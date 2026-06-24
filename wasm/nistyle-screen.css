@@ -1,0 +1,27 @@
+body { font-family: "CMU Bright", sans-serif; }
+code,pre { font-family: "Inconsolata", monospace; }
+
+body { max-width: 59rem; }
+main { max-width: 48rem; }
+
+nav {
+	float: right;
+	font-family: "CMU Sans Serif", sans-serif;
+	font-size: 0.9rem;
+	min-width: 9.5em;
+	margin-right: inherit;
+	margin-left: 1em;
+	margin-bottom: 1em;
+}
+
+nav > * { margin-left: 0; }
+nav > h1, nav > h2 { margin-left: 0; margin-top: 0; }
+nav ul { padding-left: 0; list-style: none inside; }
+nav ul ul { padding-left: 1em; }
+
+.teipen {
+	width: 100%;
+	text-align: center;
+	background-color: blue; color: yellow;
+	font-weight: bold; font-variant: small-caps;
+}

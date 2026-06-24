@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang='en-GB'>
+
+
+
+
+
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+
+
+<style media='screen'><!--/*--><![CDATA[/*><!--*/
+@import url('/nistyle-screen.css');
+/*]]>*/--></style>
+<style media='print'><!--/*--><![CDATA[/*><!--*/
+@import url('/nistyle-print.css');
+/*]]>*/--></style>
+<style media='screen,print'><!--/*--><![CDATA[/*><!--*/
+@import url('/nistyle.css');
+/*]]>*/--></style>
+
+<title>404 Not Found</title>
+</head>
+
+<body>
+
+<header>
+
+
+
+<nav id='site-nav'>
+
+<p class='skiptocontent'><a href='#content'>Skip navigation</a>
+<h2>Navigation</h2>
+<ul>
+
+
+<li><a href='/debian/'>Apt repository</a>
+
+
+
+<li><a href='/dragon/'>Dragon computers</a>
+
+
+
+<li><a href='/evilwm/'>evilwm</a>
+
+
+
+<li><a href='/xroar/'>XRoar</a>
+
+
+
+<li><a href='/asm6809/'>asm6809</a>
+
+
+
+<li><a href='/blockdown/'>Blockdown</a>
+
+
+
+<li><a href='/dunjunz/'>Dunjunz</a>
+
+
+
+<li><a href='/fstools/'>fstools</a>
+
+(ADFS)
+
+
+<li><a href='/media/'>Media</a>
+
+
+
+<li><a href='/dev/'>Dev diary</a>
+
+
+
+<li><a href='/misc/'>Miscellany</a>
+
+
+
+<li><a href='/ciaran/'>Personal / Contact</a>
+
+
+</ul>
+
+<p><a href='/cookies.shtml'>Cookies?</a>
+
+
+
+
+
+
+
+<!-- 25AA BLACK SMALL SQUARE -->
+<p style='color: green;'>&#x25aa;&#x25aa;&#x25aa;&#x25aa;&#x25aa;</p>
+
+</nav>
+
+</header>
+
+<main id='content'>
+
+
+<h1>Not Found</h1>
+
+<p>The requested URL /xroar/online/cp400bas.rom was not found on this
+server.
+
+</main>
+
+
+
+</body>
+
+</html>
+

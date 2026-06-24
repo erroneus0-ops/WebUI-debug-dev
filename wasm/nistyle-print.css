@@ -1,0 +1,13 @@
+body { font-family: "CMU Serif", sans-serif; }
+code, pre { font-family: "CMU Typewriter Text", "Inconsolata", monospace; }
+body { font-size: 12pt; }
+pre { font-size: 12pt; letter-spacing: 0.1em; }
+code { font-size: 11pt; letter-spacing: 0.1em; }
+
+a { color: inherit; text-decoration: none; }
+
+nav { display: none; }
+
+#updated { display: none; }
+
+.teipen { display: none; }

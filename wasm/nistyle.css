@@ -1,0 +1,61 @@
+code,.code { font-weight: bold; }
+var { font-style: italic; }
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.1875rem; }
+h3 { font-size: 1rem; } 
+code,pre,.code { font-size: small; }
+
+body { margin-left: 0; padding-left: 0.75rem; padding-right: 0.75rem; }
+pre { margin-left: 1.5rem; }
+table { margin-left: 1.5rem; }
+
+ul.toc { margin-left: -3rem; }
+
+h1 { margin-top: 1.3125rem; margin-bottom: 1.3125rem; }
+h2 { margin-top: 1.1875rem; margin-bottom: 0.1875rem; }
+h3 { margin-top: 1.125rem; margin-bottom: 0.125rem; }
+p { margin-top: 1rem; margin-bottom: 1rem; }
+pre { margin-top: 1rem; margin-bottom: 1rem; }
+
+/*
+h1+* { margin-top: 0.3125rem; }
+h2+* { margin-top: 0.1875rem; }
+h3+* { margin-top: 0.125rem; }
+*/
+
+dd { margin-top: none; margin-bottom: 1rem; }
+dl.compact dd { margin-bottom: 0.0625rem; }
+
+h1,h2,h3 { page-break-after: avoid; }
+h1+*,h2+*,h3+* { page-break-before: avoid; }
+dt+dd { page-break-before: avoid; }
+
+img+p.caption { page-break-before: avoid; margin-top: 0; font-size: smaller; }
+video+p.caption { page-break-before: avoid; margin-top: 0; font-size: smaller; }
+
+p { text-align: justify; }
+dd { text-align: justify; }
+
+p.comment { font-style: italic; }
+
+table { border-collapse: collapse; border-style: hidden hidden none hidden; }
+table thead { border-bottom: solid; }
+table thead th { text-align: left; }
+table tbody { border-bottom: solid thin; }
+table tbody th { text-align: left; }
+table td, table th { border-left: solid thin; border-right: solid thin; border-bottom: none; vertical-align: top; padding: 0 0.1875rem 0.0625rem; }
+
+section.footnotes { border-top: solid thin dimgrey; }
+
+.skiptocontent { display: none; }
+
+.widethumbs { list-style: none inside; padding-left: 0; margin-left: 0; }
+.widethumbs li { max-width: 168px; float: left; text-align: center; padding: 3px; }
+.widethumbs img { max-width: 80px; max-height: 60px; }
+.rightthumbs { list-style: none inside; float: right; padding: 0 0 3px 1em; margin: 0; }
+.rightthumbs li { max-width: 168px; text-align: center; padding: 3px; }
+.rightthumbs img { max-width: 80px; max-height: 60px; }
+
+.breakfloat { clear: both; height: 0; }
+
