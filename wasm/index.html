@@ -152,8 +152,8 @@ be a better way to make this usable...
 <!-- start tabs container -->
 <div id='controls' class="tabs-container">
 
-<!-- start tab -->
-<input id="tab0" type="radio" name="tabs" checked />
+<!-- start tab CHANGE Default Tab remove "checked" from "tab0" and add to "tab3" -->
+<input id="tab0" type="radio" name="tabs" />
 <label for="tab0" class="tab-label">Software</label>
 <div class="tab-content">
 
@@ -320,7 +320,7 @@ be a better way to make this usable...
 <!-- end tab -->
 
 <!-- start tab -->
-<input id="tab3" type="radio" name="tabs" />
+<input id="tab3" type="radio" name="tabs" checked />
 <label for="tab3" class="tab-label">Hardware</label>
 <div class="tab-content">
 
@@ -374,11 +374,72 @@ be a better way to make this usable...
 
 <script>
 
+	/*
+	 * XRoar WASM Configuration
+	 * ─────────────────────────────────────────────────────────────────────
+	 * Arguments in the array below are passed to XRoar at startup exactly
+	 * as they would appear on the command line.  The full list of options
+	 * can be obtained by running:  xroar -print-config
+	 *
+	 * MACHINE  (-machine <id>)
+	 *   coco          Tandy CoCo (PAL)
+	 *   cocous        Tandy CoCo (NTSC)
+	 *   coco2b        Tandy CoCo 2B (PAL,T1)
+	 *   coco2bus      Tandy CoCo 2B (NTSC,T1)   ← current
+	 *   coco3         Tandy CoCo 3
+	 *   dragon32      Dragon 32
+	 *   dragon64      Dragon 64
+	 *
+	 * CARTRIDGE  (-cart <id>)
+	 *   rsdos         RS-DOS disk controller     ← current
+	 *   dragondos     DragonDOS
+	 *   becker        RS-DOS with Becker port
+	 *   ide           IDE interface
+	 *   (omit -cart for no cartridge)
+	 *
+	 * KEYBOARD  (-kbd-translate <mode>)
+	 *   translated    Map modern keys to CoCo layout  ← current
+	 *   (omit flag)   Raw scan codes (default)
+	 *
+	 * TV TYPE  (-tv-type <type>)
+	 *   ntsc          60Hz NTSC (set automatically by coco2bus)
+	 *   pal           50Hz PAL
+	 *
+	 * DISPLAY
+	 *   -no-vo-colour-killer   keep colour in mono video modes (current)
+	 *   -invert-text           start with inverse text mode on
+	 *   -vo-brightness <0-100> default 52
+	 *   -vo-contrast <0-100>   default 52
+	 *
+	 * DISK
+	 *   -no-disk-auto-os9      don't auto-boot OS-9 disks (current)
+	 *   -no-disk-write-back    discard disk writes on eject
+	 *
+	 * AUDIO
+	 *   -ao-fragments <n>      audio buffer fragment count (3 = current)
+	 *   -ao-gain <dBFS>        volume, e.g. -3.0 (default)
+	 *
+	 * DEFAULT TAB
+	 *   Set by the 'checked' attribute on the tab radio inputs in the HTML.
+	 *   tab0=Software  tab1=File  tab2=View  tab3=Hardware  tab99=Help
+	 *   Currently: tab3 (Hardware) has checked.
+	 * ─────────────────────────────────────────────────────────────────────
+     * MULTI-PAK INTERFACE
+     *   Replace -cart rsdos with:
+     *   -cart mpi
+     *   -mpi-load-cart 0=rsdos      slot 1: RS-DOS disk controller
+     *   -mpi-load-cart 1=gmc        slot 2: Games Master Cartridge
+     *   -mpi-load-cart 2=orch90     slot 3: Orchestra 90-CC
+     *   -mpi-slot 0                 active slot at startup (0-based)
+     *
+     *   Available cart IDs for slots: rsdos, becker, dragondos,
+     *   delta, gmc, orch90, ide, nx32, mooh, mpi-race
+	 */
 	var Module = {
 		canvas: (function() { return document.getElementById('canvas'); })(),
 		initial_resize: 0,
 		is_fullscreen: 0,
-		arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3' ],
+		arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', 'translated' ], // added , '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', 'translated'
 	};
 
 	var drive_filename = [ null, null, null, null ];
