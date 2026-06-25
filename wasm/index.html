@@ -397,9 +397,10 @@ be a better way to make this usable...
 	 *   ide           IDE interface
 	 *   (omit -cart for no cartridge)
 	 *
-	 * KEYBOARD  (-kbd-translate <mode>)
-	 *   translated    Map modern keys to CoCo layout  ← current
-	 *   (omit flag)   Raw scan codes (default)
+	 * KEYBOARD
+	 *   -kbd-translate translated   Map modern keys to CoCo layout  ← current
+	 *   -kbd-lang us                US keyboard layout (default is UK)  ← current
+	 *   (omit -kbd-translate)       Raw scan codes
 	 *
 	 * TV TYPE  (-tv-type <type>)
 	 *   ntsc          60Hz NTSC (set automatically by coco2bus)
@@ -439,7 +440,7 @@ be a better way to make this usable...
 		canvas: (function() { return document.getElementById('canvas'); })(),
 		initial_resize: 0,
 		is_fullscreen: 0,
-		arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', 'translated' ], // added , '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', 'translated'
+		arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', 'translated', '-kbd-lang', 'us' ],
 	};
 
 	var drive_filename = [ null, null, null, null ];
