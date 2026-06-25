@@ -402,6 +402,10 @@ be a better way to make this usable...
 	 *   -kbd-lang us                US keyboard layout (default is UK)  ← current
 	 *   (omit -kbd-translate)       Raw scan codes
 	 *
+	 *   NOTE: -kbd-lang us added after confirming UK default was causing
+	 *   incorrect shift+number key mapping (e.g. # instead of £ and vice versa).
+	 *   Both -kbd-translate and -kbd-lang must be present together.
+	 *
 	 * TV TYPE  (-tv-type <type>)
 	 *   ntsc          60Hz NTSC (set automatically by coco2bus)
 	 *   pal           50Hz PAL
