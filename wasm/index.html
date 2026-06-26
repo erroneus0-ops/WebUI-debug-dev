@@ -448,7 +448,8 @@ be a better way to make this usable...
 				}
 			}
 		}
-		wasm_apply_size_override();
+		// size override is applied in ui_done_initialising() instead,
+		// after XRoar's own wasm_resize() has run.
 	};
 
 	// Work-around chromium autoplay policy, by Beuc.
@@ -939,6 +940,9 @@ be a better way to make this usable...
 			Module.initial_resize = 1;
 			wasm_set_int("fullscreen", 0, 1);
 		}
+
+		// Apply canvas size override after XRoar's own resize completes
+		wasm_apply_size_override();
 
 		// Scan arguments for key=value pairs to populate a program struct
 		var program = {};
