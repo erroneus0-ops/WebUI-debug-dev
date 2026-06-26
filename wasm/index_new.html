@@ -481,14 +481,24 @@ var Module = {
 
 	// Type text dialog
 	function show_type_dialog() {
+		Module.canvas.blur();   // SDL2 typically ignores keys when canvas lacks focus
 		var dlg = document.getElementById('type-dialog');
 		dlg.style.display = 'flex';
-		document.getElementById('type-dialog-text').focus();
+		var ta = document.getElementById('type-dialog-text');
+		// Capture phase: intercept before SDL2 can see it
+		document.addEventListener('keydown',  stop_event, true);
+		document.addEventListener('keyup',    stop_event, true);
+		document.addEventListener('keypress', stop_event, true);
+		ta.focus();
 	}
 	function hide_type_dialog() {
+		document.removeEventListener('keydown',  stop_event, true);
+		document.removeEventListener('keyup',    stop_event, true);
+		document.removeEventListener('keypress', stop_event, true);
 		document.getElementById('type-dialog').style.display = 'none';
 		Module.canvas.focus();
 	}
+	function stop_event(e) { e.stopPropagation(); e.stopImmediatePropagation(); }
 	function send_type_dialog() {
 		var text = document.getElementById('type-dialog-text').value;
 		if (text) {
