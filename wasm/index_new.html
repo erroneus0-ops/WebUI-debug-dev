@@ -330,10 +330,248 @@ function applyMonitorLayout() {
 // Call on page load so the monitor frame and bezel appear immediately
 window.addEventListener('DOMContentLoaded', applyMonitorLayout);
 
-// ── XRoar Module definition ───────────────────────────────────────────────
-// PASTE MODULE DEFINITION FROM index.html HERE
-// (everything from "var Module = {" to the end of the script block)
-// ─────────────────────────────────────────────────────────────────────────
+var Module = {
+		canvas: (function() { return document.getElementById('canvas'); })(),
+		initial_resize: 0,
+		is_fullscreen: 0,
+		arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', 'translated', '-kbd-lang', 'us' ],
+	};
+
+	var drive_filename = [ null, null, null, null ];
+	var hd_filename = [ null, null ];
+
+	Module.onRuntimeInitialized = function() {
+		wasm_load_file = Module.cwrap('wasm_load_file', null, [ 'string', 'number', 'number' ]);
+		let args = window.location.search.substr(1).split('&');
+		for (let arg of args) {
+			if (arg.substring(0, 1) == '-') {
+				if (arg.includes('=')) {
+					let [k, v] = arg.split('=');
+					v = decodeURIComponent(v.replace(/\+/g, '%20'));
+					Module.arguments.push(k, v);
+				} else {
+					Module.arguments.push(arg);
+				}
+			}
+		}
+	};
+
+	function resumeAudio(e) {
+		if (Module === undefined || typeof Module.SDL2 == 'undefined' || typeof Module.SDL2.audioContext == 'undefined') return;
+		if (Module.SDL2.audioContext.state == 'suspended') { Module.SDL2.audioContext.resume(); }
+		if (Module.SDL2.audioContext.state == 'running') {
+			document.getElementById('canvas').removeEventListener('click', resumeAudio);
+			document.removeEventListener('keydown', resumeAudio);
+		}
+	}
+	document.getElementById('canvas').addEventListener('click', resumeAudio);
+	document.addEventListener('keydown', resumeAudio);
+
+	// Build software drop-downs
+	{
+		var table = document.getElementById('software');
+		for (var i = 0; i < software.length; ++i) {
+			const section = software[i];
+			var tr = document.createElement('tr');
+			tr.setAttribute('title', section.description);
+			table.appendChild(tr);
+			var th = document.createElement('th');
+			th.innerHTML = section.name + ':';
+			tr.appendChild(th);
+			var td = document.createElement('td');
+			var select = document.createElement('select');
+			select.setAttribute('id', 'software:'+i);
+			select.setAttribute('style', 'width: 90%');
+			select.setAttribute('onchange', 'start_selected_software(this, this.options[this.selectedIndex].value)');
+			var option = document.createElement('option');
+			option.setAttribute('value', '');
+			option.innerHTML = '-';
+			select.appendChild(option);
+			for (var j = 0; j < section.entries.length; ++j) {
+				const entry = section.entries[j];
+				var option = document.createElement('option');
+				option.setAttribute('value', i+','+j);
+				option.setAttribute('title', entry.publisher ?? entry.author);
+				option.innerHTML = entry.name;
+				select.appendChild(option);
+			}
+			td.appendChild(select);
+			tr.appendChild(td);
+			table.appendChild(tr);
+		}
+	}
+
+	const load_type = { load:0, run:1, tape:2, disk:3, text:4, hd:5 };
+
+	function file_input_onload(el, loadtype, drive) {
+		resumeAudio();
+		if (el.files.length == 0) return;
+		var file = el.files[0];
+		var fr = new FileReader();
+		fr.onload = function() {
+			var data = new Uint8Array(fr.result);
+			Module.FS.writeFile(file.name, data);
+			wasm_load_file(file.name, loadtype, drive);
+			el.value = '';
+		};
+		fr.readAsArrayBuffer(file);
+		Module.canvas.focus();
+	}
+
+	function start_selected_software(select, value) {
+		resumeAudio();
+		setTimeout(function(){ select.value=''; }, 1000);
+		Module.canvas.focus();
+		if (typeof value != 'string') return;
+		var [i,j] = value.split(',');
+		start_program(software[i].entries[j]);
+	}
+
+	function start_program(program) {
+		if ('tape' in program) wasm_load_file(program.tape, load_type.tape, 0);
+		for (let i = 0; i < 4; ++i) { let d='disk'+i; if (d in program) wasm_load_file(program[d], load_type.disk, i); }
+		for (let i = 0; i < 2; ++i) { let h='hd'+i;   if (h in program) wasm_load_file(program[h], load_type.hd, i); }
+		Module.ccall('wasm_set_machine_cart', null, ['string','string','string','string'], [program.machine, program.cart, program.cart_rom, program.cart_rom2]);
+		wasm_set_joystick_by_name(0, ('joy_right' in program) ? program.joy_right : '');
+		wasm_set_joystick_by_name(1, ('joy_left'  in program) ? program.joy_left  : '');
+		if ('ccr' in program) wasm_set_int('ccr', program.ccr, 1);
+		if ('tv_input' in program) wasm_set_int('tv_input', program.tv_input);
+		wasm_eject_tape();
+		for (let i = 0; i < 4; ++i) wasm_eject_disk(i);
+		if ('autorun' in program) {
+			if (program.autorun.split('.').pop().localeCompare('bin')) setTimeout(wasm_load_file, 2000, program.autorun, load_type.run, 0);
+			else wasm_load_file(program.autorun, load_type.run, 0);
+		}
+		if ('basic' in program) Module.ccall('wasm_queue_basic', null, ['string'], [program.basic]);
+	}
+
+	function wasm_hard_reset() { resumeAudio(); Module.ccall('xroar_hard_reset', null, [], []); }
+	function wasm_soft_reset() { resumeAudio(); Module.ccall('xroar_soft_reset', null, [], []); }
+	function wasm_set_joystick(joy, value) { resumeAudio(); Module.ccall('wasm_set_joystick_port', null, ['number','number'], [joy, value]); Module.canvas.focus(); }
+	function wasm_set_joystick_by_name(joy, value) { resumeAudio(); Module.ccall('wasm_set_joystick_by_name', null, ['number','string'], [joy, value]); Module.canvas.focus(); }
+	function wasm_new_disk(drive) { Module.ccall('wasm_new_disk', null, ['number'], [drive]); }
+	function wasm_eject_disk(drive) { resumeAudio(); Module.ccall('xroar_eject_disk', null, ['number'], [drive]); }
+	function wasm_eject_tape() { resumeAudio(); Module.ccall('xroar_eject_input_tape', null, [], []); }
+	function wasm_set_int(control, value, refocus) { resumeAudio(); Module.ccall('wasm_set_int', null, ['string','number'], [control, value]); if (refocus) Module.canvas.focus(); }
+	function wasm_set_float(control, value, refocus) { resumeAudio(); Module.ccall('wasm_set_float', null, ['string','number'], [control, value]); if (refocus) Module.canvas.focus(); }
+	function wasm_set_string(control, value, refocus) { resumeAudio(); Module.ccall('wasm_set_string', null, ['string','string'], [control, value]); if (refocus) Module.canvas.focus(); }
+	function wasm_set_machine(value) { resumeAudio(); Module.ccall('wasm_set_machine_cart', null, ['string','string','string','string'], [value, null, null, null]); Module.canvas.focus(); }
+	function wasm_set_cart(value) { resumeAudio(); Module.ccall('wasm_set_machine_cart', null, ['string','string','string','string'], [null, value, null, null]); Module.canvas.focus(); }
+
+	function wasm_resize() {
+		if (Module.is_fullscreen) {
+			Module.canvas.width = window.innerWidth;
+			Module.canvas.height = window.innerHeight;
+			Module.canvas.scrollIntoView();
+		} else {
+			Module.canvas.width = 640;
+			Module.canvas.height = 480;
+		}
+		Module.ccall('wasm_resize', null, ['number','number'], [Module.canvas.width, Module.canvas.height]);
+	}
+
+	function wasm_js_set_axis(axis, value) { Module.ccall('wasm_js_set_axis', null, ['number','number'], [axis, value]); }
+	function wasm_js_set_button(button, value) { Module.ccall('wasm_js_set_button', null, ['number','number'], [button, value]); }
+
+	function download_snapshot() {
+		Module.ccall('write_snapshot', null, ['string'], ['xroar.sna']);
+		let content = Module.FS.readFile('xroar.sna');
+		var a = document.createElement('a');
+		a.download = 'xroar.sna'; a.href = URL.createObjectURL(new Blob([content], {type:'application/octet-stream'})); a.style.display='none';
+		document.body.appendChild(a); a.click();
+		setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(a.href); Module.FS.unlink('xroar.sna'); }, 2000);
+	}
+
+	function download_disk(drive) {
+		Module.ccall('wasm_vdrive_flush', null, [], []);
+		if (drive_filename[drive]) {
+			let content = Module.FS.readFile(drive_filename[drive]);
+			var a = document.createElement('a');
+			a.download = drive_filename[drive]; a.href = URL.createObjectURL(new Blob([content], {type:'application/octet-stream'})); a.style.display='none';
+			document.body.appendChild(a); a.click();
+			setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 2000);
+		}
+	}
+
+	function download_hd(drive) {
+		if (hd_filename[drive]) {
+			let content = Module.FS.readFile(hd_filename[drive]);
+			var a = document.createElement('a');
+			a.download = hd_filename[drive]; a.href = URL.createObjectURL(new Blob([content], {type:'application/octet-stream'})); a.style.display='none';
+			document.body.appendChild(a); a.click();
+			setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 2000);
+		}
+	}
+
+	// XRoar UI callbacks
+	function ui_menu_clear(menu) { var s=document.getElementById(UTF8ToString(menu)); if(s) while(s.lastChild) s.removeChild(s.lastChild); }
+	function ui_menu_add(menu, label, value) { var s=document.getElementById(UTF8ToString(menu)); if(s){ var el=document.createElement('OPTION'); el.innerHTML=UTF8ToString(label); el.setAttribute('value',value); s.appendChild(el); } }
+	function ui_menu_add_str(menu, label, value) { var s=document.getElementById(UTF8ToString(menu)); if(s){ var el=document.createElement('OPTION'); el.innerHTML=UTF8ToString(label); el.setAttribute('value',UTF8ToString(value)); s.appendChild(el); } }
+	function ui_menu_select(menu, value) { var s=document.getElementById(UTF8ToString(menu)); if(s) s.value=value; }
+	function ui_menu_select_str(menu, value) { var s=document.getElementById(UTF8ToString(menu)); if(s) s.value=UTF8ToString(value); }
+	function ui_set_checkbox(idp, value) { var el=document.getElementById(UTF8ToString(idp)); if(el) el.checked=value; }
+	function ui_set_html(elname, value) { var el=document.getElementById(UTF8ToString(elname)); if(el) el.innerHTML=UTF8ToString(value); }
+	function ui_set_value(idp, value) { var id=UTF8ToString(idp); var el=document.getElementById(id); if(el) el.value=value; var elv=document.getElementById(id+'_value'); if(elv) elv.innerHTML=value; }
+	function ui_update_tape_input_filename(fnp) { var el=document.getElementById('tape'); if(el) el.innerHTML = fnp!=0 ? UTF8ToString(fnp) : ''; }
+	function ui_update_tape_playing(value) {
+		document.getElementById('tape_play').style.display  = value ? 'none' : '';
+		document.getElementById('tape_pause').style.display = value ? '' : 'none';
+	}
+	function ui_update_disk_info(drive, fnp, wb, wp, ncyls, nheads) {
+		var el=document.getElementById('disk'+drive);
+		if(ncyls<0){ el.innerHTML=''; drive_filename[drive]=null; }
+		else { el.innerHTML=ncyls.toString().padStart(2,'0')+'C '+nheads+'H'; if(fnp!=0){ var fn=UTF8ToString(fnp); drive_filename[drive]=fn; el.innerHTML+=' | '+fn; } }
+	}
+	function ui_update_hd_filename(drive, fnp) {
+		var el=document.getElementById('hd'+drive); hd_filename[drive]=null; el.innerHTML='';
+		if(fnp!=0){ var fn=UTF8ToString(fnp); hd_filename[drive]=fn; el.innerHTML=fn; }
+	}
+	function ui_update_ccr(value) { document.getElementById('ccr').value=value; }
+
+	function ui_set_fullscreen(fs) {
+		Module.is_fullscreen = fs;
+		if (fs) {
+			document.getElementById('controls-region').style.display = 'none';
+			document.body.style.margin = '0'; document.body.style.padding = '0'; document.body.style.overflow = 'hidden';
+			window.addEventListener('resize', wasm_resize);
+		} else {
+			document.body.style.margin = ''; document.body.style.padding = ''; document.body.style.overflow = '';
+			document.getElementById('controls-region').style.display = '';
+			window.removeEventListener('resize', wasm_resize);
+		}
+		wasm_resize();
+	}
+
+	function ui_done_initialising() {
+		if (!Module.initial_resize) { Module.initial_resize = 1; wasm_set_int('fullscreen', 0, 1); }
+		applyMonitorLayout();
+		var program = {};
+		let args = window.location.search.substr(1).split('&');
+		for (let arg of args) {
+			if (arg.substring(0,1)=='-') continue;
+			if (arg.includes('=')) {
+				let [k,v] = arg.split('='); v=decodeURIComponent(v.replace(/\+/g,'%20'));
+				if (k==='nodos') Module.ccall('wasm_set_machine_cart',null,['string','string','string','string'],[v,null,null,null]);
+				else program[k]=v;
+			} else if (arg==='nodos') {
+				Module.ccall('wasm_set_machine_cart',null,['string','string','string','string'],['dragon32',null,null,null]);
+			} else if (arg==='fs') {
+				wasm_set_int('fullscreen',1,1);
+			} else {
+				search_software: for (var i=0; i<software.length; ++i) {
+					var sel=document.getElementById('software:'+i);
+					for (var j=0; j<software[i].entries.length; ++j) {
+						const entry=software[i].entries[j];
+						const tag=Object.hasOwn(entry,'tag')?entry.tag:entry.name;
+						if (arg===encodeURIComponent(tag)){ start_selected_software(sel,i+','+j); break search_software; }
+					}
+				}
+			}
+		}
+		if (Object.entries(program).length!==0) start_program(program);
+		window.addEventListener('gamepadconnected',   (e)=>{ Module.ccall('wasm_gamepad_connected',    null,['number'],[e.gamepad.index]); });
+		window.addEventListener('gamepaddisconnected',(e)=>{ Module.ccall('wasm_gamepad_disconnected', null,['number'],[e.gamepad.index]); });
+	}
 </script>
 
 <!-- XRoar WebAssembly -->
