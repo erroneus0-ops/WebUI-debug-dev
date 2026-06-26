@@ -19,17 +19,32 @@
 @import url('xroar-wasm.css');
 table thead,table tbody,table td,table th { border: none; }
 
-/* Minimal page layout */
+/* ── Page background ────────────────────────────────────────────────
+ * Change background-color below to adjust the page background.
+ * Current: medium-light grey (#c8c8c8)
+ * Other options to try: #d0d0d0 (lighter), #a0a0a0 (darker),
+ *   #1a1a1a (near-black), #f0f0f0 (near-white)
+ */
 body {
     margin: 0;
     padding: 0.75rem;
     font-family: sans-serif;
+    background-color: #c8c8c8;
 }
 
 h1 {
     margin: 0.5rem 0 1rem 0;
     font-size: 1.2rem;
 }
+
+/* ── Main content width ─────────────────────────────────────────────
+ * The .xroar-layout flex container holds the canvas (left) and
+ * the controls panel (right). To give the controls more room,
+ * increase min-width on #controls below.
+ * To constrain the overall page width, add max-width here:
+ *   main { max-width: 1200px; }
+ * Currently: unconstrained -- fills the browser window.
+ */
 
 /* Canvas left, controls right */
 .xroar-layout {
@@ -40,9 +55,14 @@ h1 {
 }
 
 .xroar-canvas-area {
-    flex-shrink: 0;
+    flex-shrink: 0;    /* canvas never squishes -- XRoar sets its own size */
 }
 
+/* ── Controls panel width ───────────────────────────────────────────
+ * flex: 1 means the controls take all remaining space after the canvas.
+ * min-width: minimum width before the panel can't shrink further.
+ * Increase min-width if controls feel cramped.
+ */
 #controls {
     flex: 1;
     min-width: 280px;
