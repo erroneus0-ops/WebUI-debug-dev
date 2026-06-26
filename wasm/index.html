@@ -409,6 +409,24 @@ be a better way to make this usable...
 		arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', 'translated', '-kbd-lang', 'us' ],
 	};
 
+	// ── Canvas size override ───────────────────────────────────────────────
+	// wasm_resize() hardcodes 640x480. To use a different size at startup,
+	// change the values below. Set to null to use the default 640x480.
+	// Examples: [512, 384]  [800, 600]  [640, 480]  null (default)
+	var canvas_size_override = null;
+
+	// Called after the emulator runtime is ready -- applies the size override.
+	// Leave this function alone; change canvas_size_override above instead.
+	function wasm_apply_size_override() {
+		if (canvas_size_override) {
+			Module.canvas.width  = canvas_size_override[0];
+			Module.canvas.height = canvas_size_override[1];
+			Module.ccall('wasm_resize', null, [ 'number', 'number' ],
+				[ Module.canvas.width, Module.canvas.height ]);
+		}
+	}
+	// ──────────────────────────────────────────────────────────────────────
+
 	var drive_filename = [ null, null, null, null ];
 	var hd_filename = [ null, null ];
 
@@ -430,6 +448,7 @@ be a better way to make this usable...
 				}
 			}
 		}
+		wasm_apply_size_override();
 	};
 
 	// Work-around chromium autoplay policy, by Beuc.
