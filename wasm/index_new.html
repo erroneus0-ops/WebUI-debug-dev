@@ -327,6 +327,9 @@ function applyMonitorLayout() {
     }
 }
 
+// Call on page load so the monitor frame and bezel appear immediately
+window.addEventListener('DOMContentLoaded', applyMonitorLayout);
+
 // ── XRoar Module definition ───────────────────────────────────────────────
 // PASTE MODULE DEFINITION FROM index.html HERE
 // (everything from "var Module = {" to the end of the script block)
