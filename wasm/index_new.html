@@ -198,7 +198,9 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
         <div style="margin-top:4px;">
           <textarea id="type-text-input" rows="4"
             style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
-            placeholder="Type text here then click Send..."></textarea>
+            placeholder="Type text here then click Send..."
+            onfocus="document.getElementById('canvas').removeAttribute('tabindex')"
+            onblur="document.getElementById('canvas').setAttribute('tabindex','0')"></textarea>
           <span class="button" onclick="type_text_input()">Send to emulator</span>
         </div>
         <table>
