@@ -6,6 +6,35 @@
 <title>XRoar Online</title>
 
 <style>
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * STYLE CUSTOMIZATION
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Page background color:
+ *   body { background: #c8c8c8; }   ← change this hex value
+ *   e.g. #1a1a1a for near-black, #e0ddd5 for warm off-white
+ *
+ * Controls panel width:
+ *   #controls-region { width: 380px; }
+ *
+ * Controls panel height:
+ *   #controls-region { height: 462px; }
+ *   Set to match monitor: height = round(967 * monitorWidth / 1073)
+ *   e.g. monitorWidth=1024 → height=923px, half=462px
+ *
+ * Tab/panel color (manila):
+ *   .tab-label selected:  background: #f0e0a8
+ *   .tab-label unselected: background: #d4b455
+ *   .tab-content:         background: #f0e0a8
+ *   Change these three to retheme the controls panel.
+ *
+ * Bezel image:
+ *   #bezel-overlay { background-image: url('...'); }
+ *   Swap the filename to use a different bezel image.
+ *   Screen opening measurements must also be updated in applyMonitorLayout().
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
 /* ── Reset ───────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -323,16 +352,73 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 <script src="software.js"></script>
 
 <script>
-// ── Canvas / monitor sizing ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// USER CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════
 //
-// Called after XRoar finishes initialising (ui_done_initialising).
-// Sizes the monitor frame and positions the canvas at the screen opening.
+// ── Monitor size ──────────────────────────────────────────────────────────
 //
-// To resize: change monitorWidth below.
-// PNG: cm8_rebuilt_transparent_CRT_bkgd.png  1073x967
-// Screen opening: left=109  top=112  width=854  height=659
+//   Change monitorWidth to resize the entire CM-8 bezel and canvas.
+//   Everything else scales automatically.
+//
+//   Bezel image: cm8_rebuilt_transparent_CRT_bkgd.png  (1073 x 967 px)
+//   Screen opening in that image: left=109 top=112 width=854 height=659
+//
+//   Examples:
+//     var monitorWidth = 800;    // smaller
+//     var monitorWidth = 1024;   // default
+//     var monitorWidth = 1280;   // larger (good for 1080p displays)
+//     var monitorWidth = 1600;   // very large (4K displays)
+//
+var monitorWidth = 1024;
 
-var monitorWidth = 1024;    // ← change this to resize
+// ── XRoar machine arguments ───────────────────────────────────────────────
+//
+//   These are passed to XRoar at startup exactly as command-line options.
+//   Run  xroar --help  or see the XRoar manual for the full list.
+//
+//   MACHINE  (-machine <id>)
+//     cocous      Tandy CoCo (NTSC)              ← common choice
+//     coco2bus    Tandy CoCo 2B (NTSC,T1)        ← current
+//     coco2b      Tandy CoCo 2B (PAL,T1)
+//     coco3       Tandy CoCo 3
+//     dragon32    Dragon 32
+//     dragon64    Dragon 64
+//
+//   CARTRIDGE  (-cart <id>)
+//     rsdos       RS-DOS disk controller         ← current
+//     dragondos   DragonDOS
+//     becker      RS-DOS with Becker port
+//     (omit -cart for no cartridge)
+//
+//   KEYBOARD
+//     -kbd-translate              Map modern keyboard to CoCo layout ← current
+//     -kbd-lang us / US           US keyboard layout                 ← current
+//     (omit -kbd-translate)       Raw scan codes (UK layout default)
+//
+//     NOTE: -kbd-translate is a flag with no parameter.
+//           Both -kbd-translate and -kbd-lang must be present together.
+//
+//   DISPLAY
+//     -no-vo-colour-killer        Keep colour in mono video modes    ← current
+//     -vo-brightness <0-100>      Brightness (default 52)
+//     -vo-contrast <0-100>        Contrast (default 52)
+//
+//   DISK
+//     -no-disk-auto-os9           Don't auto-boot OS-9 disks        ← current
+//     -no-disk-write-back         Discard disk writes on eject
+//
+//   AUDIO
+//     -ao-fragments <n>           Audio buffer fragments (3 = current)
+//     -ao-gain <dBFS>             Volume, e.g. -3.0 (default)
+//
+//   MULTI-PAK INTERFACE (replace -cart rsdos with):
+//     -cart mpi
+//     -mpi-load-cart 0=rsdos      slot 1: RS-DOS
+//     -mpi-load-cart 1=gmc        slot 2: Games Master Cartridge
+//     -mpi-slot 0                 active slot at startup
+//
+// ─────────────────────────────────────────────────────────────────────────
 
 function applyMonitorLayout() {
     var scale  = monitorWidth / 1073;
