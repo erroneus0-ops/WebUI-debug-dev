@@ -405,7 +405,7 @@ be a better way to make this usable...
 	// wasm_resize() hardcodes 640x480. To use a different size at startup,
 	// change the values below. Set to null to use the default 640x480.
 	// Examples: [512, 384]  [800, 600]  [640, 480]  null (default)
-	var canvas_size_override = null;
+	var canvas_size_override = [1024, 768];
 
 	// Called after the emulator runtime is ready -- applies the size override.
 	// Leave this function alone; change canvas_size_override above instead.
