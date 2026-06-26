@@ -78,6 +78,14 @@ body {
 #controls-region {
     flex-shrink: 0;
     width: 380px;
+    /* Retro inset frame -- dark top/left, light bottom/right */
+    border-top:    2px solid #808080;
+    border-left:   2px solid #808080;
+    border-bottom: 2px solid #ffffff;
+    border-right:  2px solid #ffffff;
+    box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+    padding: 4px;
+    background: #c8c8c8;
 }
 
 /* ── Tab bar ─────────────────────────────────────────────────────── */
