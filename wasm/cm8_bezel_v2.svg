@@ -1,0 +1,40 @@
+<svg width="100%" viewBox="0 0 680 620" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Tandy CM-8 color monitor front view v2 - based on CM-11 reference photo</title>
+<desc>Front-face SVG illustration of the Tandy CM-8/CM-11 monitor. Putty grey case, deep black screen recess, narrow bottom label strip. Screen opening marked with red dashed annotation.</desc>
+
+<rect x="34" y="30" width="622" height="568" rx="10" fill="#888880" opacity="0.25"/>
+<rect x="28" y="24" width="622" height="568" rx="8" fill="#c8c4b8"/>
+<rect x="28" y="24" width="622" height="8" rx="8" fill="#dedad0"/>
+<rect x="28" y="24" width="8" height="568" rx="8" fill="#d8d4ca"/>
+<rect x="638" y="30" width="12" height="562" rx="4" fill="#a8a49a"/>
+<rect x="28" y="580" width="622" height="12" rx="4" fill="#9a9690"/>
+<rect x="40" y="36" width="598" height="556" rx="6" fill="#c4c0b4"/>
+<rect x="52" y="44" width="574" height="470" rx="18" fill="#1a1a18"/>
+<rect x="56" y="48" width="566" height="462" rx="16" fill="#141412"/>
+<rect x="60" y="52" width="558" height="454" rx="14" fill="#0e0e0c"/>
+<rect x="72" y="62" width="534" height="434" rx="10" fill="#0c0d0a"/>
+<ellipse cx="160" cy="130" rx="120" ry="70" fill="#1a1e14" opacity="0.5"/>
+<ellipse cx="140" cy="110" rx="60" ry="35" fill="#222818" opacity="0.3"/>
+<rect x="52" y="520" width="574" height="60" rx="6" fill="#b8b4a8"/>
+<rect x="52" y="520" width="574" height="2" fill="#a0a098"/>
+<rect x="52" y="578" width="574" height="2" fill="#d0ccc0"/>
+<rect x="64" y="530" width="80" height="38" rx="3" fill="#1a1a18"/>
+<text x="104" y="550" text-anchor="middle" fill="#e8e4d8" font-size="11" font-family="sans-serif" font-weight="bold" letter-spacing="1">TANDY</text>
+<text x="104" y="562" text-anchor="middle" fill="#a0a098" font-size="7" font-family="sans-serif" letter-spacing="0.5">RGB HIGH RES</text>
+<circle cx="172" cy="540" r="5" fill="#cc2222"/>
+<circle cx="184" cy="540" r="5" fill="#22aa22"/>
+<circle cx="196" cy="540" r="5" fill="#2244cc"/>
+<text x="184" y="558" text-anchor="middle" fill="#888884" font-size="7" font-family="sans-serif">COLOR MONITOR CM-8</text>
+<rect x="570" y="532" width="24" height="16" rx="3" fill="#a8a4a0" stroke="#9a9690" stroke-width="1"/>
+<rect x="598" y="532" width="24" height="16" rx="3" fill="#a8a4a0" stroke="#9a9690" stroke-width="1"/>
+<rect x="570" y="533" width="24" height="5" rx="2" fill="#c0bdb8"/>
+<rect x="598" y="533" width="24" height="5" rx="2" fill="#c0bdb8"/>
+<rect x="52" y="518" width="574" height="1.5" fill="#a8a4a0"/>
+<rect x="52" y="519" width="574" height="1" fill="#dedad2"/>
+<rect x="40" y="36" width="598" height="2" rx="1" fill="#d4d0c6"/>
+<rect x="40" y="590" width="598" height="2" rx="1" fill="#b0aca4"/>
+<rect x="72" y="62" width="534" height="434" fill="none" stroke="#ff4444" stroke-width="1.5" stroke-dasharray="8,4" opacity="0.6"/>
+<text x="339" y="282" text-anchor="middle" fill="#ff6666" font-size="16" font-family="sans-serif" opacity="0.6">screen opening</text>
+<text x="339" y="302" text-anchor="middle" fill="#ff6666" font-size="11" font-family="sans-serif" opacity="0.6">534 x 434  delete annotation before use</text>
+
+</svg>
