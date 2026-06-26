@@ -51,17 +51,16 @@ h1 {
 }
 
 /* ── Monitor bezel frame ────────────────────────────────────────────
- * cm8_bezel_transbackground.png is the background. The canvas sits inside it at
- * the glass opening (measured from PNG pixel data: 1073x964).
+ * cm8_bezel_transbackground.png is the background image.
+ * Canvas is positioned pixel-precisely by wasm_apply_size_override().
  *
- * Glass opening percentages:
- *   left: 10.16%   top: 11.51%   width: 79.50%   height: 68.26%
+ * Screen opening in 1073x964 PNG:
+ *   left: 109px  top: 111px  width: 854px  height: 659px
  *
- * Frame width is set by JS (wasm_apply_size_override).
- * Formula: frame_width = canvas_width / 0.7950
- *          frame_height = frame_width * (964/1073)
- *
- * Tweak percentages below until canvas sits cleanly in screen opening.
+ * JS calculates: frame_width  = canvas_width * (1073/854)
+ *                frame_height = canvas_width * (964/854)
+ *                canvas_left  = round(109 * scale)
+ *                canvas_top   = round(111 * scale) + vertical_centering
  */
 .monitor-frame {
     position: relative;
@@ -72,10 +71,7 @@ h1 {
 
 .monitor-frame canvas {
     position: absolute;
-    left:   10.16%;
-    top:    11.51%;
-    width:  79.50%;
-    height: 68.26%;
+    /* left/top set by wasm_apply_size_override() */
 }
 
 /* ── Controls panel width ───────────────────────────────────────────
@@ -446,17 +442,25 @@ be a better way to make this usable...
 			Module.ccall('wasm_resize', null, [ 'number', 'number' ],
 				[ Module.canvas.width, Module.canvas.height ]);
 		}
-		// Size the monitor frame to match the PNG aspect ratio (1073x964)
-		// so the canvas lands in the glass opening at the right position.
-		// frame_width  = canvas_width / glass_width_percent (0.785)
-		// frame_height = frame_width  * (984/1095)
+		// Size monitor frame and position canvas pixel-precisely.
+		// Screen opening in 1073x964 PNG: left=109 top=111 w=854 h=659
+		// Scale so canvas width fills screen opening width exactly.
 		var frame = document.getElementById('monitor-frame');
 		if (frame) {
-			var cw = Module.canvas.width;
-			var fw = Math.round(cw / 0.7950);
-			var fh = Math.round(fw * (964 / 1073));
+			var cw    = Module.canvas.width;
+			var ch    = Module.canvas.height;
+			var scale = cw / 854;
+			var fw    = Math.round(1073 * scale);
+			var fh    = Math.round(964  * scale);
 			frame.style.width  = fw + 'px';
 			frame.style.height = fh + 'px';
+			// Center canvas horizontally and vertically in screen opening
+			var cl       = Math.round(109 * scale);
+			var soTop    = Math.round(111 * scale);
+			var soHeight = Math.round(659 * scale);
+			var ct       = soTop + Math.round((soHeight - ch) / 2);
+			Module.canvas.style.left = cl + 'px';
+			Module.canvas.style.top  = ct + 'px';
 		}
 	}
 	// ──────────────────────────────────────────────────────────────────────
