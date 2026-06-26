@@ -50,32 +50,41 @@ h1 {
     flex-shrink: 0;    /* canvas never squishes -- XRoar sets its own size */
 }
 
-/* ── Monitor bezel frame ────────────────────────────────────────────
- * cm8_bezel.png is the background. The canvas sits inside it at
- * the glass opening (measured from PNG pixel data: 1095x984).
+/* ── Monitor bezel overlay ──────────────────────────────────────────
+ * cm8_bezel_transparent.png overlays on top of the canvas.
+ * The screen area is already transparent so the canvas shows through.
+ * pointer-events: none lets clicks pass through to the canvas.
  *
- * Glass opening percentages:
- *   left: 10.96%   top: 11.2%   width: 78.5%   height: 68.1%
+ * Screen opening in 1073x964 PNG (from pixel scan):
+ *   left: 109px (10.16%)   top:  111px (11.51%)
+ *   width: 853px (79.50%)  height: 658px (68.26%)
  *
- * Frame width is set by JS (wasm_apply_size_override).
- * Formula: frame_width = canvas_width / 0.785
- *          frame_height = frame_width * (984/1095)
+ * Frame is sized so the canvas fills the screen opening exactly.
+ * canvas_width = frame_width * 0.7950
+ * frame_width  = canvas_width / 0.7950
+ * frame_height = frame_width * (964 / 1073)
  *
- * Tweak percentages below until canvas sits cleanly in screen opening.
+ * To fine-tune canvas position, adjust left/top percentages below.
  */
 .monitor-frame {
     position: relative;
     display: inline-block;
-    background-image: url('cm8_bezel.png');
-    background-size: 100% 100%;
 }
 
 .monitor-frame canvas {
+    display: block;
+}
+
+.monitor-bezel-overlay {
     position: absolute;
-    left:   10.96%;
-    top:    11.2%;
-    width:  78.5%;
-    height: 68.1%;
+    top:    0;
+    left:   0;
+    width:  100%;
+    height: 100%;
+    background-image: url('cm8_bezel_transparent.png');
+    background-size: 100% 100%;
+    pointer-events: none;   /* clicks pass through to canvas */
+    z-index: 10;
 }
 
 /* ── Controls panel width ───────────────────────────────────────────
@@ -127,6 +136,7 @@ be a better way to make this usable...
 <div class="xroar-canvas-area">
 <div class="monitor-frame" id="monitor-frame">
 <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+<div class="monitor-bezel-overlay"></div>
 </div>
 </div>
 
@@ -446,15 +456,15 @@ be a better way to make this usable...
 			Module.ccall('wasm_resize', null, [ 'number', 'number' ],
 				[ Module.canvas.width, Module.canvas.height ]);
 		}
-		// Size the monitor frame to match the PNG aspect ratio (1095x984)
-		// so the canvas lands in the glass opening at the right position.
-		// frame_width  = canvas_width / glass_width_percent (0.785)
-		// frame_height = frame_width  * (984/1095)
+		// Size the monitor frame so the canvas fills the screen opening.
+		// Transparent PNG: 1073x964, screen opening width = 79.50%
+		// frame_width  = canvas_width  / 0.7950
+		// frame_height = frame_width   * (964 / 1073)
 		var frame = document.getElementById('monitor-frame');
 		if (frame) {
 			var cw = Module.canvas.width;
-			var fw = Math.round(cw / 0.785);
-			var fh = Math.round(fw * (984 / 1095));
+			var fw = Math.round(cw / 0.7950);
+			var fh = Math.round(fw * (964 / 1073));
 			frame.style.width  = fw + 'px';
 			frame.style.height = fh + 'px';
 		}
