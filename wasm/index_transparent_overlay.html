@@ -51,45 +51,30 @@ h1 {
 }
 
 /* ── Monitor bezel overlay ──────────────────────────────────────────
- * cm8_bezel_transparent.png overlays on top of the canvas.
- * The screen area is already transparent so the canvas shows through.
- * pointer-events: none lets clicks pass through to the canvas.
+ * Frame matches full PNG aspect ratio (1073x967).
+ * Canvas is absolutely positioned inside the frame at the screen opening.
+ * Overlay covers 100% of frame -- transparent hole sits over canvas.
  *
- * Screen opening in 1073x964 PNG (from pixel scan):
- *   left: 109px (10.16%)   top:  111px (11.51%)
- *   width: 853px (79.50%)  height: 658px (68.26%)
- *
- * Frame is sized so the canvas fills the screen opening exactly.
- * canvas_width = frame_width * 0.7950
- * frame_width  = canvas_width / 0.7950
- * frame_height = frame_width * (964 / 1073)
- *
- * To fine-tune canvas position, adjust left/top percentages below.
+ * To resize the monitor, change monitorWidth in wasm_apply_size_override().
+ * Everything else is calculated automatically.
  */
 .monitor-frame {
     position: relative;
     display: inline-block;
-    overflow: visible;   /* bezel extends beyond canvas edges */
+    flex-shrink: 0;
 }
 
 .monitor-frame canvas {
-    display: block;
-    position: relative;
-    z-index: 1;
+    position: absolute;
+    /* left/top/width/height set by wasm_apply_size_override() */
 }
 
-/* ── Bezel overlay sizing ────────────────────────────────────────────
- * The overlay PNG is larger than the canvas frame.
- * It is offset negatively so its transparent screen hole aligns
- * exactly with the canvas. The bezel extends beyond the frame.
- *
- * PNG: cm8_rebuilt_transparent_CRT_bkgd.png  1073x967
- * Screen opening: left=109 top=112 w=854 h=659
- *
- * JS calculates the exact size and offset -- do not set here.
- */
 .monitor-bezel-overlay {
     position: absolute;
+    top:    0;
+    left:   0;
+    width:  100%;
+    height: 100%;
     background-image: url('cm8_rebuilt_transparent_CRT_bkgd.png');
     background-size: 100% 100%;
     pointer-events: none;
@@ -465,33 +450,30 @@ be a better way to make this usable...
 			Module.ccall('wasm_resize', null, [ 'number', 'number' ],
 				[ Module.canvas.width, Module.canvas.height ]);
 		}
-		// Overlay approach: canvas fills frame, overlay extends beyond it.
-		// PNG: 1073x967, screen opening: left=109 top=112 w=854 h=659
-		// Scale PNG so screen opening width = canvas width.
-		// Center canvas vertically in screen opening.
+		// Frame = full PNG scaled to monitorWidth.
+		// Canvas positioned at screen opening inside frame.
+		// Overlay covers frame 100% -- transparent hole sits over canvas.
+		//
+		// PNG: 1073x967   Screen opening: left=109 top=112 w=854 h=659
+		// Change monitorWidth to resize. Everything else is automatic.
+		var monitorWidth = 1024;
+		var scale = monitorWidth / 1073;
 		var frame = document.getElementById('monitor-frame');
-		var overlay = frame ? frame.querySelector('.monitor-bezel-overlay') : null;
-		if (frame && overlay) {
-			var cw    = Module.canvas.width;
-			var ch    = Module.canvas.height;
-			var scale = cw / 854;          // PNG px -> frame px
-			var ow    = Math.round(1073 * scale);   // overlay total width
-			var oh    = Math.round(967  * scale);   // overlay total height
-			// Transparent hole position in overlay coordinates
-			var holeLeft   = Math.round(109 * scale);
-			var holeTop    = Math.round(112 * scale);
-			var holeHeight = Math.round(659 * scale);
-			// Frame = canvas size exactly
-			frame.style.width  = cw + 'px';
-			frame.style.height = ch + 'px';
-			// Offset overlay so hole is centered over canvas
-			var vertCenter = Math.round((holeHeight - ch) / 2);
-			overlay.style.width  = ow + 'px';
-			overlay.style.height = oh + 'px';
-			overlay.style.left   = (-holeLeft) + 'px';
-			overlay.style.top    = (-holeTop + vertCenter * -1) + 'px';
+		if (frame) {
+			var fw = monitorWidth;
+			var fh = Math.round(967 * scale);
+			frame.style.width  = fw + 'px';
+			frame.style.height = fh + 'px';
+			// Canvas position and size at screen opening
+			var cl  = Math.round(109 * scale);
+			var ct  = Math.round(112 * scale);
+			var csw = Math.round(854 * scale);
+			var csh = Math.round(659 * scale);
+			Module.canvas.style.left   = cl  + 'px';
+			Module.canvas.style.top    = ct  + 'px';
+			Module.canvas.style.width  = csw + 'px';
+			Module.canvas.style.height = csh + 'px';
 		}
-	}
 	// ──────────────────────────────────────────────────────────────────────
 
 	var drive_filename = [ null, null, null, null ];
