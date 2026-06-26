@@ -51,7 +51,7 @@ h1 {
 }
 
 /* ── Monitor bezel frame ────────────────────────────────────────────
- * cm8_bezel_transbackground.png is the background image.
+ * cm8_rebuilt_transparent_bkgd.png is the background image.
  * Canvas is positioned pixel-precisely by wasm_apply_size_override().
  *
  * Screen opening in 1073x964 PNG:
@@ -65,7 +65,7 @@ h1 {
 .monitor-frame {
     position: relative;
     display: inline-block;
-    background-image: url('cm8_bezel_transbackground.png');
+    background-image: url('cm8_rebuilt_transparent_bkgd.png');
     background-size: 100% 100%;
 }
 
@@ -443,7 +443,7 @@ be a better way to make this usable...
 				[ Module.canvas.width, Module.canvas.height ]);
 		}
 		// Size monitor frame and position canvas pixel-precisely.
-		// Screen opening in 1073x964 PNG: left=109 top=111 w=854 h=659
+		// Screen opening in 1073x967 PNG: left=109 top=112 w=854 h=659
 		// Scale so canvas width fills screen opening width exactly.
 		var frame = document.getElementById('monitor-frame');
 		if (frame) {
@@ -451,12 +451,12 @@ be a better way to make this usable...
 			var ch    = Module.canvas.height;
 			var scale = cw / 854;
 			var fw    = Math.round(1073 * scale);
-			var fh    = Math.round(964  * scale);
+			var fh    = Math.round(967  * scale);
 			frame.style.width  = fw + 'px';
 			frame.style.height = fh + 'px';
 			// Center canvas horizontally and vertically in screen opening
 			var cl       = Math.round(109 * scale);
-			var soTop    = Math.round(111 * scale);
+			var soTop    = Math.round(112 * scale);
 			var soHeight = Math.round(659 * scale);
 			var ct       = soTop + Math.round((soHeight - ch) / 2);
 			Module.canvas.style.left = cl + 'px';
