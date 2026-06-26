@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XRoar Online</title>
+
+<style>
+/* ── Reset ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Page ────────────────────────────────────────────────────────── */
+body {
+    font-family: sans-serif;
+    font-size: 14px;
+    background: #c8c8c8;
+    padding: 0.5rem 1rem;
+    color: #222;
+}
+
+/* ── Title ───────────────────────────────────────────────────────── */
+#title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+/* ── Main layout: monitor left, controls right ───────────────────── */
+#main {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+/* ── Monitor region ──────────────────────────────────────────────── */
+/*
+ * #monitor-region holds the canvas and the bezel overlay on top.
+ *
+ * Sizing is driven by JS (wasm_apply_size_override):
+ *   monitorWidth = 1024  (change this one value to resize)
+ *   scale = monitorWidth / 1073  (PNG is 1073x967)
+ *   frame width  = monitorWidth
+ *   frame height = round(967 * scale)
+ *
+ * Screen opening in cm8_rebuilt_transparent_CRT_bkgd.png (1073x967):
+ *   left=109  top=112  width=854  height=659
+ *   canvas CSS: left=round(109*scale)  top=round(112*scale)
+ *               width=round(854*scale) height=round(659*scale)
+ */
+#monitor-region {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+    /* width/height set by JS */
+    background: #000;   /* fallback while loading */
+}
+
+/* Canvas: absolutely positioned inside monitor-region at screen opening */
+#canvas {
+    position: absolute;
+    display: block;
+    /* left/top/width/height set by JS */
+    background: #111;   /* placeholder */
+}
+
+/* Bezel overlay: covers entire monitor-region, transparent over canvas */
+#bezel-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url('cm8_rebuilt_transparent_CRT_bkgd.png');
+    background-size: 100% 100%;
+    pointer-events: none;   /* clicks pass through to canvas */
+    z-index: 10;
+}
+
+/* ── Controls region ─────────────────────────────────────────────── */
+#controls-region {
+    flex: 1;
+    min-width: 260px;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────── */
+/*
+ * Pure-CSS tabs using hidden radio inputs.
+ * https://simonsc.medium.com/tabs-with-css-and-no-javascript-d829018e219a
+ */
+#controls-region .tabs {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#controls-region .tabs input[type=radio] {
+    display: none;
+}
+
+#controls-region .tabs .tab-label {
+    padding: 4px 8px;
+    border: 2px solid #aaa;
+    cursor: pointer;
+    background: #ddd;
+    font-size: 13px;
+    margin-right: 2px;
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+}
+
+#controls-region .tabs input[type=radio]:checked + .tab-label {
+    border-color: #666;
+    background: #f0f0f0;
+    font-weight: bold;
+}
+
+#controls-region .tabs .tab-content {
+    order: 99;
+    width: 100%;
+    display: none;
+    border: 1px solid #aaa;
+    padding: 0.5rem;
+    background: #f0f0f0;
+    border-radius: 0 3px 3px 3px;
+}
+
+#controls-region .tabs input[type=radio]:checked + .tab-label + .tab-content {
+    display: block;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.button, select {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid #aaa;
+    background: #eee;
+    cursor: pointer;
+    font: caption;
+    font-size: 0.8rem;
+    margin: 1px;
+}
+.button:hover, select:hover { background: #fff; }
+
+input[type="file"] { display: none; }
+
+.filename { font-family: monospace; font-size: 12px; }
+
+table { border-collapse: collapse; }
+table th, table td { border: none; padding: 1px 4px; vertical-align: middle; }
+table th { font-weight: normal; text-align: right; white-space: nowrap; }
+
+</style>
+</head>
+
+<body>
+
+<div id="title">XRoar Online</div>
+
+<div id="main">
+
+  <!-- ── Monitor region ── -->
+  <div id="monitor-region">
+    <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="bezel-overlay"></div>
+  </div>
+
+  <!-- ── Controls region ── -->
+  <div id="controls-region">
+    <div class="tabs">
+
+      <!-- Software tab -->
+      <input id="tab-software" type="radio" name="tabs">
+      <label for="tab-software" class="tab-label">Software</label>
+      <div class="tab-content">
+        <!-- populated by software.js -->
+        <table id="software" style="width:100%"></table>
+        <div id="software-text"></div>
+      </div>
+
+      <!-- File tab -->
+      <input id="tab-file" type="radio" name="tabs">
+      <label for="tab-file" class="tab-label">File</label>
+      <div class="tab-content">
+        <p>
+          <label class="button"><input type="file" accept=".bin,.rom,.cas,.wav,.vdk,.dsk,.dmk,.jvc,.os9,.sna" onchange="file_input_onload(this,load_type.load,0)">Load...</label>
+          <label class="button"><input type="file" accept=".bin,.rom,.cas,.wav,.vdk,.dsk,.dmk,.jvc,.os9,.sna" onchange="file_input_onload(this,load_type.run,0)">Run...</label>
+          <label class="button"><input type="file" accept=".txt,.bas,.asc" onchange="file_input_onload(this,load_type.text,0)">Type...</label>
+          <span class="button" onclick="download_snapshot()">Save snapshot...</span>
+        </p>
+        <table>
+          <tr><th>Drive 1:</th>
+            <td><span class="button" onclick="wasm_new_disk(0)">&#x2795;</span></td>
+            <td><span class="button" onclick="wasm_eject_disk(0)">&#x23cf;</span></td>
+            <td><span class="button" onclick="download_disk(0)">Save...</span></td>
+            <td><label class="button"><input type="file" accept=".dsk,.dmk,.jvc,.vdk,.os9" onchange="file_input_onload(this,load_type.disk,0)">Insert...</label></td>
+            <td><span id="disk0" class="filename"></span></td>
+          </tr>
+          <tr><th>Drive 2:</th>
+            <td><span class="button" onclick="wasm_new_disk(1)">&#x2795;</span></td>
+            <td><span class="button" onclick="wasm_eject_disk(1)">&#x23cf;</span></td>
+            <td><span class="button" onclick="download_disk(1)">Save...</span></td>
+            <td><label class="button"><input type="file" accept=".dsk,.dmk,.jvc,.vdk,.os9" onchange="file_input_onload(this,load_type.disk,1)">Insert...</label></td>
+            <td><span id="disk1" class="filename"></span></td>
+          </tr>
+          <tr><th>Drive 3:</th>
+            <td><span class="button" onclick="wasm_new_disk(2)">&#x2795;</span></td>
+            <td><span class="button" onclick="wasm_eject_disk(2)">&#x23cf;</span></td>
+            <td><span class="button" onclick="download_disk(2)">Save...</span></td>
+            <td><label class="button"><input type="file" accept=".dsk,.dmk,.jvc,.vdk,.os9" onchange="file_input_onload(this,load_type.disk,2)">Insert...</label></td>
+            <td><span id="disk2" class="filename"></span></td>
+          </tr>
+          <tr><th>Drive 4:</th>
+            <td><span class="button" onclick="wasm_new_disk(3)">&#x2795;</span></td>
+            <td><span class="button" onclick="wasm_eject_disk(3)">&#x23cf;</span></td>
+            <td><span class="button" onclick="download_disk(3)">Save...</span></td>
+            <td><label class="button"><input type="file" accept=".dsk,.dmk,.jvc,.vdk,.os9" onchange="file_input_onload(this,load_type.disk,3)">Insert...</label></td>
+            <td><span id="disk3" class="filename"></span></td>
+          </tr>
+          <tr><th>HD 0:</th>
+            <td></td><td></td>
+            <td><span class="button" onclick="download_hd(0)">Save...</span></td>
+            <td><label class="button"><input type="file" accept=".vhd,.img,.hd" onchange="file_input_onload(this,load_type.hd,0)">Attach...</label></td>
+            <td><span id="hd0" class="filename"></span></td>
+          </tr>
+          <tr><th>HD 1:</th>
+            <td></td><td></td>
+            <td><span class="button" onclick="download_hd(1)">Save...</span></td>
+            <td><label class="button"><input type="file" accept=".vhd,.img,.hd" onchange="file_input_onload(this,load_type.hd,1)">Attach...</label></td>
+            <td><span id="hd1" class="filename"></span></td>
+          </tr>
+          <tr><th>Tape:</th>
+            <td><span id="tape_play" class="button" onclick="wasm_set_int('tape_playing',1,1)">&#x23f5;</span>
+                <span id="tape_pause" class="button" onclick="wasm_set_int('tape_playing',0,1)" style="display:none">&#x23f8;</span></td>
+            <td><span class="button" onclick="wasm_eject_tape()">&#x23cf;</span></td>
+            <td></td>
+            <td><label class="button"><input type="file" accept=".cas,.wav,.csave" onchange="file_input_onload(this,load_type.tape,0)">Insert...</label></td>
+            <td><span id="tape0" class="filename"></span></td>
+          </tr>
+        </table>
+        <p><span id="disk-status"></span></p>
+      </div>
+
+      <!-- View tab -->
+      <input id="tab-view" type="radio" name="tabs">
+      <label for="tab-view" class="tab-label">View</label>
+      <div class="tab-content">
+        <p><span class="button" onclick="wasm_set_int('fullscreen',1,1)">Full Screen</span>
+           (<kbd>Ctrl</kbd>+<kbd>F</kbd> to exit)</p>
+        <table>
+          <tr><th>Cross-colour:</th><td><select id="ccr" onchange="wasm_set_string('cross_colour_renderer',this.options[this.selectedIndex].value,1)"></select></td></tr>
+          <tr><th>60Hz scaling:</th><td><input type="checkbox" id="ntsc_scaling" onchange="wasm_set_int('ntsc_scaling',this.checked,1)"></td></tr>
+          <tr><th>CMP FsV:</th><td><input type="checkbox" id="cmp_fs" onchange="wasm_set_int('cmp_fs',this.checked,1)"></td></tr>
+          <tr><th>CMP FsH:</th><td><input type="checkbox" id="cmp_fsc" onchange="wasm_set_int('cmp_fsc',this.checked,1)"></td></tr>
+          <tr><th>Colour killer:</th><td><input type="checkbox" id="cmp_colour_killer" onchange="wasm_set_int('cmp_colour_killer',this.checked,1)"></td></tr>
+          <tr><th>Inverse text:</th><td><input type="checkbox" id="vdg_inverse" onchange="wasm_set_int('vdg_inverse',this.checked,1)"></td></tr>
+        </table>
+      </div>
+
+      <!-- Hardware tab (default selected) -->
+      <input id="tab-hardware" type="radio" name="tabs" checked>
+      <label for="tab-hardware" class="tab-label">Hardware</label>
+      <div class="tab-content">
+        <table>
+          <tr><th>Machine:</th><td><select id="machine" onchange="wasm_set_machine(this.options[this.selectedIndex].value)"></select></td></tr>
+          <tr><th>Cartridge:</th><td><select id="cart" onchange="wasm_set_cart(this.options[this.selectedIndex].value)"></select></td></tr>
+          <tr><th>Right joystick:</th><td><select id="right-joystick" onchange="wasm_set_joystick(0,this.options[this.selectedIndex].value)"></select></td></tr>
+          <tr><th>Left joystick:</th><td><select id="left-joystick" onchange="wasm_set_joystick(1,this.options[this.selectedIndex].value)"></select></td></tr>
+          <tr><td></td><td>
+            <span class="button" onclick="wasm_soft_reset()">Soft Reset</span>
+            <span class="button" onclick="wasm_hard_reset()">Hard Reset</span>
+          </td></tr>
+        </table>
+      </div>
+
+      <!-- Help tab -->
+      <input id="tab-help" type="radio" name="tabs">
+      <label for="tab-help" class="tab-label">Help</label>
+      <div class="tab-content">
+        <p>XRoar Online emulates the Dragon 32/64 and Tandy Colour Computers.</p>
+        <p>Read more <a href="https://www.6809.org.uk/xroar/online/about.shtml">about XRoar Online</a>.</p>
+      </div>
+
+    </div><!-- .tabs -->
+  </div><!-- #controls-region -->
+
+</div><!-- #main -->
+
+<!-- XRoar software catalog -->
+<script src="software.js"></script>
+
+<script>
+// ── Canvas / monitor sizing ───────────────────────────────────────────────
+//
+// Called after XRoar finishes initialising (ui_done_initialising).
+// Sizes the monitor frame and positions the canvas at the screen opening.
+//
+// To resize: change monitorWidth below.
+// PNG: cm8_rebuilt_transparent_CRT_bkgd.png  1073x967
+// Screen opening: left=109  top=112  width=854  height=659
+
+var monitorWidth = 1024;    // ← change this to resize
+
+function applyMonitorLayout() {
+    var scale  = monitorWidth / 1073;
+    var frame  = document.getElementById('monitor-region');
+    var canvas = document.getElementById('canvas');
+    if (!frame || !canvas) return;
+
+    var fw  = monitorWidth;
+    var fh  = Math.round(967 * scale);
+    frame.style.width  = fw + 'px';
+    frame.style.height = fh + 'px';
+
+    var cl  = Math.round(109 * scale);
+    var ct  = Math.round(112 * scale);
+    var csw = Math.round(854 * scale);
+    var csh = Math.round(659 * scale);
+    canvas.style.left   = cl  + 'px';
+    canvas.style.top    = ct  + 'px';
+    canvas.style.width  = csw + 'px';
+    canvas.style.height = csh + 'px';
+
+    // Tell XRoar the canvas pixel dimensions
+    if (typeof Module !== 'undefined' && Module.ccall) {
+        Module.canvas.width  = csw;
+        Module.canvas.height = csh;
+        Module.ccall('wasm_resize', null, ['number','number'], [csw, csh]);
+    }
+}
+
+// ── XRoar Module definition ───────────────────────────────────────────────
+// PASTE MODULE DEFINITION FROM index.html HERE
+// (everything from "var Module = {" to the end of the script block)
+// ─────────────────────────────────────────────────────────────────────────
+</script>
+
+<!-- XRoar WebAssembly -->
+<script src="xroar.js"></script>
+
+</body>
+</html>
