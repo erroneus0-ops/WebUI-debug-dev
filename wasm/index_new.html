@@ -194,6 +194,13 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
           <label class="button"><input type="file" accept=".txt,.bas,.asc" onchange="file_input_onload(this,load_type.text,0)">Type...</label>
           <span class="button" onclick="download_snapshot()">Save snapshot...</span>
         </p>
+        <!-- Type text directly into the emulator -->
+        <div style="margin-top:4px;">
+          <textarea id="type-text-input" rows="4"
+            style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
+            placeholder="Type text here then click Send..."></textarea>
+          <span class="button" onclick="type_text_input()">Send to emulator</span>
+        </div>
         <table>
           <tr><th>Drive 1:</th>
             <td><span class="button" onclick="wasm_new_disk(0)">&#x2795;</span></td>
@@ -455,6 +462,17 @@ var Module = {
 
 	function wasm_hard_reset() { resumeAudio(); Module.ccall('xroar_hard_reset', null, [], []); }
 	function wasm_soft_reset() { resumeAudio(); Module.ccall('xroar_soft_reset', null, [], []); }
+
+	// Type text directly from the textarea into the emulator
+	function type_text_input() {
+		var text = document.getElementById('type-text-input').value;
+		if (!text) return;
+		resumeAudio();
+		var data = new TextEncoder().encode(text);
+		Module.FS.writeFile('_typetext.txt', data);
+		wasm_load_file('_typetext.txt', load_type.text, 0);
+		Module.canvas.focus();
+	}
 	function wasm_set_joystick(joy, value) { resumeAudio(); Module.ccall('wasm_set_joystick_port', null, ['number','number'], [joy, value]); Module.canvas.focus(); }
 	function wasm_set_joystick_by_name(joy, value) { resumeAudio(); Module.ccall('wasm_set_joystick_by_name', null, ['number','string'], [joy, value]); Module.canvas.focus(); }
 	function wasm_new_disk(drive) { Module.ccall('wasm_new_disk', null, ['number'], [drive]); }
