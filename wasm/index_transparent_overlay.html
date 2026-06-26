@@ -69,21 +69,30 @@ h1 {
 .monitor-frame {
     position: relative;
     display: inline-block;
+    overflow: visible;   /* bezel extends beyond canvas edges */
 }
 
 .monitor-frame canvas {
     display: block;
+    position: relative;
+    z-index: 1;
 }
 
+/* ── Bezel overlay sizing ────────────────────────────────────────────
+ * The overlay PNG is larger than the canvas frame.
+ * It is offset negatively so its transparent screen hole aligns
+ * exactly with the canvas. The bezel extends beyond the frame.
+ *
+ * PNG: cm8_rebuilt_transparent_CRT_bkgd.png  1073x967
+ * Screen opening: left=109 top=112 w=854 h=659
+ *
+ * JS calculates the exact size and offset -- do not set here.
+ */
 .monitor-bezel-overlay {
     position: absolute;
-    top:    0;
-    left:   0;
-    width:  100%;
-    height: 100%;
-    background-image: url('cm8_bezel_transparent.png');
+    background-image: url('cm8_rebuilt_transparent_CRT_bkgd.png');
     background-size: 100% 100%;
-    pointer-events: none;   /* clicks pass through to canvas */
+    pointer-events: none;
     z-index: 10;
 }
 
@@ -456,17 +465,31 @@ be a better way to make this usable...
 			Module.ccall('wasm_resize', null, [ 'number', 'number' ],
 				[ Module.canvas.width, Module.canvas.height ]);
 		}
-		// Size the monitor frame so the canvas fills the screen opening.
-		// Transparent PNG: 1073x964, screen opening width = 79.50%
-		// frame_width  = canvas_width  / 0.7950
-		// frame_height = frame_width   * (964 / 1073)
+		// Overlay approach: canvas fills frame, overlay extends beyond it.
+		// PNG: 1073x967, screen opening: left=109 top=112 w=854 h=659
+		// Scale PNG so screen opening width = canvas width.
+		// Center canvas vertically in screen opening.
 		var frame = document.getElementById('monitor-frame');
-		if (frame) {
-			var cw = Module.canvas.width;
-			var fw = Math.round(cw / 0.7950);
-			var fh = Math.round(fw * (964 / 1073));
-			frame.style.width  = fw + 'px';
-			frame.style.height = fh + 'px';
+		var overlay = frame ? frame.querySelector('.monitor-bezel-overlay') : null;
+		if (frame && overlay) {
+			var cw    = Module.canvas.width;
+			var ch    = Module.canvas.height;
+			var scale = cw / 854;          // PNG px -> frame px
+			var ow    = Math.round(1073 * scale);   // overlay total width
+			var oh    = Math.round(967  * scale);   // overlay total height
+			// Transparent hole position in overlay coordinates
+			var holeLeft   = Math.round(109 * scale);
+			var holeTop    = Math.round(112 * scale);
+			var holeHeight = Math.round(659 * scale);
+			// Frame = canvas size exactly
+			frame.style.width  = cw + 'px';
+			frame.style.height = ch + 'px';
+			// Offset overlay so hole is centered over canvas
+			var vertCenter = Math.round((holeHeight - ch) / 2);
+			overlay.style.width  = ow + 'px';
+			overlay.style.height = oh + 'px';
+			overlay.style.left   = (-holeLeft) + 'px';
+			overlay.style.top    = (-holeTop + vertCenter * -1) + 'px';
 		}
 	}
 	// ──────────────────────────────────────────────────────────────────────
