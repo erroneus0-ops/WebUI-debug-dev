@@ -50,6 +50,34 @@ h1 {
     flex-shrink: 0;    /* canvas never squishes -- XRoar sets its own size */
 }
 
+/* ── Monitor bezel frame ────────────────────────────────────────────
+ * cm8_bezel.png is the background. The canvas sits inside it at
+ * the glass opening (measured from PNG pixel data: 1095x984).
+ *
+ * Glass opening percentages:
+ *   left: 10.96%   top: 11.2%   width: 78.5%   height: 68.1%
+ *
+ * Frame width is set by JS (wasm_apply_size_override).
+ * Formula: frame_width = canvas_width / 0.785
+ *          frame_height = frame_width * (984/1095)
+ *
+ * Tweak percentages below until canvas sits cleanly in screen opening.
+ */
+.monitor-frame {
+    position: relative;
+    display: inline-block;
+    background-image: url('cm8_bezel.png');
+    background-size: 100% 100%;
+}
+
+.monitor-frame canvas {
+    position: absolute;
+    left:   10.96%;
+    top:    11.2%;
+    width:  78.5%;
+    height: 68.1%;
+}
+
 /* ── Controls panel width ───────────────────────────────────────────
  * flex: 1 means the controls take all remaining space after the canvas.
  * min-width: minimum width before the panel can't shrink further.
@@ -97,7 +125,9 @@ be a better way to make this usable...
 <!-- Canvas for Wasm to draw into -->
 <div class="xroar-layout">
 <div class="xroar-canvas-area">
+<div class="monitor-frame" id="monitor-frame">
 <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+</div>
 </div>
 
 <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
@@ -415,6 +445,18 @@ be a better way to make this usable...
 			Module.canvas.height = canvas_size_override[1];
 			Module.ccall('wasm_resize', null, [ 'number', 'number' ],
 				[ Module.canvas.width, Module.canvas.height ]);
+		}
+		// Size the monitor frame to match the PNG aspect ratio (1095x984)
+		// so the canvas lands in the glass opening at the right position.
+		// frame_width  = canvas_width / glass_width_percent (0.785)
+		// frame_height = frame_width  * (984/1095)
+		var frame = document.getElementById('monitor-frame');
+		if (frame) {
+			var cw = Module.canvas.width;
+			var fw = Math.round(cw / 0.785);
+			var fh = Math.round(fw * (984 / 1095));
+			frame.style.width  = fw + 'px';
+			frame.style.height = fh + 'px';
 		}
 	}
 	// ──────────────────────────────────────────────────────────────────────
