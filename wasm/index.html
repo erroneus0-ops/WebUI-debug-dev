@@ -27,6 +27,34 @@
 <style media='screen'><!--/*--><![CDATA[/*><!--*/
 @import url('xroar-wasm.css');
 table thead,table tbody,table td,table th { border: none; }
+
+/* ── Layout overrides ──────────────────────────────────────────────
+ * nistyle-screen.css sets main { max-width: 48rem } which constrains
+ * the canvas and causes alignment shifts when switching tabs.
+ * Override that and set up a side-by-side layout.
+ */
+main {
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Canvas + controls side by side */
+.xroar-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1.5em;
+}
+
+.xroar-canvas-area {
+    flex-shrink: 0;
+}
+
+#controls {
+    flex: 1;
+    min-width: 280px;
+}
 /*]]>*/--></style>
 </head>
 
@@ -145,7 +173,10 @@ be a better way to make this usable...
 <script src="software.js"></script>
 
 <!-- Canvas for Wasm to draw into -->
+<div class="xroar-layout">
+<div class="xroar-canvas-area">
 <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+</div>
 
 <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
@@ -369,6 +400,7 @@ be a better way to make this usable...
 
 </div>
 <!-- end tabs container -->
+</div><!-- end xroar-layout -->
 
 <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
