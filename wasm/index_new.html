@@ -194,14 +194,28 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
           <label class="button"><input type="file" accept=".txt,.bas,.asc" onchange="file_input_onload(this,load_type.text,0)">Type...</label>
           <span class="button" onclick="download_snapshot()">Save snapshot...</span>
         </p>
-        <!-- Type text directly into the emulator -->
+        <!-- Type text directly into the emulator via modal dialog -->
         <div style="margin-top:4px;">
-          <textarea id="type-text-input" rows="4"
-            style="width:100%;box-sizing:border-box;font-family:monospace;font-size:12px;resize:vertical;"
-            placeholder="Type text here then click Send..."
-            onfocus="document.getElementById('canvas').removeAttribute('tabindex')"
-            onblur="document.getElementById('canvas').setAttribute('tabindex','0')"></textarea>
-          <span class="button" onclick="type_text_input()">Send to emulator</span>
+          <span class="button" onclick="show_type_dialog()">Type text...</span>
+        </div>
+
+        <!-- Modal dialog -->
+        <div id="type-dialog" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+             background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
+          <div style="background:#c8c8c8; border-top:2px solid #fff; border-left:2px solid #fff;
+               border-bottom:2px solid #808080; border-right:2px solid #808080;
+               box-shadow:2px 2px 0 #404040; padding:12px; width:400px;">
+            <div style="background:#000080; color:#fff; padding:2px 6px; margin-bottom:8px; font-weight:bold; font-size:13px;">
+              Type text into emulator
+            </div>
+            <textarea id="type-dialog-text" rows="6"
+              style="width:100%; box-sizing:border-box; font-family:monospace; font-size:12px; resize:vertical;"
+              placeholder="Enter BASIC lines or commands here..."></textarea>
+            <div style="margin-top:8px; text-align:right;">
+              <span class="button" onclick="send_type_dialog()">Send</span>
+              <span class="button" onclick="hide_type_dialog()">Cancel</span>
+            </div>
+          </div>
         </div>
         <table>
           <tr><th>Drive 1:</th>
@@ -465,15 +479,25 @@ var Module = {
 	function wasm_hard_reset() { resumeAudio(); Module.ccall('xroar_hard_reset', null, [], []); }
 	function wasm_soft_reset() { resumeAudio(); Module.ccall('xroar_soft_reset', null, [], []); }
 
-	// Type text directly from the textarea into the emulator
-	function type_text_input() {
-		var text = document.getElementById('type-text-input').value;
-		if (!text) return;
-		resumeAudio();
-		var data = new TextEncoder().encode(text);
-		Module.FS.writeFile('_typetext.txt', data);
-		wasm_load_file('_typetext.txt', load_type.text, 0);
+	// Type text dialog
+	function show_type_dialog() {
+		var dlg = document.getElementById('type-dialog');
+		dlg.style.display = 'flex';
+		document.getElementById('type-dialog-text').focus();
+	}
+	function hide_type_dialog() {
+		document.getElementById('type-dialog').style.display = 'none';
 		Module.canvas.focus();
+	}
+	function send_type_dialog() {
+		var text = document.getElementById('type-dialog-text').value;
+		if (text) {
+			resumeAudio();
+			var data = new TextEncoder().encode(text);
+			Module.FS.writeFile('_typetext.txt', data);
+			wasm_load_file('_typetext.txt', load_type.text, 0);
+		}
+		hide_type_dialog();
 	}
 	function wasm_set_joystick(joy, value) { resumeAudio(); Module.ccall('wasm_set_joystick_port', null, ['number','number'], [joy, value]); Module.canvas.focus(); }
 	function wasm_set_joystick_by_name(joy, value) { resumeAudio(); Module.ccall('wasm_set_joystick_by_name', null, ['number','string'], [joy, value]); Module.canvas.focus(); }
