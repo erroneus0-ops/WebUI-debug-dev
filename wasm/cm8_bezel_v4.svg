@@ -1,0 +1,49 @@
+<svg width="100%" viewBox="0 0 680 660" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Tandy CM-8 color monitor front view v4</title>
+<desc>CM-8 specific front view based on original owner's manual illustration. Squarer shape, larger bottom strip with two buttons, cream case. Screen opening: x=80 y=72 w=514 h=412 rx=14.</desc>
+
+<rect x="32" y="30" width="626" height="608" rx="12" fill="#505040" opacity="0.2"/>
+<rect x="24" y="22" width="626" height="608" rx="10" fill="#d2cec0"/>
+<rect x="24" y="22" width="626" height="10" rx="10" fill="#e6e2d4"/>
+<rect x="24" y="22" width="10" height="608" rx="10" fill="#dedad0"/>
+<rect x="638" y="30" width="12" height="596" rx="4" fill="#aeaa9c"/>
+<rect x="24" y="616" width="626" height="14" rx="6" fill="#a6a296"/>
+<rect x="36" y="34" width="602" height="596" rx="8" fill="#cec9bc"/>
+<rect x="36" y="524" width="602" height="1.5" fill="#b6b2a6"/>
+<rect x="36" y="526" width="602" height="1" fill="#dedbd0"/>
+<rect x="36" y="530" width="602" height="1.5" fill="#b6b2a6"/>
+<rect x="36" y="532" width="602" height="1" fill="#dedbd0"/>
+<rect x="36" y="534" width="602" height="82" rx="6" fill="#484644"/>
+<rect x="36" y="534" width="602" height="3" fill="#363432"/>
+<rect x="36" y="614" width="602" height="2" rx="2" fill="#565452"/>
+<rect x="52" y="550" width="280" height="28" rx="3" fill="#0a0a0a"/>
+<text x="68" y="568" fill="#f0ece0" font-size="12" font-family="sans-serif" font-weight="bold" letter-spacing="1.5">TANDY</text>
+<rect x="115" y="556" width="18" height="6" rx="1" fill="#cc2020"/>
+<rect x="136" y="556" width="18" height="6" rx="1" fill="#22aa22"/>
+<rect x="157" y="556" width="18" height="6" rx="1" fill="#2244cc"/>
+<text x="182" y="565" fill="#c0bdb0" font-size="7" font-family="sans-serif" letter-spacing="0.3">RGB HIGH RESOLUTION COLOR MONITOR CM-8</text>
+<circle cx="500" cy="541" r="4" fill="#cc0000"/>
+<circle cx="499" cy="540" r="1.5" fill="#ff6666" opacity="0.7"/>
+<rect x="558" y="547" width="36" height="26" rx="4" fill="#585654" stroke="#383634" stroke-width="1"/>
+<rect x="559" y="548" width="34" height="10" rx="3" fill="#686664"/>
+<text x="576" y="583" text-anchor="middle" fill="#888480" font-size="6.5" font-family="sans-serif" letter-spacing="0.5">POWER</text>
+<rect x="600" y="547" width="30" height="26" rx="4" fill="#585654" stroke="#383634" stroke-width="1"/>
+<rect x="601" y="548" width="28" height="10" rx="3" fill="#686664"/>
+<text x="615" y="583" text-anchor="middle" fill="#888480" font-size="6.5" font-family="sans-serif" letter-spacing="0.5">RESET</text>
+<rect x="44" y="38" width="586" height="480" rx="16" fill="#161614"/>
+<rect x="50" y="44" width="574" height="468" rx="14" fill="#101010"/>
+<rect x="56" y="50" width="562" height="456" rx="12" fill="#0c0c0a"/>
+<rect x="64" y="58" width="546" height="440" rx="10" fill="#0a0a08"/>
+<rect x="72" y="66" width="530" height="424" rx="8" fill="#080806"/>
+<rect x="80" y="72" width="514" height="412" rx="14" fill="#0c0d0a"/>
+<ellipse cx="195" cy="145" rx="190" ry="105" fill="#161a12" opacity="0.55"/>
+<ellipse cx="165" cy="115" rx="100" ry="56" fill="#1c2016" opacity="0.4"/>
+<ellipse cx="145" cy="95" rx="55" ry="30" fill="#22281a" opacity="0.3"/>
+<ellipse cx="90" cy="82" rx="28" ry="18" fill="#040404" opacity="0.8"/>
+<ellipse cx="584" cy="82" rx="28" ry="18" fill="#040404" opacity="0.8"/>
+<ellipse cx="90" cy="476" rx="28" ry="18" fill="#040404" opacity="0.8"/>
+<ellipse cx="584" cy="476" rx="28" ry="18" fill="#040404" opacity="0.8"/>
+<rect x="80" y="72" width="514" height="412" rx="14" fill="none" stroke="#ff4444" stroke-width="1.5" stroke-dasharray="8,4" opacity="0.6"/>
+<text x="337" y="281" text-anchor="middle" fill="#ff6666" font-size="15" font-family="sans-serif" opacity="0.7">screen opening</text>
+<text x="337" y="301" text-anchor="middle" fill="#ff6666" font-size="10" font-family="sans-serif" opacity="0.7">514 x 412  rx=14  delete before use</text>
+</svg>
