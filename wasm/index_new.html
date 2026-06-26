@@ -53,7 +53,7 @@ body {
     display: inline-block;
     flex-shrink: 0;
     /* width/height set by JS */
-    background: #000;   /* fallback while loading */
+    background: transparent;
 }
 
 /* Canvas: absolutely positioned inside monitor-region at screen opening */
@@ -61,7 +61,6 @@ body {
     position: absolute;
     display: block;
     /* left/top/width/height set by JS */
-    background: #111;   /* placeholder */
 }
 
 /* Bezel overlay: covers entire monitor-region, transparent over canvas */
@@ -77,8 +76,8 @@ body {
 
 /* ── Controls region ─────────────────────────────────────────────── */
 #controls-region {
-    flex: 1;
-    min-width: 260px;
+    flex-shrink: 0;
+    width: auto;
 }
 
 /* ── Tab bar ─────────────────────────────────────────────────────── */
