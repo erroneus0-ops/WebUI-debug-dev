@@ -528,11 +528,11 @@ window.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter')  { commit(); }
             if (e.key === 'Escape') { inp.replaceWith(label); }
         });
-        inp.addEventListener('blur', commit);
-
         label.replaceWith(inp);
         inp.focus();
         inp.select();
+        // Defer blur to prevent immediate commit on focus
+        setTimeout(function() { inp.addEventListener('blur', commit); }, 200);
     });
 
     applyMonitorLayout();
