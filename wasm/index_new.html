@@ -496,8 +496,8 @@ function applyMonitorLayout() {
     }
 }
 
-// Call on page load so the monitor frame and bezel appear immediately
-window.addEventListener('DOMContentLoaded', function() {
+// Wiring runs directly -- script is at bottom of page, DOM already ready
+(function() {
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
 
