@@ -218,7 +218,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
   <span id="title-text">XRoar Online</span>
   <div id="size-control">
     <label for="size-slider">Size:</label>
-    <input type="range" id="size-slider" min="0" max="7" step="1" value="4">
+    <input type="range" id="size-slider" min="0" max="7" step="1" value="4" oninput="applySize(sizeSteps[parseInt(this.value,10)])">
     <span id="size-label" title="Click to enter custom size">1024</span>
   </div>
 </div>
@@ -500,13 +500,6 @@ function applyMonitorLayout() {
 (function() {
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
-
-    // Slider drag -- delegated on document to survive any DOM refresh by XRoar init
-    document.addEventListener('input', function(e) {
-        if (e.target.id === 'size-slider') {
-            applySize(sizeSteps[parseInt(e.target.value, 10)]);
-        }
-    });
 
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
