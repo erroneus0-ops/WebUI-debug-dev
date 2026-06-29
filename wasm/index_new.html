@@ -501,9 +501,11 @@ function applyMonitorLayout() {
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
 
-    // Slider drag -- attach BEFORE applySize so listener survives any error below
-    slider.addEventListener('input', function() {
-        applySize(sizeSteps[parseInt(this.value, 10)]);
+    // Slider drag -- delegated on document to survive any DOM refresh by XRoar init
+    document.addEventListener('input', function(e) {
+        if (e.target.id === 'size-slider') {
+            applySize(sizeSteps[parseInt(e.target.value, 10)]);
+        }
     });
 
     // Sync slider to current monitorWidth
