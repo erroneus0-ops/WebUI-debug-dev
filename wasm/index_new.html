@@ -501,13 +501,13 @@ function applyMonitorLayout() {
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
 
-    // Sync slider to current monitorWidth
-    applySize(monitorWidth);
-
-    // Slider drag
+    // Slider drag -- attach BEFORE applySize so listener survives any error below
     slider.addEventListener('input', function() {
         applySize(sizeSteps[parseInt(this.value, 10)]);
     });
+
+    // Sync slider to current monitorWidth
+    applySize(monitorWidth);
 
     // Click label to type a custom value
     label.style.cursor = 'pointer';
