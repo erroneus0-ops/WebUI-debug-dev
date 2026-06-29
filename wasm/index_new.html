@@ -399,6 +399,27 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 //
 var monitorWidth = 1024;
 
+var sizeSteps = [400, 480, 640, 800, 1024, 1280, 1366, 1400];
+
+function nearestIndex(w) {
+    var best = 0, bestDist = Math.abs(sizeSteps[0] - w);
+    for (var i = 1; i < sizeSteps.length; i++) {
+        var d = Math.abs(sizeSteps[i] - w);
+        if (d < bestDist) { bestDist = d; best = i; }
+    }
+    return best;
+}
+
+function applySize(w) {
+    w = Math.max(400, Math.min(1400, w));
+    monitorWidth = w;
+    var slider = document.getElementById('size-slider');
+    var label  = document.getElementById('size-label');
+    if (slider) slider.value = nearestIndex(w);
+    if (label)  label.textContent = w;
+    applyMonitorLayout();
+}
+
 // ── XRoar machine arguments ───────────────────────────────────────────────
 //
 //   These are passed to XRoar at startup exactly as command-line options.
@@ -477,27 +498,8 @@ function applyMonitorLayout() {
 
 // Call on page load so the monitor frame and bezel appear immediately
 window.addEventListener('DOMContentLoaded', function() {
-    var sizeSteps = [400, 480, 640, 800, 1024, 1280, 1366, 1400];
-
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
-
-    function nearestIndex(w) {
-        var best = 0, bestDist = Math.abs(sizeSteps[0] - w);
-        for (var i = 1; i < sizeSteps.length; i++) {
-            var d = Math.abs(sizeSteps[i] - w);
-            if (d < bestDist) { bestDist = d; best = i; }
-        }
-        return best;
-    }
-
-    function applySize(w) {
-        w = Math.max(400, Math.min(1400, w));
-        monitorWidth = w;
-        slider.value = nearestIndex(w);
-        label.textContent = w;
-        applyMonitorLayout();
-    }
 
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
