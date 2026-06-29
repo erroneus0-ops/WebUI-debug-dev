@@ -68,11 +68,11 @@ body {
  *
  * Sizing is driven by JS (wasm_apply_size_override):
  *   monitorWidth = 1024  (change this one value to resize)
- *   scale = monitorWidth / 1073  (PNG is 1073x967)
+ *   scale = monitorWidth / 1073  (SVG is 1073x967)
  *   frame width  = monitorWidth
  *   frame height = round(967 * scale)
  *
- * Screen opening in cm8_rebuilt_transparent_CRT_bkgd.png (1073x967):
+ * Screen opening in cm8_rebuilt_transparent_CRT_bkgd.svg (1073x967):
  *   left=109  top=112  width=854  height=659
  *   canvas CSS: left=round(109*scale)  top=round(112*scale)
  *               width=round(854*scale) height=round(659*scale)
@@ -97,7 +97,7 @@ body {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background-image: url('cm8_rebuilt_transparent_CRT_bkgd.png');
+    background-image: url('cm8_rebuilt_transparent_CRT_bkgd.svg');
     background-size: 100% 100%;
     pointer-events: none;   /* clicks pass through to canvas */
     z-index: 10;
@@ -361,7 +361,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 //   Change monitorWidth to resize the entire CM-8 bezel and canvas.
 //   Everything else scales automatically.
 //
-//   Bezel image: cm8_rebuilt_transparent_CRT_bkgd.png  (1073 x 967 px)
+//   Bezel image: cm8_rebuilt_transparent_CRT_bkgd.svg  (1073 x 967 px)
 //   Screen opening in that image: left=109 top=112 width=854 height=659
 //
 //   Examples:
