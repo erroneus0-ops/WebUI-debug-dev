@@ -52,6 +52,26 @@ body {
     font-size: 1.1rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#title-text {
+    flex: 1;
+}
+
+#size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: normal;
+}
+
+#size-slider {
+    width: 120px;
+    cursor: pointer;
 }
 
 /* ── Main layout: monitor left, controls right ───────────────────── */
@@ -194,7 +214,14 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 
 <body>
 
-<div id="title">XRoar Online</div>
+<div id="title">
+  <span id="title-text">XRoar Online</span>
+  <div id="size-control">
+    <label for="size-slider">Size:</label>
+    <input type="range" id="size-slider" min="400" max="1400" step="50" value="1024">
+    <span id="size-label">1024</span>
+  </div>
+</div>
 
 <div id="main">
 
@@ -449,7 +476,22 @@ function applyMonitorLayout() {
 }
 
 // Call on page load so the monitor frame and bezel appear immediately
-window.addEventListener('DOMContentLoaded', applyMonitorLayout);
+window.addEventListener('DOMContentLoaded', function() {
+    var slider = document.getElementById('size-slider');
+    var label  = document.getElementById('size-label');
+
+    // Sync slider to current monitorWidth
+    slider.value = monitorWidth;
+    label.textContent = monitorWidth;
+
+    slider.addEventListener('input', function() {
+        monitorWidth = parseInt(this.value, 10);
+        label.textContent = monitorWidth;
+        applyMonitorLayout();
+    });
+
+    applyMonitorLayout();
+});
 
 var Module = {
 		canvas: (function() { return document.getElementById('canvas'); })(),
