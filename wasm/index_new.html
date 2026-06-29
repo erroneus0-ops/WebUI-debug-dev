@@ -218,8 +218,8 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
   <span id="title-text">XRoar Online</span>
   <div id="size-control">
     <label for="size-slider">Size:</label>
-    <input type="range" id="size-slider" min="400" max="1400" step="50" value="1024">
-    <span id="size-label">1024</span>
+    <input type="range" id="size-slider" min="0" max="7" step="1" value="4">
+    <span id="size-label" title="Click to enter custom size">1024</span>
   </div>
 </div>
 
@@ -477,17 +477,62 @@ function applyMonitorLayout() {
 
 // Call on page load so the monitor frame and bezel appear immediately
 window.addEventListener('DOMContentLoaded', function() {
+    var sizeSteps = [400, 480, 640, 800, 1024, 1280, 1366, 1400];
+
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
 
-    // Sync slider to current monitorWidth
-    slider.value = monitorWidth;
-    label.textContent = monitorWidth;
+    function nearestIndex(w) {
+        var best = 0, bestDist = Math.abs(sizeSteps[0] - w);
+        for (var i = 1; i < sizeSteps.length; i++) {
+            var d = Math.abs(sizeSteps[i] - w);
+            if (d < bestDist) { bestDist = d; best = i; }
+        }
+        return best;
+    }
 
-    slider.addEventListener('input', function() {
-        monitorWidth = parseInt(this.value, 10);
-        label.textContent = monitorWidth;
+    function applySize(w) {
+        w = Math.max(400, Math.min(1400, w));
+        monitorWidth = w;
+        slider.value = nearestIndex(w);
+        label.textContent = w;
         applyMonitorLayout();
+    }
+
+    // Sync slider to current monitorWidth
+    applySize(monitorWidth);
+
+    // Slider drag
+    slider.addEventListener('input', function() {
+        applySize(sizeSteps[parseInt(this.value, 10)]);
+    });
+
+    // Click label to type a custom value
+    label.style.cursor = 'pointer';
+    label.addEventListener('click', function() {
+        var inp = document.createElement('input');
+        inp.type = 'number';
+        inp.min = 400;
+        inp.max = 1400;
+        inp.value = monitorWidth;
+        inp.style.width = '60px';
+        inp.style.font = 'inherit';
+
+        function commit() {
+            var v = parseInt(inp.value, 10);
+            if (!isNaN(v)) applySize(v);
+            inp.replaceWith(label);
+        }
+
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter')  { commit(); }
+            if (e.key === 'Escape') { inp.replaceWith(label); }
+        });
+        inp.addEventListener('blur', commit);
+
+        label.replaceWith(inp);
+        inp.focus();
+        inp.select();
     });
 
     applyMonitorLayout();
