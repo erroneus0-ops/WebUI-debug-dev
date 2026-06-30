@@ -329,8 +329,6 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
           </tr>
         </table>
         <p><span id="disk-status"></span></p>
-        <p style="margin-bottom:2px;"><b>Log:</b></p>
-        <div id="xroar-log" style="height:120px; overflow-y:auto; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px; white-space:pre-wrap;"></div>
       </div>
 
       <!-- View tab -->
@@ -371,6 +369,8 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
       <div class="tab-content">
         <p>XRoar Online emulates the Dragon 32/64 and Tandy Colour Computers.</p>
         <p>Read more <a href="https://www.6809.org.uk/xroar/online/about.shtml">about XRoar Online</a>.</p>
+        <p><span class="button" onclick="toggleLog()">...</span></p>
+        <div id="xroar-log" style="display:none; height:200px; overflow-y:auto; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px; white-space:pre-wrap;"></div>
       </div>
 
     </div><!-- .tabs -->
@@ -673,6 +673,12 @@ var Module = {
 		line.textContent = text;
 		el.appendChild(line);
 		el.scrollTop = el.scrollHeight;
+	}
+
+	function toggleLog() {
+		var el = document.getElementById('xroar-log');
+		if (!el) return;
+		el.style.display = (el.style.display === 'none') ? 'block' : 'none';
 	}
 
 	function file_input_onload(el, loadtype, drive) {
