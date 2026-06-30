@@ -352,8 +352,8 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
       <label for="tab-hardware" class="tab-label">Hardware</label>
       <div class="tab-content">
         <table>
-          <tr><th>Machine:</th><td><select id="machine" onchange="wasm_set_machine(this.options[this.selectedIndex].value)"></select></td></tr>
-          <tr><th>Cartridge:</th><td><select id="cart" onchange="wasm_set_cart(this.options[this.selectedIndex].value)"></select></td></tr>
+          <tr><th>Machine:</th><td><select id="machine" onchange="wasm_set_int('machine', this.options[this.selectedIndex].value, 1)"></select></td></tr>
+          <tr><th>Cartridge:</th><td><select id="cart" onchange="wasm_set_int('cartridge', this.options[this.selectedIndex].value, 1)"></select></td></tr>
           <tr><th>Right joystick:</th><td><select id="right-joystick" onchange="wasm_set_joystick(0,this.options[this.selectedIndex].value)"></select></td></tr>
           <tr><th>Left joystick:</th><td><select id="left-joystick" onchange="wasm_set_joystick(1,this.options[this.selectedIndex].value)"></select></td></tr>
           <tr><td></td><td>
