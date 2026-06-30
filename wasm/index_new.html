@@ -329,6 +329,8 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
           </tr>
         </table>
         <p><span id="disk-status"></span></p>
+        <p style="margin-bottom:2px;"><b>Log:</b></p>
+        <div id="xroar-log" style="height:120px; overflow-y:auto; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px; white-space:pre-wrap;"></div>
       </div>
 
       <!-- View tab -->
@@ -541,6 +543,9 @@ var Module = {
 		initial_resize: 0,
 		is_fullscreen: 0,
 
+		print: function(text) { console.log(text); log_message(text); },
+		printErr: function(text) { console.error(text); log_message(text); },
+
         <!--arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', '-kbd-lang', 'US' ],-->
         arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],
 	};
@@ -611,6 +616,65 @@ var Module = {
 
 	const load_type = { load:0, run:1, tape:2, disk:3, text:4, hd:5 };
 
+	// ── DECB .bin header parser ─────────────────────────────────────────
+	// Format: repeated blocks of [tag(1) len_hi(1) len_lo(1) addr_hi(1) addr_lo(1) data(len)]
+	// where tag=0x00 is a data block (addr = load address) and tag=0xFF is the
+	// EOF block (len is always 0x0000, addr = exec/entry address).
+	function parse_decb_bin(data) {
+		var blocks = [];
+		var pos = 0;
+		var execAddr = null;
+		while (pos < data.length) {
+			if (pos + 5 > data.length) return { error: 'truncated header at offset ' + pos, blocks: blocks };
+			var tag = data[pos];
+			var len = (data[pos+1] << 8) | data[pos+2];
+			var addr = (data[pos+3] << 8) | data[pos+4];
+			if (tag === 0x00) {
+				blocks.push({ type: 'data', loadAddr: addr, length: len, offset: pos });
+				pos += 5 + len;
+			} else if (tag === 0xFF) {
+				execAddr = addr;
+				pos += 5;
+				break;
+			} else {
+				return { error: 'unrecognized block tag 0x' + tag.toString(16).padStart(2,'0') + ' at offset ' + pos, blocks: blocks };
+			}
+		}
+		if (execAddr === null) return { error: 'no EOF block found (file may not be a valid DECB binary)', blocks: blocks };
+		return { blocks: blocks, execAddr: execAddr };
+	}
+
+	function describe_decb_bin(filename, data) {
+		var result = parse_decb_bin(data);
+		if (result.error) {
+			log_message('"' + filename + '": ' + result.error + ' -- not a recognized DECB binary, loading raw');
+			return;
+		}
+		var totalLoaded = 0;
+		for (var b of result.blocks) totalLoaded += b.length;
+		var firstLoad = result.blocks.length ? result.blocks[0].loadAddr : null;
+		var msg = '"' + filename + '": ' + result.blocks.length + ' block(s), ' + totalLoaded + ' byte(s) loaded';
+		if (firstLoad !== null) msg += ' starting at $' + firstLoad.toString(16).toUpperCase().padStart(4,'0');
+		msg += ', entry point $' + result.execAddr.toString(16).toUpperCase().padStart(4,'0');
+		// Flag a placeholder/likely-bogus exec address: zero, or outside any loaded block's range.
+		var inRange = result.blocks.some(b => result.execAddr >= b.loadAddr && result.execAddr < b.loadAddr + b.length);
+		if (result.execAddr === 0 || !inRange) {
+			msg += ' (entry point is outside loaded data -- may be a placeholder; EXEC at load address $' +
+				(firstLoad !== null ? firstLoad.toString(16).toUpperCase().padStart(4,'0') : '????') + ' instead if unsure)';
+		}
+		log_message(msg);
+	}
+
+	// ── Visible log panel, mirrors XRoar's own console output (Module.print/printErr) ──
+	function log_message(text) {
+		var el = document.getElementById('xroar-log');
+		if (!el) return;
+		var line = document.createElement('div');
+		line.textContent = text;
+		el.appendChild(line);
+		el.scrollTop = el.scrollHeight;
+	}
+
 	function file_input_onload(el, loadtype, drive) {
 		resumeAudio();
 		if (el.files.length == 0) return;
@@ -618,6 +682,7 @@ var Module = {
 		var fr = new FileReader();
 		fr.onload = function() {
 			var data = new Uint8Array(fr.result);
+			if (file.name.toLowerCase().endsWith('.bin')) describe_decb_bin(file.name, data);
 			Module.FS.writeFile(file.name, data);
 			wasm_load_file(file.name, loadtype, drive);
 			el.value = '';
