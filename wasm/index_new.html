@@ -514,11 +514,13 @@ function applyMonitorLayout() {
     var label  = document.getElementById('size-label');
 
     // Auto-detect a sane starting size from the current window width.
-    // The controls panel sits to the right of the bezel (~420px including margins).
-    // Pick the largest size step that fits in the available width with some breathing room.
+    // On wide screens: subtract ~440px for the controls panel sitting to the right.
+    // On narrow screens (mobile): controls stack below, use full viewport width.
     (function() {
-        var available = window.innerWidth - 440;  // leave room for controls panel + margins
-        var autoWidth = sizeSteps[0];             // fallback: smallest step
+        var vw = window.innerWidth;
+        var available = vw < 700 ? vw - 20 : vw - 440;
+        available = Math.max(available, sizeSteps[0]);  // never below minimum
+        var autoWidth = sizeSteps[0];
         for (var i = 0; i < sizeSteps.length; i++) {
             if (sizeSteps[i] <= available) autoWidth = sizeSteps[i];
         }
