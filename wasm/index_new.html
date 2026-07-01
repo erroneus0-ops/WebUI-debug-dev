@@ -513,6 +513,18 @@ function applyMonitorLayout() {
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
 
+    // Auto-detect a sane starting size from the current window width.
+    // The controls panel sits to the right of the bezel (~420px including margins).
+    // Pick the largest size step that fits in the available width with some breathing room.
+    (function() {
+        var available = window.innerWidth - 440;  // leave room for controls panel + margins
+        var autoWidth = sizeSteps[0];             // fallback: smallest step
+        for (var i = 0; i < sizeSteps.length; i++) {
+            if (sizeSteps[i] <= available) autoWidth = sizeSteps[i];
+        }
+        monitorWidth = autoWidth;
+    })();
+
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
 
