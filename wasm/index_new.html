@@ -525,6 +525,13 @@ function applyMonitorLayout() {
             if (sizeSteps[i] <= available) autoWidth = sizeSteps[i];
         }
         monitorWidth = autoWidth;
+
+        // TEMPORARY DEBUG -- remove when sizing is confirmed working
+        var dbg = document.createElement('div');
+        dbg.id = 'size-debug';
+        dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#000;color:#ff0;font:12px monospace;padding:4px 8px;z-index:9999;opacity:0.85;';
+        dbg.textContent = 'vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth;
+        document.body.appendChild(dbg);
     })();
 
     // Sync slider to current monitorWidth
