@@ -527,11 +527,14 @@ function applyMonitorLayout() {
         monitorWidth = autoWidth;
 
         // TEMPORARY DEBUG -- remove when sizing is confirmed working
-        var dbg = document.createElement('div');
-        dbg.id = 'size-debug';
-        dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#000;color:#ff0;font:12px monospace;padding:4px 8px;z-index:99999;';
-        dbg.textContent = 'DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth;
-        document.body.appendChild(dbg);
+        var titleDiv = document.getElementById('title');
+        if (titleDiv) {
+            var dbg = document.createElement('span');
+            dbg.id = 'size-debug';
+            dbg.style.cssText = 'margin-left:1rem; font-size:0.8rem; color:#ff0; font-family:monospace;';
+            dbg.textContent = ' [vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ']';
+            titleDiv.appendChild(dbg);
+        }
         console.log('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth);
         log_message('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth);
     })();
