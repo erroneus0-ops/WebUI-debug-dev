@@ -513,13 +513,21 @@ function applyMonitorLayout() {
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
 
-    // Auto-detect a sane starting size from the current window width.
+    // Auto-detect a sane starting size from the current window width and height.
     // On wide screens: subtract ~440px for the controls panel sitting to the right.
     // On narrow screens (mobile): controls stack below, use full viewport width.
+    // Also cap by viewport height: monitor height = round(967 * scale), so
+    // max width from height = (availableHeight / 967) * 1073.
     (function() {
         var vw = window.innerWidth;
-        var available = vw < 700 ? vw - 20 : vw - 440;
-        available = Math.max(available, sizeSteps[0]);  // never below minimum
+        var vh = window.innerHeight;
+        var availableW = vw < 700 ? vw - 20 : vw - 440;
+        availableW = Math.max(availableW, sizeSteps[0]);
+        // Derive max width from available height (leave ~60px for title bar + margins)
+        var availableH = vh - 60;
+        var maxFromHeight = Math.floor((availableH / 967) * 1073);
+        var available = Math.min(availableW, maxFromHeight);
+        available = Math.max(available, sizeSteps[0]);
         var autoWidth = sizeSteps[0];
         for (var i = 0; i < sizeSteps.length; i++) {
             if (sizeSteps[i] <= available) autoWidth = sizeSteps[i];
