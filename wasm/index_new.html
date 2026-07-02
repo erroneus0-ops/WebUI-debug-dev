@@ -525,20 +525,6 @@ function applyMonitorLayout() {
             if (sizeSteps[i] <= available) autoWidth = sizeSteps[i];
         }
         monitorWidth = autoWidth;
-
-        // TEMPORARY DEBUG -- remove when sizing is confirmed working
-        var titleDiv = document.getElementById('title');
-        if (titleDiv) {
-            var dbg = document.createElement('span');
-            dbg.id = 'size-debug';
-            dbg.style.cssText = 'margin-left:1rem; font-size:0.8rem; color:#ff0; font-family:monospace;';
-            dbg.textContent = ' [vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ']';
-            titleDiv.appendChild(dbg);
-        }
-        console.log('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth);
-        if (typeof log_message === 'function') {
-            log_message('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth);
-        }
     })();
 
     // Sync slider to current monitorWidth
