@@ -149,6 +149,8 @@ body {
     display: flex;
     flex-wrap: wrap;
     min-width: 360px;
+    height: 100%;
+    align-content: flex-start;
 }
 
 #controls-region .tabs input[type=radio] {
@@ -182,10 +184,17 @@ body {
     padding: 0.5rem;
     background: #f0e0a8;   /* manila content area */
     border-radius: 0 3px 3px 3px;
+    box-sizing: border-box;
 }
 
 #controls-region .tabs input[type=radio]:checked + .tab-label + .tab-content {
     display: block;
+}
+
+#tab-help:checked + .tab-label + #help-tab-content {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 28px);
 }
 
 /* ── Buttons ─────────────────────────────────────────────────────── */
@@ -366,9 +375,11 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
       <!-- Help tab -->
       <input id="tab-help" type="radio" name="tabs">
       <label for="tab-help" class="tab-label">Help</label>
-      <div class="tab-content">
+      <div class="tab-content" id="help-tab-content" style="flex-direction:column; box-sizing:border-box;">
         <p>XRoar Online emulates the Dragon 32/64 and Tandy Colour Computers.</p>
         <p>Read more <a href="https://www.6809.org.uk/xroar/online/about.shtml">about XRoar Online</a>.</p>
+        <p style="text-align:right; margin:0 0 4px 0;"><span class="button" onclick="toggleLog()">...</span></p>
+        <div id="xroar-log" style="display:none; flex:1; overflow-y:auto; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px; white-space:pre-wrap;"></div>
       </div>
 
     </div><!-- .tabs -->
@@ -502,6 +513,20 @@ function applyMonitorLayout() {
     var slider = document.getElementById('size-slider');
     var label  = document.getElementById('size-label');
 
+    // Auto-detect a sane starting size from the current window width.
+    // On wide screens: subtract ~440px for the controls panel sitting to the right.
+    // On narrow screens (mobile): controls stack below, use full viewport width.
+    (function() {
+        var vw = window.innerWidth;
+        var available = vw < 700 ? vw - 20 : vw - 440;
+        available = Math.max(available, sizeSteps[0]);  // never below minimum
+        var autoWidth = sizeSteps[0];
+        for (var i = 0; i < sizeSteps.length; i++) {
+            if (sizeSteps[i] <= available) autoWidth = sizeSteps[i];
+        }
+        monitorWidth = autoWidth;
+    })();
+
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
 
@@ -534,15 +559,18 @@ function applyMonitorLayout() {
     });
 
     applyMonitorLayout();
-});
+})();
 
 var Module = {
 		canvas: (function() { return document.getElementById('canvas'); })(),
 		initial_resize: 0,
 		is_fullscreen: 0,
 
-        <!--arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],-->
-        arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-no-machine-cart', '-load', 'STRTEST_CART.cct', '-no-cart-autorun' ],
+		print: function(text) { console.log(text); log_message(text); },
+		printErr: function(text) { console.error(text); log_message(text); },
+
+        <!--arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', '-kbd-lang', 'US' ],-->
+        arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],
 	};
 
 	var drive_filename = [ null, null, null, null ];
@@ -611,6 +639,71 @@ var Module = {
 
 	const load_type = { load:0, run:1, tape:2, disk:3, text:4, hd:5 };
 
+	// ── DECB .bin header parser ─────────────────────────────────────────
+	// Format: repeated blocks of [tag(1) len_hi(1) len_lo(1) addr_hi(1) addr_lo(1) data(len)]
+	// where tag=0x00 is a data block (addr = load address) and tag=0xFF is the
+	// EOF block (len is always 0x0000, addr = exec/entry address).
+	function parse_decb_bin(data) {
+		var blocks = [];
+		var pos = 0;
+		var execAddr = null;
+		while (pos < data.length) {
+			if (pos + 5 > data.length) return { error: 'truncated header at offset ' + pos, blocks: blocks };
+			var tag = data[pos];
+			var len = (data[pos+1] << 8) | data[pos+2];
+			var addr = (data[pos+3] << 8) | data[pos+4];
+			if (tag === 0x00) {
+				blocks.push({ type: 'data', loadAddr: addr, length: len, offset: pos });
+				pos += 5 + len;
+			} else if (tag === 0xFF) {
+				execAddr = addr;
+				pos += 5;
+				break;
+			} else {
+				return { error: 'unrecognized block tag 0x' + tag.toString(16).padStart(2,'0') + ' at offset ' + pos, blocks: blocks };
+			}
+		}
+		if (execAddr === null) return { error: 'no EOF block found (file may not be a valid DECB binary)', blocks: blocks };
+		return { blocks: blocks, execAddr: execAddr };
+	}
+
+	function describe_decb_bin(filename, data) {
+		var result = parse_decb_bin(data);
+		if (result.error) {
+			log_message('"' + filename + '": ' + result.error + ' -- not a recognized DECB binary, loading raw');
+			return;
+		}
+		var totalLoaded = 0;
+		for (var b of result.blocks) totalLoaded += b.length;
+		var firstLoad = result.blocks.length ? result.blocks[0].loadAddr : null;
+		var msg = '"' + filename + '": ' + result.blocks.length + ' block(s), ' + totalLoaded + ' byte(s) loaded';
+		if (firstLoad !== null) msg += ' starting at $' + firstLoad.toString(16).toUpperCase().padStart(4,'0');
+		msg += ', entry point $' + result.execAddr.toString(16).toUpperCase().padStart(4,'0');
+		// Flag a placeholder/likely-bogus exec address: zero, or outside any loaded block's range.
+		var inRange = result.blocks.some(b => result.execAddr >= b.loadAddr && result.execAddr < b.loadAddr + b.length);
+		if (result.execAddr === 0 || !inRange) {
+			msg += ' (entry point is outside loaded data -- may be a placeholder; EXEC at load address $' +
+				(firstLoad !== null ? firstLoad.toString(16).toUpperCase().padStart(4,'0') : '????') + ' instead if unsure)';
+		}
+		log_message(msg);
+	}
+
+	// ── Visible log panel, mirrors XRoar's own console output (Module.print/printErr) ──
+	function log_message(text) {
+		var el = document.getElementById('xroar-log');
+		if (!el) return;
+		var line = document.createElement('div');
+		line.textContent = text;
+		el.appendChild(line);
+		el.scrollTop = el.scrollHeight;
+	}
+
+	function toggleLog() {
+		var el = document.getElementById('xroar-log');
+		if (!el) return;
+		el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+	}
+
 	function file_input_onload(el, loadtype, drive) {
 		resumeAudio();
 		if (el.files.length == 0) return;
@@ -618,6 +711,7 @@ var Module = {
 		var fr = new FileReader();
 		fr.onload = function() {
 			var data = new Uint8Array(fr.result);
+			if (file.name.toLowerCase().endsWith('.bin')) describe_decb_bin(file.name, data);
 			Module.FS.writeFile(file.name, data);
 			wasm_load_file(file.name, loadtype, drive);
 			el.value = '';
