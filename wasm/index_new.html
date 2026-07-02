@@ -533,6 +533,7 @@ function applyMonitorLayout() {
         dbg.textContent = 'DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth;
         document.body.appendChild(dbg);
         console.log('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth);
+        log_message('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth);
     })();
 
     // Sync slider to current monitorWidth
