@@ -536,7 +536,9 @@ function applyMonitorLayout() {
             titleDiv.appendChild(dbg);
         }
         console.log('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth);
-        log_message('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth);
+        if (typeof log_message === 'function') {
+            log_message('SIZE DEBUG: vw=' + vw + ' avail=' + available + ' auto=' + autoWidth + ' mono=' + monitorWidth);
+        }
     })();
 
     // Sync slider to current monitorWidth
