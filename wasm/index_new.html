@@ -549,6 +549,7 @@ function applyMonitorLayout() {
         return score >= 4;
     }
     var _isMobile = isMobileDevice();
+    window._isMobile = _isMobile;
 
     // Hamburger menu -- toggle controls panel visibility
     // On mobile uses the wrapper div; on desktop uses controls-region directly
@@ -1024,7 +1025,7 @@ var Module = {
 		} else {
 			document.body.style.margin = ''; document.body.style.padding = ''; document.body.style.overflow = '';
 			// On mobile, keep controls hidden after exiting fullscreen -- burger controls visibility
-			if (!_isMobile) {
+			if (!window._isMobile) {
 				document.getElementById('controls-region').style.display = '';
 			}
 			window.removeEventListener('resize', wasm_resize);
