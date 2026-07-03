@@ -651,8 +651,10 @@ function applyMonitorLayout() {
             e.preventDefault();
             var dx = x - startX;
             var dy = y - startY;
+            var titleBar = document.getElementById('title');
+            var minTop = titleBar ? titleBar.getBoundingClientRect().bottom + 2 : 44;
             wrapper.style.left = Math.max(0, origLeft + dx) + 'px';
-            wrapper.style.top  = Math.max(0, origTop  + dy) + 'px';
+            wrapper.style.top  = Math.max(minTop, origTop  + dy) + 'px';
         }
 
         function dragEnd() {
@@ -682,48 +684,26 @@ function applyMonitorLayout() {
 
     var burger = document.getElementById('hamburger-menu');
     if (burger) {
+        // Double-tap to reset overlay position, single tap to toggle
+        var lastTap = 0;
+
         burger.addEventListener('click', function() {
-            if (longPressFired) { longPressFired = false; return; }
             toggleControls();
         });
 
-        // Long press (600ms) resets overlay to default position
-        var longPressTimer = null;
-        var longPressFired = false;
-
-        function resetOverlayPosition() {
-            var wrapper = window._mobileControlsWrapper;
-            if (!wrapper) return;
-            wrapper.style.left = '0';
-            wrapper.style.top = '2.5rem';
-            longPressFired = true;
-        }
-
-        burger.addEventListener('mousedown', function() {
-            longPressFired = false;
-            longPressTimer = setTimeout(resetOverlayPosition, 600);
+        burger.addEventListener('touchend', function(e) {
+            var now = Date.now();
+            if (now - lastTap < 300) {
+                // Double-tap -- reset overlay position
+                var wrapper = window._mobileControlsWrapper;
+                if (wrapper) {
+                    wrapper.style.left = '0';
+                    wrapper.style.top = '2.5rem';
+                }
+                e.preventDefault();
+            }
+            lastTap = now;
         });
-        burger.addEventListener('mouseup', function() {
-            clearTimeout(longPressTimer);
-        });
-        burger.addEventListener('mouseleave', function() {
-            clearTimeout(longPressTimer);
-        });
-
-        burger.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            longPressFired = false;
-            longPressTimer = setTimeout(resetOverlayPosition, 600);
-        }, {passive: false});
-        burger.addEventListener('touchend', function() {
-            clearTimeout(longPressTimer);
-            if (longPressFired) { longPressFired = false; return; }
-            // preventDefault on touchstart blocks click, so trigger toggle here
-            toggleControls();
-        });
-        burger.addEventListener('touchmove', function() {
-            clearTimeout(longPressTimer);
-        }, {passive: true});
     }
 
     // Sync slider to current monitorWidth
