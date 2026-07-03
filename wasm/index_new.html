@@ -537,11 +537,11 @@ function applyMonitorLayout() {
     })();
 
     // Hamburger menu -- toggle controls panel visibility
-    // On mobile (narrow viewport): controls hidden by default, shown as overlay
+    // On mobile uses the wrapper div; on desktop uses controls-region directly
     function toggleControls() {
-        var ctrl = document.getElementById('controls-region');
-        if (!ctrl) return;
-        ctrl.style.display = ctrl.style.display === 'none' ? '' : 'none';
+        var el = window._mobileControlsWrapper || document.getElementById('controls-region');
+        if (!el) return;
+        el.style.display = el.style.display === 'none' ? 'flex' : 'none';
     }
 
     // Set initial controls state and positioning based on viewport width
@@ -549,19 +549,9 @@ function applyMonitorLayout() {
         var ctrl = document.getElementById('controls-region');
         if (!ctrl) return;
         if (window.innerWidth < 700) {
-            // Mobile: hide by default, set up as overlay when shown
-            ctrl.style.display = 'none';
-            ctrl.style.position = 'fixed';
-            ctrl.style.top = '2.5rem';
-            ctrl.style.left = '0';
-            ctrl.style.right = 'auto';
-            ctrl.style.width = monitorWidth + 'px';
-            ctrl.style.maxWidth = '95vw';
-            ctrl.style.height = 'auto';
-            ctrl.style.maxHeight = '60vh';
-            ctrl.style.overflowY = 'auto';
-            ctrl.style.zIndex = '100';
-            ctrl.style.boxShadow = '0 4px 16px rgba(0,0,0,0.5)';
+            // Mobile: hide by default -- wrapper handles positioning
+            // The wrapper is created by the drag handle IIFE above
+            // Nothing to do here -- wrapper starts as display:none
         }
     })();
 
@@ -570,7 +560,38 @@ function applyMonitorLayout() {
         var ctrl = document.getElementById('controls-region');
         if (!ctrl || window.innerWidth >= 700) return;
 
-        // Insert drag handle title bar at top of controls
+        // Wrap controls-region in a container, put handle outside scroll area
+        var wrapper = document.createElement('div');
+        wrapper.id = 'controls-overlay-wrapper';
+        wrapper.style.cssText = [
+            'position: fixed',
+            'top: 2.5rem',
+            'left: 0',
+            'right: auto',
+            'width: ' + monitorWidth + 'px',
+            'max-width: 95vw',
+            'z-index: 100',
+            'display: none',
+            'flex-direction: column',
+            'box-shadow: 0 4px 16px rgba(0,0,0,0.5)',
+        ].join(';');
+
+        // Insert wrapper before controls-region in DOM
+        ctrl.parentNode.insertBefore(wrapper, ctrl);
+        wrapper.appendChild(ctrl);
+
+        // Remove positioning from controls-region itself -- wrapper handles it
+        ctrl.style.position = '';
+        ctrl.style.top = '';
+        ctrl.style.left = '';
+        ctrl.style.right = '';
+        ctrl.style.width = '';
+        ctrl.style.maxWidth = '';
+        ctrl.style.zIndex = '';
+        ctrl.style.boxShadow = '';
+        ctrl.style.display = '';  // always visible inside wrapper
+
+        // Insert drag handle title bar at top of wrapper
         var handle = document.createElement('div');
         handle.id = 'controls-drag-handle';
         handle.style.cssText = [
@@ -586,16 +607,17 @@ function applyMonitorLayout() {
             'justify-content: space-between',
             'border-bottom: 1px solid #222',
             'touch-action: none',
+            'flex-shrink: 0',
         ].join(';');
         handle.innerHTML = '<span>Controls</span><span style="letter-spacing:2px;opacity:0.5">&#8801;</span>';
-        ctrl.insertBefore(handle, ctrl.firstChild);
+        wrapper.insertBefore(handle, ctrl);
 
         var dragging = false;
         var startX, startY, origLeft, origTop;
 
         function dragStart(x, y) {
             dragging = true;
-            var rect = ctrl.getBoundingClientRect();
+            var rect = wrapper.getBoundingClientRect();
             startX = x;
             startY = y;
             origLeft = rect.left;
@@ -608,9 +630,8 @@ function applyMonitorLayout() {
             e.preventDefault();
             var dx = x - startX;
             var dy = y - startY;
-            ctrl.style.left = Math.max(0, origLeft + dx) + 'px';
-            ctrl.style.top  = Math.max(0, origTop  + dy) + 'px';
-            ctrl.style.right = 'auto';
+            wrapper.style.left = Math.max(0, origLeft + dx) + 'px';
+            wrapper.style.top  = Math.max(0, origTop  + dy) + 'px';
         }
 
         function dragEnd() {
@@ -618,12 +639,10 @@ function applyMonitorLayout() {
             handle.style.cursor = 'grab';
         }
 
-        // Mouse
         handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
         document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); });
         document.addEventListener('mouseup', dragEnd);
 
-        // Touch -- not passive so we can preventDefault to block pull-to-refresh
         handle.addEventListener('touchstart', function(e) {
             var t = e.touches[0];
             dragStart(t.clientX, t.clientY);
@@ -635,6 +654,9 @@ function applyMonitorLayout() {
             dragMove(e, t.clientX, t.clientY);
         }, {passive: false});
         document.addEventListener('touchend', dragEnd);
+
+        // toggleControls now shows/hides the wrapper
+        window._mobileControlsWrapper = wrapper;
     })();
 
     var burger = document.getElementById('hamburger-menu');
@@ -977,7 +999,8 @@ var Module = {
 	function ui_set_fullscreen(fs) {
 		Module.is_fullscreen = fs;
 		if (fs) {
-			document.getElementById('controls-region').style.display = 'none';
+			var el = window._mobileControlsWrapper || document.getElementById('controls-region');
+			el.style.display = 'none';
 			document.body.style.margin = '0'; document.body.style.padding = '0'; document.body.style.overflow = 'hidden';
 			window.addEventListener('resize', wasm_resize);
 		} else {
