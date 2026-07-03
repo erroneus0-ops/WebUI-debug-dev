@@ -684,22 +684,24 @@ function applyMonitorLayout() {
 
     var burger = document.getElementById('hamburger-menu');
     if (burger) {
-        // Double-tap to reset overlay position, single tap to toggle
         var lastTap = 0;
+        var suppressNextClick = false;
 
         burger.addEventListener('click', function() {
+            if (suppressNextClick) { suppressNextClick = false; return; }
             toggleControls();
         });
 
         burger.addEventListener('touchend', function(e) {
             var now = Date.now();
             if (now - lastTap < 300) {
-                // Double-tap -- reset overlay position
+                // Double-tap -- reset overlay position, suppress both clicks
                 var wrapper = window._mobileControlsWrapper;
                 if (wrapper) {
                     wrapper.style.left = '0';
                     wrapper.style.top = '2.5rem';
                 }
+                suppressNextClick = true;
                 e.preventDefault();
             }
             lastTap = now;
