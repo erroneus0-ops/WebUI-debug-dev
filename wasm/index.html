@@ -56,6 +56,8 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
+    position: relative;
+    z-index: 101;
 }
 
 #title-text {
@@ -225,6 +227,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 <body>
 
 <div id="title">
+  <img src="hamburger.svg" id="hamburger-menu" style="width:28px; height:28px; cursor:pointer; flex-shrink:0; -webkit-touch-callout:none;" alt="menu" oncontextmenu="return false">
   <span id="title-text">XRoar Online</span>
   <div id="size-control">
     <label for="size-slider">Size:</label>
@@ -535,6 +538,178 @@ function applyMonitorLayout() {
         monitorWidth = autoWidth;
     })();
 
+    // Preponderance-of-evidence mobile detection
+    // Combines multiple signals rather than relying on any single indicator
+    function isMobileDevice() {
+        var score = 0;
+        if ('ontouchstart' in window) score += 2;
+        if (window.matchMedia('(pointer: coarse)').matches) score += 2;
+        if (window.matchMedia('(hover: none)').matches) score += 1;
+        if (window.innerWidth < 700) score += 1;
+        if (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) score += 1;
+        if (screen.width < 768) score += 1;
+        return score >= 4;
+    }
+    var _isMobile = isMobileDevice();
+    window._isMobile = _isMobile;
+
+    // Hamburger menu -- toggle controls panel visibility
+    // On mobile uses the wrapper div; on desktop uses controls-region directly
+    function toggleControls() {
+        var el = window._mobileControlsWrapper || document.getElementById('controls-region');
+        if (!el) return;
+        el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    // Set initial controls state and positioning based on viewport width
+    (function() {
+        var ctrl = document.getElementById('controls-region');
+        if (!ctrl) return;
+        if (_isMobile) {
+            // Mobile: hide by default -- wrapper handles positioning
+            // The wrapper is created by the drag handle IIFE above
+            // Nothing to do here -- wrapper starts as display:none
+        }
+    })();
+
+    // Draggable overlay for mobile controls -- drag handle only
+    (function() {
+        var ctrl = document.getElementById('controls-region');
+        if (!ctrl || !_isMobile) return;
+
+        // Wrap controls-region in a container, put handle outside scroll area
+        var wrapper = document.createElement('div');
+        wrapper.id = 'controls-overlay-wrapper';
+        wrapper.style.cssText = [
+            'position: fixed',
+            'top: 2.5rem',
+            'left: 0',
+            'right: auto',
+            'width: ' + monitorWidth + 'px',
+            'max-width: 95vw',
+            'max-height: 70vh',
+            'z-index: 100',
+            'display: none',
+            'flex-direction: column',
+            'box-shadow: 0 4px 16px rgba(0,0,0,0.5)',
+        ].join(';');
+
+        // Insert wrapper before controls-region in DOM
+        ctrl.parentNode.insertBefore(wrapper, ctrl);
+        wrapper.appendChild(ctrl);
+
+        // Remove positioning from controls-region itself -- wrapper handles it
+        ctrl.style.position = '';
+        ctrl.style.top = '';
+        ctrl.style.left = '';
+        ctrl.style.right = '';
+        ctrl.style.width = '100%';
+        ctrl.style.maxWidth = '';
+        ctrl.style.height = '';
+        ctrl.style.maxHeight = '100%';
+        ctrl.style.overflowY = 'auto';
+        ctrl.style.zIndex = '';
+        ctrl.style.boxShadow = '';
+        ctrl.style.display = '';  // always visible inside wrapper
+
+        // Insert drag handle title bar at top of wrapper
+        var handle = document.createElement('div');
+        handle.id = 'controls-drag-handle';
+        handle.style.cssText = [
+            'background: #404040',
+            'color: #ccc',
+            'font: bold 11px sans-serif',
+            'padding: 4px 8px',
+            'cursor: grab',
+            'user-select: none',
+            '-webkit-user-select: none',
+            'display: flex',
+            'align-items: center',
+            'justify-content: space-between',
+            'border-bottom: 1px solid #222',
+            'touch-action: none',
+            'flex-shrink: 0',
+        ].join(';');
+        handle.innerHTML = '<span>Controls</span><span style="letter-spacing:2px;opacity:0.5">&#8801;</span>';
+        wrapper.insertBefore(handle, ctrl);
+
+        var dragging = false;
+        var startX, startY, origLeft, origTop;
+
+        function dragStart(x, y) {
+            dragging = true;
+            var rect = wrapper.getBoundingClientRect();
+            startX = x;
+            startY = y;
+            origLeft = rect.left;
+            origTop = rect.top;
+            handle.style.cursor = 'grabbing';
+        }
+
+        function dragMove(e, x, y) {
+            if (!dragging) return;
+            e.preventDefault();
+            var dx = x - startX;
+            var dy = y - startY;
+            var titleBar = document.getElementById('title');
+            var minTop = titleBar ? titleBar.getBoundingClientRect().bottom + 2 : 44;
+            wrapper.style.left = Math.max(0, origLeft + dx) + 'px';
+            wrapper.style.top  = Math.max(minTop, origTop  + dy) + 'px';
+        }
+
+        function dragEnd() {
+            dragging = false;
+            handle.style.cursor = 'grab';
+        }
+
+        handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
+        document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); });
+        document.addEventListener('mouseup', dragEnd);
+
+        handle.addEventListener('touchstart', function(e) {
+            var t = e.touches[0];
+            dragStart(t.clientX, t.clientY);
+        }, {passive: true});
+        document.addEventListener('touchmove', function(e) {
+            if (!dragging) return;
+            e.preventDefault();
+            var t = e.touches[0];
+            dragMove(e, t.clientX, t.clientY);
+        }, {passive: false});
+        document.addEventListener('touchend', dragEnd);
+
+        // toggleControls now shows/hides the wrapper
+        window._mobileControlsWrapper = wrapper;
+    })();
+
+    var burger = document.getElementById('hamburger-menu');
+    if (burger) {
+        var lastTap = 0;
+        var singleTapTimer = null;
+
+        burger.addEventListener('click', function(e) {
+            var now = Date.now();
+            if (now - lastTap < 300) {
+                // Double-tap detected -- cancel pending single tap, reset position
+                clearTimeout(singleTapTimer);
+                singleTapTimer = null;
+                var wrapper = window._mobileControlsWrapper;
+                if (wrapper) {
+                    wrapper.style.left = '0';
+                    wrapper.style.top = '2.5rem';
+                }
+            } else {
+                // First tap -- wait to see if second tap arrives
+                clearTimeout(singleTapTimer);
+                singleTapTimer = setTimeout(function() {
+                    toggleControls();
+                    singleTapTimer = null;
+                }, 300);
+            }
+            lastTap = now;
+        });
+    }
+
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
 
@@ -577,8 +752,8 @@ var Module = {
 		print: function(text) { console.log(text); log_message(text); },
 		printErr: function(text) { console.error(text); log_message(text); },
 
-        <!--arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-machine', 'coco2bus', '-cart', 'rsdos', '-kbd-translate', '-kbd-lang', 'US' ],-->
-        arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],
+        <!--arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],-->
+        arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos', '-debug-file', '1' ],
 	};
 
 	var drive_filename = [ null, null, null, null ];
@@ -872,12 +1047,16 @@ var Module = {
 	function ui_set_fullscreen(fs) {
 		Module.is_fullscreen = fs;
 		if (fs) {
-			document.getElementById('controls-region').style.display = 'none';
+			var el = window._mobileControlsWrapper || document.getElementById('controls-region');
+			el.style.display = 'none';
 			document.body.style.margin = '0'; document.body.style.padding = '0'; document.body.style.overflow = 'hidden';
 			window.addEventListener('resize', wasm_resize);
 		} else {
 			document.body.style.margin = ''; document.body.style.padding = ''; document.body.style.overflow = '';
-			document.getElementById('controls-region').style.display = '';
+			// On mobile, keep controls hidden after exiting fullscreen -- burger controls visibility
+			if (!window._isMobile) {
+				document.getElementById('controls-region').style.display = '';
+			}
 			window.removeEventListener('resize', wasm_resize);
 		}
 		wasm_resize();
