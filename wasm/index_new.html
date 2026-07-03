@@ -565,10 +565,30 @@ function applyMonitorLayout() {
         }
     })();
 
-    // Draggable overlay for mobile controls
+    // Draggable overlay for mobile controls -- drag handle only
     (function() {
         var ctrl = document.getElementById('controls-region');
         if (!ctrl || window.innerWidth >= 700) return;
+
+        // Insert drag handle title bar at top of controls
+        var handle = document.createElement('div');
+        handle.id = 'controls-drag-handle';
+        handle.style.cssText = [
+            'background: #404040',
+            'color: #ccc',
+            'font: bold 11px sans-serif',
+            'padding: 4px 8px',
+            'cursor: grab',
+            'user-select: none',
+            '-webkit-user-select: none',
+            'display: flex',
+            'align-items: center',
+            'justify-content: space-between',
+            'border-bottom: 1px solid #222',
+            'touch-action: none',
+        ].join(';');
+        handle.innerHTML = '<span>Controls</span><span style="letter-spacing:2px;opacity:0.5">&#8801;</span>';
+        ctrl.insertBefore(handle, ctrl.firstChild);
 
         var dragging = false;
         var startX, startY, origLeft, origTop;
@@ -580,11 +600,12 @@ function applyMonitorLayout() {
             startY = y;
             origLeft = rect.left;
             origTop = rect.top;
-            ctrl.style.transition = 'none';
+            handle.style.cursor = 'grabbing';
         }
 
-        function dragMove(x, y) {
+        function dragMove(e, x, y) {
             if (!dragging) return;
+            e.preventDefault();
             var dx = x - startX;
             var dy = y - startY;
             ctrl.style.left = Math.max(0, origLeft + dx) + 'px';
@@ -592,23 +613,27 @@ function applyMonitorLayout() {
             ctrl.style.right = 'auto';
         }
 
-        function dragEnd() { dragging = false; }
+        function dragEnd() {
+            dragging = false;
+            handle.style.cursor = 'grab';
+        }
 
         // Mouse
-        ctrl.addEventListener('mousedown',  function(e) { dragStart(e.clientX, e.clientY); });
-        document.addEventListener('mousemove', function(e) { dragMove(e.clientX, e.clientY); });
-        document.addEventListener('mouseup',   dragEnd);
+        handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
+        document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); });
+        document.addEventListener('mouseup', dragEnd);
 
-        // Touch
-        ctrl.addEventListener('touchstart', function(e) {
+        // Touch -- not passive so we can preventDefault to block pull-to-refresh
+        handle.addEventListener('touchstart', function(e) {
             var t = e.touches[0];
             dragStart(t.clientX, t.clientY);
         }, {passive: true});
         document.addEventListener('touchmove', function(e) {
             if (!dragging) return;
+            e.preventDefault();
             var t = e.touches[0];
-            dragMove(t.clientX, t.clientY);
-        }, {passive: true});
+            dragMove(e, t.clientX, t.clientY);
+        }, {passive: false});
         document.addEventListener('touchend', dragEnd);
     })();
 
