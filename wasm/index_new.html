@@ -56,6 +56,8 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
+    position: relative;
+    z-index: 101;
 }
 
 #title-text {
@@ -679,7 +681,48 @@ function applyMonitorLayout() {
     })();
 
     var burger = document.getElementById('hamburger-menu');
-    if (burger) burger.addEventListener('click', toggleControls);
+    if (burger) {
+        burger.addEventListener('click', function() {
+            if (longPressFired) { longPressFired = false; return; }
+            toggleControls();
+        });
+
+        // Long press (600ms) resets overlay to default position
+        var longPressTimer = null;
+        var longPressFired = false;
+
+        function resetOverlayPosition() {
+            var wrapper = window._mobileControlsWrapper;
+            if (!wrapper) return;
+            wrapper.style.left = '0';
+            wrapper.style.top = '2.5rem';
+            longPressFired = true;
+        }
+
+        burger.addEventListener('mousedown', function() {
+            longPressFired = false;
+            longPressTimer = setTimeout(resetOverlayPosition, 600);
+        });
+        burger.addEventListener('mouseup', function() {
+            clearTimeout(longPressTimer);
+        });
+        burger.addEventListener('mouseleave', function() {
+            clearTimeout(longPressTimer);
+        });
+
+        burger.addEventListener('touchstart', function(e) {
+            longPressFired = false;
+            longPressTimer = setTimeout(resetOverlayPosition, 600);
+        }, {passive: true});
+        burger.addEventListener('touchend', function() {
+            clearTimeout(longPressTimer);
+            // If long press fired, don't also toggle
+            if (longPressFired) longPressFired = false;
+        });
+        burger.addEventListener('touchmove', function() {
+            clearTimeout(longPressTimer);
+        }, {passive: true});
+    }
 
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
