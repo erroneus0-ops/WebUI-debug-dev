@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
 
-  <!-- Top bun: dome -- approved shape, shifted up to center -->
+  <!-- Top bun: approved dome shape, centered -->
   <path d="M 6,22
            Q 6,6 32,6
            Q 58,6 58,22
