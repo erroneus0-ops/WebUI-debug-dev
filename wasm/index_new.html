@@ -225,7 +225,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 <body>
 
 <div id="title">
-  <img src="hamburger.svg" id="hamburger-menu" style="width:28px; height:28px; cursor:pointer; flex-shrink:0;" alt="menu">
+  <img src="hamburger.svg" id="hamburger-menu" style="width:28px; height:28px; cursor:pointer; flex-shrink:0;" alt="menu" onclick="toggleControls()">
   <span id="title-text">XRoar Online</span>
   <div id="size-control">
     <label for="size-slider">Size:</label>
@@ -535,6 +535,13 @@ function applyMonitorLayout() {
         }
         monitorWidth = autoWidth;
     })();
+
+    // Hamburger menu -- toggle controls panel visibility
+    function toggleControls() {
+        var ctrl = document.getElementById('controls-region');
+        if (!ctrl) return;
+        ctrl.style.display = ctrl.style.display === 'none' ? '' : 'none';
+    }
 
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
