@@ -536,6 +536,20 @@ function applyMonitorLayout() {
         monitorWidth = autoWidth;
     })();
 
+    // Preponderance-of-evidence mobile detection
+    // Combines multiple signals rather than relying on any single indicator
+    function isMobileDevice() {
+        var score = 0;
+        if ('ontouchstart' in window) score += 2;
+        if (window.matchMedia('(pointer: coarse)').matches) score += 2;
+        if (window.matchMedia('(hover: none)').matches) score += 1;
+        if (window.innerWidth < 700) score += 1;
+        if (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) score += 1;
+        if (screen.width < 768) score += 1;
+        return score >= 4;
+    }
+    var _isMobile = isMobileDevice();
+
     // Hamburger menu -- toggle controls panel visibility
     // On mobile uses the wrapper div; on desktop uses controls-region directly
     function toggleControls() {
@@ -548,7 +562,7 @@ function applyMonitorLayout() {
     (function() {
         var ctrl = document.getElementById('controls-region');
         if (!ctrl) return;
-        if (window.innerWidth < 700) {
+        if (_isMobile) {
             // Mobile: hide by default -- wrapper handles positioning
             // The wrapper is created by the drag handle IIFE above
             // Nothing to do here -- wrapper starts as display:none
@@ -558,7 +572,7 @@ function applyMonitorLayout() {
     // Draggable overlay for mobile controls -- drag handle only
     (function() {
         var ctrl = document.getElementById('controls-region');
-        if (!ctrl || window.innerWidth >= 700) return;
+        if (!ctrl || !_isMobile) return;
 
         // Wrap controls-region in a container, put handle outside scroll area
         var wrapper = document.createElement('div');
@@ -1010,7 +1024,7 @@ var Module = {
 		} else {
 			document.body.style.margin = ''; document.body.style.padding = ''; document.body.style.overflow = '';
 			// On mobile, keep controls hidden after exiting fullscreen -- burger controls visibility
-			if (window.innerWidth >= 700) {
+			if (!_isMobile) {
 				document.getElementById('controls-region').style.display = '';
 			}
 			window.removeEventListener('resize', wasm_resize);
