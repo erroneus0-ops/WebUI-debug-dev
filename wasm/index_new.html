@@ -225,7 +225,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 <body>
 
 <div id="title">
-  <img src="hamburger.svg" id="hamburger-menu" style="width:28px; height:28px; cursor:pointer; flex-shrink:0;" alt="menu" onclick="toggleControls()">
+  <img src="hamburger.svg" id="hamburger-menu" style="width:28px; height:28px; cursor:pointer; flex-shrink:0;" alt="menu">
   <span id="title-text">XRoar Online</span>
   <div id="size-control">
     <label for="size-slider">Size:</label>
@@ -542,6 +542,8 @@ function applyMonitorLayout() {
         if (!ctrl) return;
         ctrl.style.display = ctrl.style.display === 'none' ? '' : 'none';
     }
+    var burger = document.getElementById('hamburger-menu');
+    if (burger) burger.addEventListener('click', toggleControls);
 
     // Sync slider to current monitorWidth
     applySize(monitorWidth);
