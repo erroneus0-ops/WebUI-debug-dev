@@ -1,34 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
 
-  <!-- Top bun: dome from previous approved version -->
-  <path d="M 6,26
-           Q 6,10 32,10
-           Q 58,10 58,26
+  <!-- Top bun: dome -- approved shape, shifted up to center -->
+  <path d="M 6,22
+           Q 6,6 32,6
+           Q 58,6 58,22
            Z"
         fill="#c8922a"/>
 
-  <!-- gap -->
-
-  <!-- Lettuce: y=31 -->
-  <rect x="4" y="31" width="56" height="4" rx="1" fill="#4a9e3f"/>
-  <path d="M4,31 Q10,28.5 16,31 Q22,28.5 28,31 Q34,28.5 40,31 Q46,28.5 52,31 Q58,28.5 60,31"
+  <!-- Lettuce: y=26 -->
+  <rect x="4" y="26" width="56" height="4" rx="1" fill="#4a9e3f"/>
+  <path d="M4,26 Q10,23.5 16,26 Q22,23.5 28,26 Q34,23.5 40,26 Q46,23.5 52,26 Q58,23.5 60,26"
         fill="none" stroke="#3a8e2f" stroke-width="1.5"/>
 
-  <!-- gap -->
+  <!-- Cheese: y=33 -->
+  <rect x="5" y="33" width="54" height="3" rx="1" fill="#f0c030"/>
+  <polygon points="5,33 5,36 2,37 2,34" fill="#f0c030"/>
+  <polygon points="59,33 59,36 62,37 62,34" fill="#f0c030"/>
 
-  <!-- Cheese: y=39 -->
-  <rect x="5" y="39" width="54" height="3" rx="1" fill="#f0c030"/>
-  <polygon points="5,39 5,42 2,43 2,40" fill="#f0c030"/>
-  <polygon points="59,39 59,42 62,43 62,40" fill="#f0c030"/>
+  <!-- Patty: y=40 -->
+  <rect x="6" y="40" width="52" height="7" rx="2" fill="#5c3010"/>
 
-  <!-- gap -->
-
-  <!-- Patty: y=47 -->
-  <rect x="6" y="47" width="52" height="7" rx="2" fill="#5c3010"/>
-
-  <!-- gap -->
-
-  <!-- Bottom bun: y=58 -->
-  <rect x="6" y="58" width="52" height="5" rx="2" fill="#c8922a"/>
+  <!-- Bottom bun: y=51, slightly thicker at 7px -->
+  <rect x="6" y="51" width="52" height="7" rx="2" fill="#c8922a"/>
 
 </svg>
