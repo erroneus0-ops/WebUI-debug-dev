@@ -685,24 +685,26 @@ function applyMonitorLayout() {
     var burger = document.getElementById('hamburger-menu');
     if (burger) {
         var lastTap = 0;
-        var suppressNextClick = false;
+        var singleTapTimer = null;
 
-        burger.addEventListener('click', function() {
-            if (suppressNextClick) { suppressNextClick = false; return; }
-            toggleControls();
-        });
-
-        burger.addEventListener('touchend', function(e) {
+        burger.addEventListener('click', function(e) {
             var now = Date.now();
             if (now - lastTap < 300) {
-                // Double-tap -- reset overlay position, suppress both clicks
+                // Double-tap detected -- cancel pending single tap, reset position
+                clearTimeout(singleTapTimer);
+                singleTapTimer = null;
                 var wrapper = window._mobileControlsWrapper;
                 if (wrapper) {
                     wrapper.style.left = '0';
                     wrapper.style.top = '2.5rem';
                 }
-                suppressNextClick = true;
-                e.preventDefault();
+            } else {
+                // First tap -- wait to see if second tap arrives
+                clearTimeout(singleTapTimer);
+                singleTapTimer = setTimeout(function() {
+                    toggleControls();
+                    singleTapTimer = null;
+                }, 300);
             }
             lastTap = now;
         });
