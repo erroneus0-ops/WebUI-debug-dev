@@ -537,11 +537,33 @@ function applyMonitorLayout() {
     })();
 
     // Hamburger menu -- toggle controls panel visibility
+    // On mobile (narrow viewport): controls hidden by default, shown as overlay
     function toggleControls() {
         var ctrl = document.getElementById('controls-region');
         if (!ctrl) return;
         ctrl.style.display = ctrl.style.display === 'none' ? '' : 'none';
     }
+
+    // Set initial controls state and positioning based on viewport width
+    (function() {
+        var ctrl = document.getElementById('controls-region');
+        if (!ctrl) return;
+        if (window.innerWidth < 700) {
+            // Mobile: hide by default, set up as overlay when shown
+            ctrl.style.display = 'none';
+            ctrl.style.position = 'fixed';
+            ctrl.style.top = '2.5rem';
+            ctrl.style.left = '0';
+            ctrl.style.right = '0';
+            ctrl.style.width = 'auto';
+            ctrl.style.height = 'auto';
+            ctrl.style.maxHeight = '60vh';
+            ctrl.style.overflowY = 'auto';
+            ctrl.style.zIndex = '100';
+            ctrl.style.boxShadow = '0 4px 16px rgba(0,0,0,0.5)';
+        }
+    })();
+
     var burger = document.getElementById('hamburger-menu');
     if (burger) burger.addEventListener('click', toggleControls);
 
