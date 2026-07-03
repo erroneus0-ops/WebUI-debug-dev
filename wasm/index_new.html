@@ -717,8 +717,9 @@ function applyMonitorLayout() {
         }, {passive: false});
         burger.addEventListener('touchend', function() {
             clearTimeout(longPressTimer);
-            // If long press fired, don't also toggle
-            if (longPressFired) longPressFired = false;
+            if (longPressFired) { longPressFired = false; return; }
+            // preventDefault on touchstart blocks click, so trigger toggle here
+            toggleControls();
         });
         burger.addEventListener('touchmove', function() {
             clearTimeout(longPressTimer);
