@@ -909,7 +909,10 @@ var Module = {
 			window.addEventListener('resize', wasm_resize);
 		} else {
 			document.body.style.margin = ''; document.body.style.padding = ''; document.body.style.overflow = '';
-			document.getElementById('controls-region').style.display = '';
+			// On mobile, keep controls hidden after exiting fullscreen -- burger controls visibility
+			if (window.innerWidth >= 700) {
+				document.getElementById('controls-region').style.display = '';
+			}
 			window.removeEventListener('resize', wasm_resize);
 		}
 		wasm_resize();
