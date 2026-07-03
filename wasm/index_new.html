@@ -570,6 +570,7 @@ function applyMonitorLayout() {
             'right: auto',
             'width: ' + monitorWidth + 'px',
             'max-width: 95vw',
+            'max-height: 70vh',
             'z-index: 100',
             'display: none',
             'flex-direction: column',
@@ -585,8 +586,11 @@ function applyMonitorLayout() {
         ctrl.style.top = '';
         ctrl.style.left = '';
         ctrl.style.right = '';
-        ctrl.style.width = '';
+        ctrl.style.width = '100%';
         ctrl.style.maxWidth = '';
+        ctrl.style.height = '';
+        ctrl.style.maxHeight = '100%';
+        ctrl.style.overflowY = 'auto';
         ctrl.style.zIndex = '';
         ctrl.style.boxShadow = '';
         ctrl.style.display = '';  // always visible inside wrapper
