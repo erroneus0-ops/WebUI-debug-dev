@@ -120,7 +120,7 @@ body {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background-image: url('cm8_bezel.svg');
+    background-image: url('cm8_bezel-light.svg');
     background-size: 100% 100%;
     pointer-events: none;   /* clicks pass through to canvas */
     z-index: 10;
@@ -242,6 +242,31 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
   <div id="monitor-region">
     <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
     <div id="bezel-overlay"></div>
+    <!-- Interactive SVG overlay: LED and power button -- must be above bezel-overlay -->
+    <div id="bezel-interactive" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:11;">
+      <svg id="bezel-svg" viewBox="0 0 1073 967" style="width:100%;height:100%;"
+           xmlns="http://www.w3.org/2000/svg">
+        <g id="led-light">
+          <rect style="fill:#ff0300;fill-opacity:0.5325132;fill-rule:evenodd;stroke-width:1.00021"
+                id="rect2" width="14.51622" height="2.4889479"
+                x="948.64032" y="881.60669"
+                transform="matrix(0.99957404,-0.02918464,0,1,0,0)" />
+          <rect style="fill:#ff0300;fill-opacity:0.532513;fill-rule:evenodd;stroke-width:0.858773"
+                id="rect3" width="12.463528" height="2.1369936"
+                x="950.01776" y="881.79297"
+                transform="matrix(0.99957404,-0.02918464,0,1,0,0)" />
+          <rect style="fill:#ff0300;fill-opacity:1;fill-rule:evenodd;stroke-width:0.698156"
+                id="rect4" width="10.132456" height="1.7373085"
+                x="951.3952" y="881.99896"
+                transform="matrix(0.99957404,-0.02918464,0,1,0,0)" />
+        </g>
+        <rect style="display:inline;fill:#838995;fill-opacity:0;fill-rule:evenodd;stroke-width:1.01625;cursor:pointer;"
+              id="power-butt" width="76.542" height="53.677032"
+              x="850.80621" y="866.75653"
+              transform="matrix(0.99993902,-0.01104375,0,1,0,0)"
+              pointer-events="all" />
+      </svg>
+    </div>
   </div>
 
   <!-- ── Controls region ── -->
@@ -552,6 +577,29 @@ function applyMonitorLayout() {
     }
     var _isMobile = isMobileDevice();
     window._isMobile = _isMobile;
+
+    // Power button -- toggle emulator and LED state
+    var _powered = true;
+    function togglePower() {
+        _powered = !_powered;
+        var led = document.getElementById('led-light');
+        if (led) {
+            var color = _powered ? '#ff0300' : '#1a0000';
+            led.querySelectorAll('rect').forEach(function(r) {
+                r.style.fill = color;
+            });
+        }
+        // Pause/resume XRoar if available
+        if (typeof Module !== 'undefined' && Module.ccall) {
+            try {
+                Module.ccall('wasm_set_int', null, ['string','number'],
+                    ['pause', _powered ? 0 : 1]);
+            } catch(e) {}
+        }
+    }
+
+    var powerBtn = document.getElementById('power-butt');
+    if (powerBtn) powerBtn.addEventListener('click', togglePower);
 
     // Hamburger menu -- toggle controls panel visibility
     // On mobile uses the wrapper div; on desktop uses controls-region directly
