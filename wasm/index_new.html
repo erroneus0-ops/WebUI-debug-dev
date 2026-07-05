@@ -242,6 +242,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
   <!-- ── Monitor region ── -->
   <div id="monitor-region">
     <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="crt-black" style="position:absolute;background:#000;display:block;"></div>
     <div id="bezel-overlay"></div>
     <!-- Interactive SVG overlay: LED and power button -- must be above bezel-overlay -->
     <div id="bezel-interactive" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:11;">
@@ -528,6 +529,14 @@ function applyMonitorLayout() {
     canvas.style.top    = ct  + 'px';
     canvas.style.width  = csw + 'px';
     canvas.style.height = csh + 'px';
+
+    var crtBlack = document.getElementById('crt-black');
+    if (crtBlack) {
+        crtBlack.style.left   = cl  + 'px';
+        crtBlack.style.top    = ct  + 'px';
+        crtBlack.style.width  = csw + 'px';
+        crtBlack.style.height = csh + 'px';
+    }
 
     // Tell XRoar the canvas pixel dimensions
     if (typeof Module !== 'undefined' && Module.ccall) {
