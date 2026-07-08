@@ -1,0 +1,2916 @@
+
+; ================================================================
+; TRS-80 Color Computer / Dragon Hardware Register Equates
+; ================================================================
+
+; ── PIA0  $FF00-$FF03  (keyboard, joystick, cassette) ──────────
+PIA0DA   EQU    $FF00    ; PIA0 Data Register A  (keyboard columns)
+PIA0CRA  EQU    $FF01    ; PIA0 Control Register A
+PIA0DB   EQU    $FF02    ; PIA0 Data Register B  (keyboard rows, joystick)
+PIA0CRB  EQU    $FF03    ; PIA0 Control Register B
+
+; ── PIA1  $FF20-$FF23  (VDG mode, sound, RS-232) ───────────────
+PIA1DA   EQU    $FF20    ; PIA1 Data Register A  (cassette, sound, RS-232)
+PIA1CRA  EQU    $FF21    ; PIA1 Control Register A
+PIA1DB   EQU    $FF22    ; PIA1 Data Register B  (VDG mode select bits)
+PIA1CRB  EQU    $FF23    ; PIA1 Control Register B
+
+; ── SAM  $FFC0-$FFDF  (video address, clock, memory map) ───────
+; Video display address (V0-V6): write $FFC6/$FFC7 to set bit
+SAMV0C   EQU    $FFC6    ; SAM V0 clear
+SAMV0S   EQU    $FFC7    ; SAM V0 set
+SAMV1C   EQU    $FFC8    ; SAM V1 clear
+SAMV1S   EQU    $FFC9    ; SAM V1 set
+SAMV2C   EQU    $FFCA    ; SAM V2 clear
+SAMV2S   EQU    $FFCB    ; SAM V2 set
+SAMV3C   EQU    $FFCC    ; SAM V3 clear
+SAMV3S   EQU    $FFCD    ; SAM V3 set
+SAMV4C   EQU    $FFCE    ; SAM V4 clear
+SAMV4S   EQU    $FFCF    ; SAM V4 set
+SAMV5C   EQU    $FFD0    ; SAM V5 clear
+SAMV5S   EQU    $FFD1    ; SAM V5 set
+SAMV6C   EQU    $FFD2    ; SAM V6 clear
+SAMV6S   EQU    $FFD3    ; SAM V6 set
+; SAM memory map (TY0/TY1): all-RAM mode
+SAMTY0C  EQU    $FFDC    ; SAM TY0 clear
+SAMTY0S  EQU    $FFDD    ; SAM TY0 set
+SAMTY1C  EQU    $FFDE    ; SAM TY1 clear (all-RAM)
+SAMTY1S  EQU    $FFDF    ; SAM TY1 set   (all-RAM)
+
+; ── Color BASIC ROM entry points ────────────────────────────────
+POLCAT   EQU    $A000    ; poll keyboard: returns char in A, 0=none
+CHROUT   EQU    $A002    ; output character in A to screen
+BLINKKY  EQU    $A1B1    ; blink cursor, wait for keypress (ROM-version dependent)
+
+; ================================================================
+
+; ==============================================================
+; Disassembly:  wasm/flames.bin
+; Module:       wasm/flames.bin
+; Type:         DECB/BIN  ($00)
+; Size:         $167C  (5756 bytes)
+; Entry:        $0E00
+; BSS:          $0000  (0 bytes)
+; CRC-24:       N/A
+; ==============================================================
+
+; ----- Module Header -----
+; ----- DECB/RS-DOS BIN Segments -----
+;   $0E00 - $0E18  (25 bytes)
+;   $0E19 - $1D4D  (3893 bytes)
+;   $2000 - $247B  (1148 bytes)
+;   Exec: $0E00
+         ORG   $0E00
+
+; ==============================================================
+; Pre-exec data  (post-name)—$0DFF
+; Everything here is DATA — no executable code.
+; ==============================================================
+
+
+; ==============================================================
+; Code section  $0E00—$247B  (5756 bytes)
+; ==============================================================
+
+$0E00  1A 50               Init:          ORCC #$50              ; set CC: I,F
+$0E02  B7 FF DF                           STA $FFDF             
+$0E05  8E 0E 19                           LDX #$0E19            
+$0E08  10 8E E0 00                        LDY #$E000            
+$0E0C  EC 81               Loc_0E0C:      LDD ,X++              
+$0E0E  ED A1                              STD ,Y++              
+$0E10  10 8C EF 35                        CMPY #$EF35           
+$0E14  25 F6                              BCS Loc_0E0C           ; C=1 (BLO)
+$0E16  7E E8 C5                           JMP $E8C5             
+$0E19  34 10                              PSHS X                
+$0E1B  30 22                              LEAX 2,Y              
+$0E1D  10 AE 81                           LDY ,X++              
+$0E20  6E B4                              JMP [,Y]              
+$0E22  31 22                              LEAY 2,Y              
+$0E24  10 AF C3                           STY ,--U              
+$0E27  10 AE 81                           LDY ,X++              
+$0E2A  6E B4                              JMP [,Y]              
+$0E2C  E2 A3                              SBCB ,--Y             
+$0E2E  E2 AA                              SBCB ?$AA             
+$0E30  E2 B3                              SBCB [,--Y]           
+$0E32  E8 C3                              EORB ,--U             
+$0E34  E2 D8 E2                           SBCB [-30,U]          
+$0E37  E5 E2                              BITB ,-S              
+$0E39  F2 E3 0B                           SBCB $E30B            
+$0E3C  E3 14                              ADDD -12,X            
+$0E3E  E3 1B                              ADDD -5,X             
+$0E40  E3 2A                              ADDD 10,Y             
+$0E42  E3 33                              ADDD -13,Y            
+$0E44  E3 3F                              ADDD -1,Y             
+$0E46  E3 4D                              ADDD 13,U             
+$0E48  E3 5E                              ADDD -2,U             
+$0E4A  E3 7E                              ADDD -2,S             
+$0E4C  E3 87                              ADDD ?$87             
+$0E4E  E3 A7                              ADDD ?$A7             
+$0E50  E3 E2                              ADDD ,-S              
+$0E52  E5 1A                              BITB -6,X             
+$0E54  E5 32                              BITB -14,Y            
+$0E56  E5 3D                              BITB -3,Y             
+$0E58  E5 54                              BITB -12,U            
+$0E5A  E5 6B                              BITB 11,S             
+$0E5C  E5 83                              BITB ,--X             
+$0E5E  E5 9B                              BITB [D,X]            
+$0E60  E5 AE E5                           BITB [-27,PC]         
+$0E63  C1 E5                              CMPB #$E5             
+$0E65  CF                                 FCB $CF                ; undefined opcode $CF -- not a valid 6809 instruction
+$0E66  E5 DC E5                           BITB [-27,PC]         
+$0E69  EB E3                              ADDB ,--S             
+$0E6B  CA E4                              ORB #$E4              
+$0E6D  CD                                 FCB $CD                ; undefined opcode $CD -- not a valid 6809 instruction
+$0E6E  E5 FA                              BITB [F,S]            
+$0E70  E6 14                              LDB -12,X             
+$0E72  E6 39                              LDB -7,Y              
+$0E74  E6 56                              LDB -10,U             
+$0E76  E7 A5                              STB B,Y               
+$0E78  E7 B3                              STB [,--Y]            
+$0E7A  E7 BE E7                           STB [-25,PC]          
+$0E7D  FE E8 0E                           LDU $E80E             
+$0E80  E8 1C                              EORB -4,X             
+$0E82  E8 23                              EORB 3,Y              
+$0E84  E8 30                              EORB -16,Y            
+$0E86  E8 45                              EORB 5,U              
+$0E88  E8 A8 E8                           EORB -24,Y            
+$0E8B  B1 E8 BA                           CMPA $E8BA            
+$0E8E  E6 73                              LDB -13,S             
+$0E90  E6 85                              LDB B,X               
+$0E92  E6 97                              LDB [E,X]             
+$0E94  E7 17                              STB -9,X              
+$0E96  E7 3E                              STB -2,Y              
+$0E98  E7 45                              STB 5,U               
+$0E9A  E7 52                              STB -14,U             
+$0E9C  E7 5D                              STB -3,U              
+$0E9E  E7 6C                              STB 12,S              
+$0EA0  E7 75                              STB -11,S             
+$0EA2  E6 A7                              LDB ?$A7              
+$0EA4  E6 BF E6 CC                        LDB [$E6CC]           
+$0EA8  E6 D7                              LDB [E,U]             
+$0EAA  E6 E2                              LDB ,-S               
+$0EAC  E6 F1                              LDB [,S++]            
+$0EAE  E0 09                              SUBB 9,X              
+$0EB0  07 05                              ASR <$05              
+$0EB2  01                                 FCB $01                ; undefined opcode $01 -- not a valid 6809 instruction
+$0EB3  00 04                              NEG <$04              
+$0EB5  40                                 NEGA                  
+$0EB6  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
+$0EB7  50                                 NEGB                  
+$0EB8  55                                 FCB $55                ; undefined opcode $55 -- not a valid 6809 instruction
+$0EB9  54                                 LSRB                  
+$0EBA  42                                 FCB $42                ; undefined opcode $42 -- not a valid 6809 instruction
+$0EBB  84 07                              ANDA #$07             
+$0EBD  05                                 FCB $05                ; undefined opcode $05 -- not a valid 6809 instruction
+$0EBE  02                                 FCB $02                ; undefined opcode $02 -- not a valid 6809 instruction
+$0EBF  00 08                              NEG <$08              
+$0EC1  80 22                              SUBA #$22             
+$0EC3  20 08                              BRA $0ECD             
+
+$0EC5  80 02                                      SUBA #$02
+$0EC7  00 07                                      NEG <$07
+$0EC9  07 05                                      ASR <$05
+$0ECB  40                                         NEGA 
+$0ECC  11 10                                      FCB $11,$10   ; unknown opcode $1110
+$0ECE  41                                         FCB $41   ; undefined opcode $41 -- not a valid 6809 instruction
+$0ECF  04 54                                      LSR <$54
+$0ED1  54                                         LSRB 
+$0ED2  41                                         FCB $41   ; undefined opcode $41 -- not a valid 6809 instruction
+$0ED3  04 11                                      LSR <$11
+$0ED5  10 05 40 03 03                             BIEOR $40,$03,$03
+$0EDA  20 A8                                      BRA $0E84
+$0EDC  20 03                                      BRA $0EE1
+$0EDE  03 88                                      COM <$88
+$0EE0  20 88                                      BRA $0E6A
+$0EE2  E0 09                                      SUBB 9,X
+$0EE4  00 00                                      NEG <$00
+$0EE6  00 00                                      NEG <$00
+$0EE8  00 00                                      NEG <$00
+$0EEA  00 00                                      NEG <$00
+$0EEC  30 30                                      LEAX -16,Y
+$0EEE  30 30                                      LEAX -16,Y
+$0EF0  30 00                                      LEAX 0,X
+$0EF2  30 00                                      LEAX 0,X
+$0EF4  00 00                                      NEG <$00
+$0EF6  00 00                                      NEG <$00
+$0EF8  00 00                                      NEG <$00
+$0EFA  00 00                                      NEG <$00
+$0EFC  00 00                                      NEG <$00
+$0EFE  00 00                                      NEG <$00
+$0F00  00 00                                      NEG <$00
+$0F02  00 00                                      NEG <$00
+$0F04  00 00                                      NEG <$00
+$0F06  00 00                                      NEG <$00
+$0F08  00 00                                      NEG <$00
+$0F0A  00 00                                      NEG <$00
+$0F0C  E3 03                                      ADDD 3,X
+$0F0E  0C 30                                      INC <$30
+$0F10  C3 00 00                                   ADDD #$0000
+$0F13  00 00                                      NEG <$00
+$0F15  00 00                                      NEG <$00
+$0F17  00 00                                      NEG <$00
+$0F19  00 00                                      NEG <$00
+$0F1B  00 00                                      NEG <$00
+$0F1D  00 00                                      NEG <$00
+$0F1F  00 00                                      NEG <$00
+$0F21  00 00                                      NEG <$00
+$0F23  00 00                                      NEG <$00
+$0F25  00 00                                      NEG <$00
+$0F27  00 00                                      NEG <$00
+$0F29  00 00                                      NEG <$00
+$0F2B  00 00                                      NEG <$00
+$0F2D  00 00                                      NEG <$00
+$0F2F  00 00                                      NEG <$00
+$0F31  00 00                                      NEG <$00
+$0F33  00 00                                      NEG <$00
+$0F35  00 00                                      NEG <$00
+$0F37  00 00                                      NEG <$00
+$0F39  00 00                                      NEG <$00
+$0F3B  00 00                                      NEG <$00
+$0F3D  00 00                                      NEG <$00
+$0F3F  00 00                                      NEG <$00
+$0F41  00 00                                      NEG <$00
+$0F43  00 00                                      NEG <$00
+$0F45  00 00                                      NEG <$00
+$0F47  00 00                                      NEG <$00
+$0F49  30 C0                                      LEAX ,U+
+$0F4B  00 00                                      NEG <$00
+$0F4D  00 00                                      NEG <$00
+$0F4F  FC 00 00                                   LDD $0000
+$0F52  00 00                                      NEG <$00
+$0F54  00 00                                      NEG <$00
+$0F56  00 00                                      NEG <$00
+$0F58  00 00                                      NEG <$00
+$0F5A  30 00                                      LEAX 0,X
+$0F5C  00 00                                      NEG <$00
+$0F5E  00 00                                      NEG <$00
+$0F60  00 00                                      NEG <$00
+$0F62  00 00                                      NEG <$00
+$0F64  FC CC CC                                   LDD $CCCC
+$0F67  CC CC CC                                   LDD #$CCCC
+$0F6A  FC 00 30                                   LDD $0030
+$0F6D  F0 30 30                                   SUBB $3030
+$0F70  30 30                                      LEAX -16,Y
+$0F72  FC 00 FC                                   LDD $00FC
+$0F75  CC 0C FC                                   LDD #$0CFC
+$0F78  C0 C0                                      SUBB #$C0
+$0F7A  FC 00 FC                                   LDD $00FC
+$0F7D  0C 0C                                      INC <$0C
+$0F7F  FC 0C 0C                                   LDD $0C0C
+$0F82  FC 00 CC                                   LDD $00CC
+$0F85  CC CC FC                                   LDD #$CCFC
+$0F88  0C 0C                                      INC <$0C
+$0F8A  0C 00                                      INC <$00
+$0F8C  FC C0 FC                                   LDD $C0FC
+$0F8F  0C 0C                                      INC <$0C
+$0F91  CC FC 00                                   LDD #$FC00
+$0F94  FC C0 C0                                   LDD $C0C0
+$0F97  FC CC CC                                   LDD $CCCC
+$0F9A  FC 00 FC                                   LDD $00FC
+$0F9D  0C 0C                                      INC <$0C
+$0F9F  30 30                                      LEAX -16,Y
+$0FA1  30 30                                      LEAX -16,Y
+$0FA3  00 FC                                      NEG <$FC
+$0FA5  CC CC FC                                   LDD #$CCFC
+$0FA8  CC CC FC                                   LDD #$CCFC
+$0FAB  00 FC                                      NEG <$FC
+$0FAD  CC CC FC                                   LDD #$CCFC
+$0FB0  0C 0C                                      INC <$0C
+$0FB2  FC 00 00                                   LDD $0000
+$0FB5  00 30                                      NEG <$30
+$0FB7  00 00                                      NEG <$00
+$0FB9  30 00                                      LEAX 0,X
+$0FBB  00 00                                      NEG <$00
+$0FBD  00 00                                      NEG <$00
+$0FBF  00 00                                      NEG <$00
+$0FC1  00 00                                      NEG <$00
+$0FC3  00 00                                      NEG <$00
+$0FC5  00 00                                      NEG <$00
+$0FC7  00 00                                      NEG <$00
+$0FC9  00 00                                      NEG <$00
+$0FCB  00 00                                      NEG <$00
+$0FCD  00 00                                      NEG <$00
+$0FCF  00 00                                      NEG <$00
+$0FD1  00 00                                      NEG <$00
+$0FD3  00 00                                      NEG <$00
+$0FD5  00 00                                      NEG <$00
+$0FD7  00 00                                      NEG <$00
+$0FD9  00 00                                      NEG <$00
+$0FDB  00 FC                                      NEG <$FC
+$0FDD  0C 0C                                      INC <$0C
+$0FDF  3C 00                                      CWAI #$00
+$0FE1  00 30                                      NEG <$30
+$0FE3  00 00                                      NEG <$00
+$0FE5  00 00                                      NEG <$00
+$0FE7  00 00                                      NEG <$00
+$0FE9  00 00                                      NEG <$00
+$0FEB  00 FC                                      NEG <$FC
+$0FED  CC CC FC                                   LDD #$CCFC
+$0FF0  CC CC CC                                   LDD #$CCCC
+$0FF3  00 F0                                      NEG <$F0
+$0FF5  CC CC F0                                   LDD #$CCF0
+$0FF8  CC CC F0                                   LDD #$CCF0
+$0FFB  00 FC                                      NEG <$FC
+$0FFD  C0 C0                                      SUBB #$C0
+$0FFF  C0 C0                                      SUBB #$C0
+$1001  C0 FC                                      SUBB #$FC
+$1003  00 F0                                      NEG <$F0
+$1005  CC CC CC                                   LDD #$CCCC
+$1008  CC CC F0                                   LDD #$CCF0
+$100B  00 FC                                      NEG <$FC
+$100D  C0 C0                                      SUBB #$C0
+$100F  FC C0 C0                                   LDD $C0C0
+$1012  FC 00 FC                                   LDD $00FC
+$1015  C0 C0                                      SUBB #$C0
+$1017  FC C0 C0                                   LDD $C0C0
+$101A  C0 00                                      SUBB #$00
+$101C  FC C0 C0                                   LDD $C0C0
+$101F  FC CC CC                                   LDD $CCCC
+$1022  FC 00 CC                                   LDD $00CC
+$1025  CC CC FC                                   LDD #$CCFC
+$1028  CC CC CC                                   LDD #$CCCC
+$102B  00 FC                                      NEG <$FC
+$102D  30 30                                      LEAX -16,Y
+$102F  30 30                                      LEAX -16,Y
+$1031  30 FC 00                                   LEAX [+0,PC]
+$1034  3C 0C                                      CWAI #$0C
+$1036  0C 0C                                      INC <$0C
+$1038  0C CC                                      INC <$CC
+$103A  3C 00                                      CWAI #$00
+$103C  CC CC F0                                   LDD #$CCF0
+$103F  F0 CC CC                                   SUBB $CCCC
+$1042  CC 00 C0                                   LDD #$00C0
+$1045  C0 C0                                      SUBB #$C0
+$1047  C0 C0                                      SUBB #$C0
+$1049  C0 FC                                      SUBB #$FC
+$104B  00 CC                                      NEG <$CC
+$104D  FC FC CC                                   LDD $FCCC
+$1050  CC CC CC                                   LDD #$CCCC
+$1053  00 CC                                      NEG <$CC
+$1055  CC FC FC                                   LDD #$FCFC
+$1058  CC CC CC                                   LDD #$CCCC
+$105B  00 FC                                      NEG <$FC
+$105D  CC CC CC                                   LDD #$CCCC
+$1060  CC CC FC                                   LDD #$CCFC
+$1063  00 FC                                      NEG <$FC
+$1065  CC CC FC                                   LDD #$CCFC
+$1068  C0 C0                                      SUBB #$C0
+$106A  C0 00                                      SUBB #$00
+$106C  FC CC CC                                   LDD $CCCC
+$106F  CC CC FC                                   LDD #$CCFC
+$1072  0C 00                                      INC <$00
+$1074  FC CC CC                                   LDD $CCCC
+$1077  FC F0 CC                                   LDD $F0CC
+$107A  CC 00 FC                                   LDD #$00FC
+$107D  C0 C0                                      SUBB #$C0
+$107F  FC 0C 0C                                   LDD $0C0C
+$1082  FC 00 FC                                   LDD $00FC
+$1085  30 30                                      LEAX -16,Y
+$1087  30 30                                      LEAX -16,Y
+$1089  30 30                                      LEAX -16,Y
+$108B  00 CC                                      NEG <$CC
+$108D  CC CC CC                                   LDD #$CCCC
+$1090  CC CC FC                                   LDD #$CCFC
+$1093  00 CC                                      NEG <$CC
+$1095  CC CC CC                                   LDD #$CCCC
+$1098  CC F0 F0                                   LDD #$F0F0
+$109B  00 CC                                      NEG <$CC
+$109D  CC CC CC                                   LDD #$CCCC
+$10A0  FC FC CC                                   LDD $FCCC
+$10A3  00 CC                                      NEG <$CC
+$10A5  CC FC FC                                   LDD #$FCFC
+$10A8  FC CC CC                                   LDD $CCCC
+$10AB  00 CC                                      NEG <$CC
+$10AD  CC CC FC                                   LDD #$CCFC
+$10B0  30 30                                      LEAX -16,Y
+$10B2  30 00                                      LEAX 0,X
+$10B4  FC 0C 0C                                   LDD $0C0C
+$10B7  FC C0 C0                                   LDD $C0C0
+$10BA  FC 00 35                                   LDD $0035
+$10BD  10 10                                      FCB $10,$10   ; unknown opcode $1010
+$10BF  AE 81                                      LDX ,X++
+$10C1  6E B4                                      JMP [,Y]
+$10C3  EC 81                                      LDD ,X++
+$10C5  ED C3                                      STD ,--U
+$10C7  10 AE 81                                   LDY ,X++
+$10CA  6E B4                                      JMP [,Y]
+$10CC  E6 41                                      LDB 1,U
+$10CE  33 42                                      LEAU 2,U
+$10D0  C4 3F                                      ANDB #$3F
+$10D2  CA 40                                      ORB #$40
+$10D4  10 BE EF 03                                LDY $EF03
+$10D8  E7 A9 04 00                                STB 1024,Y
+$10DC  31 21                                      LEAY 1,Y
+$10DE  10 8C 02 00                                CMPY #$0200
+$10E2  25 04                                      BCS $10E8   ; C=1 (BLO)
+$10E4  10 8E 00 00                                LDY #$0000
+$10E8  10 BF EF 03                                STY $EF03
+$10EC  10 AE 81                                   LDY ,X++
+$10EF  6E B4                                      JMP [,Y]
+$10F1  EC C4                                      LDD ,U
+$10F3  33 42                                      LEAU 2,U
+$10F5  E3 C4                                      ADDD ,U
+$10F7  ED C4                                      STD ,U
+$10F9  10 AE 81                                   LDY ,X++
+$10FC  6E B4                                      JMP [,Y]
+$10FE  EC 42                                      LDD 2,U
+$1100  A3 C4                                      SUBD ,U
+$1102  33 42                                      LEAU 2,U
+$1104  ED C4                                      STD ,U
+$1106  10 AE 81                                   LDY ,X++
+$1109  6E B4                                      JMP [,Y]
+$110B  FC EF 03                                   LDD $EF03
+$110E  C3 00 20                                   ADDD #$0020
+$1111  C4 E0                                      ANDB #$E0
+$1113  10 83 02 00                                CMPD #$0200
+$1117  25 03                                      BCS $111C   ; C=1 (BLO)
+$1119  CC 00 00                                   LDD #$0000
+$111C  FD EF 03                                   STD $EF03
+$111F  10 AE 81                                   LDY ,X++
+$1122  6E B4                                      JMP [,Y]
+$1124  EC C4                                      LDD ,U
+$1126  ED C3                                      STD ,--U
+$1128  10 AE 81                                   LDY ,X++
+$112B  6E B4                                      JMP [,Y]
+$112D  33 42                                      LEAU 2,U
+$112F  10 AE 81                                   LDY ,X++
+$1132  6E B4                                      JMP [,Y]
+$1134  EC C4                                      LDD ,U
+$1136  10 AE 42                                   LDY 2,U
+$1139  ED 42                                      STD 2,U
+$113B  10 AF C4                                   STY ,U
+$113E  10 AE 81                                   LDY ,X++
+$1141  6E B4                                      JMP [,Y]
+$1143  EC 42                                      LDD 2,U
+$1145  ED C3                                      STD ,--U
+$1147  10 AE 81                                   LDY ,X++
+$114A  6E B4                                      JMP [,Y]
+$114C  10 AE C4                                   LDY ,U
+$114F  EC A4                                      LDD ,Y
+$1151  ED C4                                      STD ,U
+$1153  10 AE 81                                   LDY ,X++
+$1156  6E B4                                      JMP [,Y]
+$1158  10 AE C4                                   LDY ,U
+$115B  EC 42                                      LDD 2,U
+$115D  ED A4                                      STD ,Y
+$115F  33 44                                      LEAU 4,U
+$1161  10 AE 81                                   LDY ,X++
+$1164  6E B4                                      JMP [,Y]
+$1166  EC C4                                      LDD ,U
+$1168  10 AE 42                                   LDY 2,U
+$116B  33 44                                      LEAU 4,U
+$116D  10 AF E3                                   STY ,--S
+$1170  ED E3                                      STD ,--S
+$1172  10 AE 81                                   LDY ,X++
+$1175  6E B4                                      JMP [,Y]
+$1177  EC E4                                      LDD ,S
+$1179  C3 00 01                                   ADDD #$0001
+$117C  ED E4                                      STD ,S
+$117E  10 A3 62                                   CMPD 2,S
+$1181  27 0B                                      BEQ $118E
+$1183  EC 84                                      LDD ,X
+$1185  30 02                                      LEAX 2,X
+$1187  30 8B                                      LEAX D,X
+$1189  10 AE 81                                   LDY ,X++
+$118C  6E B4                                      JMP [,Y]
+$118E  32 64                                      LEAS 4,S
+$1190  30 02                                      LEAX 2,X
+$1192  10 AE 81                                   LDY ,X++
+$1195  6E B4                                      JMP [,Y]
+$1197  EC E4                                      LDD ,S
+$1199  ED C3                                      STD ,--U
+$119B  10 AE 81                                   LDY ,X++
+$119E  6E B4                                      JMP [,Y]
+$11A0  A6 42                                      LDA 2,U
+$11A2  E6 41                                      LDB 1,U
+$11A4  3D                                         MUL    ; D = A×B unsigned
+$11A5  34 04                                      PSHS B
+$11A7  A6 43                                      LDA 3,U
+$11A9  E6 C4                                      LDB ,U
+$11AB  3D                                         MUL    ; D = A×B unsigned
+$11AC  EB E0                                      ADDB ,S+
+$11AE  34 04                                      PSHS B
+$11B0  A6 43                                      LDA 3,U
+$11B2  E6 41                                      LDB 1,U
+$11B4  3D                                         MUL    ; D = A×B unsigned
+$11B5  AB E0                                      ADDA ,S+
+$11B7  33 44                                      LEAU 4,U
+$11B9  ED C3                                      STD ,--U
+$11BB  10 AE 81                                   LDY ,X++
+$11BE  6E B4                                      JMP [,Y]
+$11C0  EC C4                                      LDD ,U
+$11C2  34 06                                      PSHS A,B
+$11C4  EC 42                                      LDD 2,U
+$11C6  33 44                                      LEAU 4,U
+$11C8  10 8E 00 00                                LDY #$0000
+$11CC  10 A3 E4                                   CMPD ,S
+$11CF  25 06                                      BCS $11D7   ; C=1 (BLO)
+$11D1  A3 E4                                      SUBD ,S
+$11D3  31 21                                      LEAY 1,Y
+$11D5  20 F5                                      BRA $11CC
+$11D7  32 62                                      LEAS 2,S
+$11D9  ED C3                                      STD ,--U
+$11DB  10 AF C3                                   STY ,--U
+$11DE  10 AE 81                                   LDY ,X++
+$11E1  6E B4                                      JMP [,Y]
+$11E3  A6 41                                      LDA 1,U
+$11E5  B7 FF 02                                   STA $FF02
+$11E8  F6 FF 00                                   LDB $FF00
+$11EB  53                                         COMB 
+$11EC  C4 7F                                      ANDB #$7F
+$11EE  86 FF                                      LDA #$FF
+$11F0  B7 FF 02                                   STA $FF02
+$11F3  4F                                         CLRA    ; A = 0
+$11F4  ED C4                                      STD ,U
+$11F6  10 AE 81                                   LDY ,X++
+$11F9  6E B4                                      JMP [,Y]
+$11FB  86 7F                                      LDA #$7F
+$11FD  B7 FF 02                                   STA $FF02
+$1200  B6 FF 00                                   LDA $FF00
+$1203  43                                         COMA 
+$1204  84 40                                      ANDA #$40
+$1206  B7 EF 06                                   STA $EF06
+$1209  86 FF                                      LDA #$FF
+$120B  B7 FF 02                                   STA $FF02
+$120E  8D 6B                                      BSR $127B
+$1210  4D                                         TSTA 
+$1211  26 1C                                      BNE $122F
+$1213  CC 00 1E                                   LDD #$001E
+$1216  FD EF 08                                   STD $EF08
+$1219  B6 FF 03                                   LDA $FF03
+$121C  B6 FF 02                                   LDA $FF02
+$121F  B6 EF 07                                   LDA $EF07
+$1222  27 D7                                      BEQ $11FB
+$1224  4A                                         DECA 
+$1225  B7 EF 07                                   STA $EF07
+$1228  26 D1                                      BNE $11FB
+$122A  7F EF 05                                   CLR $EF05
+$122D  20 CC                                      BRA $11FB
+$122F  C6 28                                      LDB #$28   ; B = SS.EnRTS  (GetStt/SetStt subcode)
+$1231  F7 EF 07                                   STB $EF07
+$1234  B1 EF 05                                   CMPA $EF05
+$1237  27 14                                      BEQ $124D
+$1239  B7 EF 05                                   STA $EF05
+$123C  CC 00 1E                                   LDD #$001E
+$123F  FD EF 08                                   STD $EF08
+$1242  B6 FF 03                                   LDA $FF03
+$1245  B6 FF 02                                   LDA $FF02
+$1248  B6 EF 05                                   LDA $EF05
+$124B  20 1C                                      BRA $1269
+$124D  B6 FF 03                                   LDA $FF03
+$1250  2A A9                                      BPL $11FB
+$1252  B6 FF 02                                   LDA $FF02
+$1255  FC EF 08                                   LDD $EF08
+$1258  83 00 01                                   SUBD #$0001
+$125B  FD EF 08                                   STD $EF08
+$125E  26 9B                                      BNE $11FB
+$1260  CC 00 05                                   LDD #$0005
+$1263  FD EF 08                                   STD $EF08
+$1266  B6 EF 05                                   LDA $EF05
+$1269  7D EF 06                                   TST $EF06
+$126C  27 03                                      BEQ $1271
+$126E  17 00 AC                                   LBSR $131D
+$1271  1F 89                                      TFR A,B
+$1273  4F                                         CLRA    ; A = 0
+$1274  ED C3                                      STD ,--U
+$1276  10 AE 81                                   LDY ,X++
+$1279  6E B4                                      JMP [,Y]
+$127B  10 8E E4 95                                LDY #$E495
+$127F  86 FE                                      LDA #$FE
+$1281  B7 FF 02                                   STA $FF02
+$1284  34 02                                      PSHS A
+$1286  B6 FF 00                                   LDA $FF00
+$1289  43                                         COMA 
+$128A  84 7F                                      ANDA #$7F
+$128C  C6 07                                      LDB #$07
+$128E  44                                         LSRA 
+$128F  25 12                                      BCS $12A3   ; C=1 (BLO)
+$1291  31 21                                      LEAY 1,Y
+$1293  5A                                         DECB 
+$1294  26 F8                                      BNE $128E
+$1296  35 02                                      PULS A
+$1298  1A 01                                      ORCC #$01   ; set CC: C
+$129A  49                                         ROLA 
+$129B  81 FF                                      CMPA #$FF
+$129D  26 E2                                      BNE $1281
+$129F  86 00                                      LDA #$00   ; A = NUL
+$12A1  20 04                                      BRA $12A7
+$12A3  A6 A4                                      LDA ,Y
+$12A5  35 04                                      PULS B
+$12A7  C6 FF                                      LDB #$FF
+$12A9  F7 FF 02                                   STB $FF02
+$12AC  4D                                         TSTA 
+$12AD  39                                         RTS 
+$12AE  40                                         NEGA 
+$12AF  48                                         LSLA 
+$12B0  50                                         NEGB 
+$12B1  58                                         LSLB 
+$12B2  30 38                                      LEAX -8,Y
+$12B4  0D 41                                      TST <$41
+$12B6  49                                         ROLA 
+$12B7  51                                         FCB $51   ; undefined opcode $51 -- not a valid 6809 instruction
+$12B8  59                                         ROLB 
+$12B9  31 39                                      LEAY -7,Y
+$12BB  0C 42                                      INC <$42
+$12BD  4A                                         DECA 
+$12BE  52                                         FCB $52   ; undefined opcode $52 -- not a valid 6809 instruction
+$12BF  5A                                         DECB 
+$12C0  32 3A                                      LEAS -6,Y
+$12C2  03 43                                      COM <$43
+$12C4  4B                                         FCB $4B   ; undefined opcode $4B -- not a valid 6809 instruction
+$12C5  53                                         COMB 
+$12C6  1C 33                                      ANDCC #$33   ; clr CC: Z,N,F,E
+$12C8  3B                                         RTI    ; return from interrupt
+$12C9  00 44                                      NEG <$44
+$12CB  4C                                         INCA 
+$12CC  54                                         LSRB 
+$12CD  1D                                         SEX    ; sign-extend B into A
+$12CE  34 2C                                      PSHS B,DP,Y
+$12D0  00 45                                      NEG <$45
+$12D2  4D                                         TSTA 
+$12D3  55                                         FCB $55   ; undefined opcode $55 -- not a valid 6809 instruction
+$12D4  1E 35                                      EXG U,PC
+$12D6  2D 00                                      BLT $12D8
+$12D8  46                                         RORA 
+$12D9  4E                                         FCB $4E   ; undefined opcode $4E -- not a valid 6809 instruction
+$12DA  56                                         RORB 
+$12DB  1F 36                                      TFR U,W
+$12DD  2E 00                                      BGT $12DF
+$12DF  47                                         ASRA 
+$12E0  4F                                         CLRA    ; A = 0
+$12E1  57                                         ASRB 
+$12E2  20 37                                      BRA $131B
+$12E4  2F 00                                      BLE $12E6
+$12E6  8D 0A                                      BSR $12F2
+$12E8  1F 89                                      TFR A,B
+$12EA  4F                                         CLRA    ; A = 0
+$12EB  ED C3                                      STD ,--U
+$12ED  10 AE 81                                   LDY ,X++
+$12F0  6E B4                                      JMP [,Y]
+$12F2  7F FF 02                                   CLR $FF02
+$12F5  B6 FF 00                                   LDA $FF00
+$12F8  43                                         COMA 
+$12F9  84 7F                                      ANDA #$7F
+$12FB  27 1F                                      BEQ $131C
+$12FD  86 7F                                      LDA #$7F
+$12FF  B7 FF 02                                   STA $FF02
+$1302  B6 FF 00                                   LDA $FF00
+$1305  43                                         COMA 
+$1306  84 40                                      ANDA #$40
+$1308  B7 EF 06                                   STA $EF06
+$130B  86 FF                                      LDA #$FF
+$130D  B7 FF 02                                   STA $FF02
+$1310  17 FF 68                                   LBSR $127B
+$1313  27 07                                      BEQ $131C
+$1315  7D EF 06                                   TST $EF06
+$1318  27 02                                      BEQ $131C
+$131A  8D 01                                      BSR $131D
+$131C  39                                         RTS 
+$131D  81 2C                                      CMPA #$2C   ; compare A with ','
+$131F  25 11                                      BCS $1332   ; C=1 (BLO)
+$1321  81 2F                                      CMPA #$2F   ; compare A with '/'
+$1323  23 0B                                      BLS $1330
+$1325  81 31                                      CMPA #$31   ; compare A with '1'
+$1327  25 09                                      BCS $1332   ; C=1 (BLO)
+$1329  81 3B                                      CMPA #$3B   ; compare A with ';'
+$132B  22 05                                      BHI $1332
+$132D  80 10                                      SUBA #$10
+$132F  39                                         RTS 
+$1330  8B 10                                      ADDA #$10
+$1332  39                                         RTS 
+$1333  EC C4                                      LDD ,U
+$1335  33 42                                      LEAU 2,U
+$1337  26 0B                                      BNE $1344
+$1339  EC 84                                      LDD ,X
+$133B  30 02                                      LEAX 2,X
+$133D  30 8B                                      LEAX D,X
+$133F  10 AE 81                                   LDY ,X++
+$1342  6E B4                                      JMP [,Y]
+$1344  30 02                                      LEAX 2,X
+$1346  10 AE 81                                   LDY ,X++
+$1349  6E B4                                      JMP [,Y]
+$134B  EC 84                                      LDD ,X
+$134D  30 02                                      LEAX 2,X
+$134F  30 8B                                      LEAX D,X
+$1351  10 AE 81                                   LDY ,X++
+$1354  6E B4                                      JMP [,Y]
+$1356  EC 42                                      LDD 2,U
+$1358  A3 C4                                      SUBD ,U
+$135A  33 44                                      LEAU 4,U
+$135C  26 05                                      BNE $1363
+$135E  CC FF FF                                   LDD #$FFFF
+$1361  20 03                                      BRA $1366
+$1363  CC 00 00                                   LDD #$0000
+$1366  ED C3                                      STD ,--U
+$1368  10 AE 81                                   LDY ,X++
+$136B  6E B4                                      JMP [,Y]
+$136D  EC 42                                      LDD 2,U
+$136F  A3 C4                                      SUBD ,U
+$1371  33 44                                      LEAU 4,U
+$1373  27 05                                      BEQ $137A
+$1375  CC FF FF                                   LDD #$FFFF
+$1378  20 03                                      BRA $137D
+$137A  CC 00 00                                   LDD #$0000
+$137D  ED C3                                      STD ,--U
+$137F  10 AE 81                                   LDY ,X++
+$1382  6E B4                                      JMP [,Y]
+$1384  EC 42                                      LDD 2,U
+$1386  10 A3 C4                                   CMPD ,U
+$1389  33 44                                      LEAU 4,U
+$138B  2C 05                                      BGE $1392
+$138D  CC FF FF                                   LDD #$FFFF
+$1390  20 03                                      BRA $1395
+$1392  CC 00 00                                   LDD #$0000
+$1395  ED C3                                      STD ,--U
+$1397  10 AE 81                                   LDY ,X++
+$139A  6E B4                                      JMP [,Y]
+$139C  EC 42                                      LDD 2,U
+$139E  10 A3 C4                                   CMPD ,U
+$13A1  33 44                                      LEAU 4,U
+$13A3  2F 05                                      BLE $13AA
+$13A5  CC FF FF                                   LDD #$FFFF
+$13A8  20 03                                      BRA $13AD
+$13AA  CC 00 00                                   LDD #$0000
+$13AD  ED C3                                      STD ,--U
+$13AF  10 AE 81                                   LDY ,X++
+$13B2  6E B4                                      JMP [,Y]
+$13B4  EC C4                                      LDD ,U
+$13B6  26 05                                      BNE $13BD
+$13B8  CC FF FF                                   LDD #$FFFF
+$13BB  20 03                                      BRA $13C0
+$13BD  CC 00 00                                   LDD #$0000
+$13C0  ED C4                                      STD ,U
+$13C2  10 AE 81                                   LDY ,X++
+$13C5  6E B4                                      JMP [,Y]
+$13C7  E6 41                                      LDB 1,U
+$13C9  86 20                                      LDA #$20   ; A = ' '
+$13CB  3D                                         MUL    ; D = A×B unsigned
+$13CC  EB 43                                      ADDB 3,U
+$13CE  89 00                                      ADCA #$00
+$13D0  33 44                                      LEAU 4,U
+$13D2  FD EF 03                                   STD $EF03
+$13D5  10 AE 81                                   LDY ,X++
+$13D8  6E B4                                      JMP [,Y]
+$13DA  10 AE C4                                   LDY ,U
+$13DD  A6 43                                      LDA 3,U
+$13DF  A7 A4                                      STA ,Y
+$13E1  33 44                                      LEAU 4,U
+$13E3  10 AE 81                                   LDY ,X++
+$13E6  6E B4                                      JMP [,Y]
+$13E8  10 AE C4                                   LDY ,U
+$13EB  E6 A4                                      LDB ,Y
+$13ED  4F                                         CLRA    ; A = 0
+$13EE  ED C4                                      STD ,U
+$13F0  10 AE 81                                   LDY ,X++
+$13F3  6E B4                                      JMP [,Y]
+$13F5  EC C4                                      LDD ,U
+$13F7  33 42                                      LEAU 2,U
+$13F9  A4 C4                                      ANDA ,U
+$13FB  E4 41                                      ANDB 1,U
+$13FD  ED C4                                      STD ,U
+$13FF  10 AE 81                                   LDY ,X++
+$1402  6E B4                                      JMP [,Y]
+$1404  EC C4                                      LDD ,U
+$1406  33 42                                      LEAU 2,U
+$1408  AA C4                                      ORA ,U
+$140A  EA 41                                      ORB 1,U
+$140C  ED C4                                      STD ,U
+$140E  10 AE 81                                   LDY ,X++
+$1411  6E B4                                      JMP [,Y]
+$1413  34 10                                      PSHS X
+$1415  E6 41                                      LDB 1,U
+$1417  10 AE 42                                   LDY 2,U
+$141A  27 08                                      BEQ $1424
+$141C  AE 44                                      LDX 4,U
+$141E  E7 80                                      STB ,X+
+$1420  31 3F                                      LEAY -1,Y
+$1422  26 FA                                      BNE $141E
+$1424  33 46                                      LEAU 6,U
+$1426  35 10                                      PULS X
+$1428  10 AE 81                                   LDY ,X++
+$142B  6E B4                                      JMP [,Y]
+$142D  34 10                                      PSHS X
+$142F  EC C4                                      LDD ,U
+$1431  27 16                                      BEQ $1449
+$1433  34 06                                      PSHS A,B
+$1435  AE 42                                      LDX 2,U
+$1437  10 AE 44                                   LDY 4,U
+$143A  A6 A0                                      LDA ,Y+
+$143C  A7 80                                      STA ,X+
+$143E  EC E4                                      LDD ,S
+$1440  83 00 01                                   SUBD #$0001
+$1443  ED E4                                      STD ,S
+$1445  26 F3                                      BNE $143A
+$1447  32 62                                      LEAS 2,S
+$1449  33 46                                      LEAU 6,U
+$144B  35 10                                      PULS X
+$144D  10 AE 81                                   LDY ,X++
+$1450  6E B4                                      JMP [,Y]
+$1452  A6 41                                      LDA 1,U
+$1454  84 0F                                      ANDA #$0F
+$1456  34 02                                      PSHS A
+$1458  EC 42                                      LDD 2,U
+$145A  6D E4                                      TST ,S
+$145C  27 06                                      BEQ $1464
+$145E  58                                         LSLB 
+$145F  49                                         ROLA 
+$1460  6A E4                                      DEC ,S
+$1462  26 FA                                      BNE $145E
+$1464  32 61                                      LEAS 1,S
+$1466  33 42                                      LEAU 2,U
+$1468  ED C4                                      STD ,U
+$146A  10 AE 81                                   LDY ,X++
+$146D  6E B4                                      JMP [,Y]
+$146F  A6 41                                      LDA 1,U
+$1471  84 0F                                      ANDA #$0F
+$1473  34 02                                      PSHS A
+$1475  EC 42                                      LDD 2,U
+$1477  6D E4                                      TST ,S
+$1479  27 06                                      BEQ $1481
+$147B  44                                         LSRA 
+$147C  56                                         RORB 
+$147D  6A E4                                      DEC ,S
+$147F  26 FA                                      BNE $147B
+$1481  32 61                                      LEAS 1,S
+$1483  33 42                                      LEAU 2,U
+$1485  ED C4                                      STD ,U
+$1487  10 AE 81                                   LDY ,X++
+$148A  6E B4                                      JMP [,Y]
+$148C  EC C4                                      LDD ,U
+$148E  10 A3 42                                   CMPD 2,U
+$1491  2F 02                                      BLE $1495
+$1493  EC 42                                      LDD 2,U
+$1495  33 42                                      LEAU 2,U
+$1497  ED C4                                      STD ,U
+$1499  10 AE 81                                   LDY ,X++
+$149C  6E B4                                      JMP [,Y]
+$149E  EC C4                                      LDD ,U
+$14A0  10 A3 42                                   CMPD 2,U
+$14A3  2C 02                                      BGE $14A7
+$14A5  EC 42                                      LDD 2,U
+$14A7  33 42                                      LEAU 2,U
+$14A9  ED C4                                      STD ,U
+$14AB  10 AE 81                                   LDY ,X++
+$14AE  6E B4                                      JMP [,Y]
+$14B0  EC C4                                      LDD ,U
+$14B2  2A 07                                      BPL $14BB
+$14B4  43                                         COMA 
+$14B5  53                                         COMB 
+$14B6  C3 00 01                                   ADDD #$0001
+$14B9  ED C4                                      STD ,U
+$14BB  10 AE 81                                   LDY ,X++
+$14BE  6E B4                                      JMP [,Y]
+$14C0  EC 42                                      LDD 2,U
+$14C2  10 A3 C4                                   CMPD ,U
+$14C5  25 05                                      BCS $14CC   ; C=1 (BLO)
+$14C7  CC 00 00                                   LDD #$0000
+$14CA  20 03                                      BRA $14CF
+$14CC  CC 00 01                                   LDD #$0001
+$14CF  33 42                                      LEAU 2,U
+$14D1  ED C4                                      STD ,U
+$14D3  10 AE 81                                   LDY ,X++
+$14D6  6E B4                                      JMP [,Y]
+$14D8  EC C4                                      LDD ,U
+$14DA  2A 04                                      BPL $14E0
+$14DC  4F                                         CLRA    ; A = 0
+$14DD  5F                                         CLRB    ; B = 0
+$14DE  ED C4                                      STD ,U
+$14E0  10 AE 81                                   LDY ,X++
+$14E3  6E B4                                      JMP [,Y]
+$14E5  EC C4                                      LDD ,U
+$14E7  58                                         LSLB 
+$14E8  49                                         ROLA 
+$14E9  ED C4                                      STD ,U
+$14EB  10 AE 81                                   LDY ,X++
+$14EE  6E B4                                      JMP [,Y]
+$14F0  EC C4                                      LDD ,U
+$14F2  47                                         ASRA 
+$14F3  56                                         RORB 
+$14F4  ED C4                                      STD ,U
+$14F6  10 AE 81                                   LDY ,X++
+$14F9  6E B4                                      JMP [,Y]
+$14FB  EC C4                                      LDD ,U
+$14FD  2B 06                                      BMI $1505
+$14FF  27 04                                      BEQ $1505
+$1501  4F                                         CLRA    ; A = 0
+$1502  5F                                         CLRB    ; B = 0
+$1503  ED C4                                      STD ,U
+$1505  10 AE 81                                   LDY ,X++
+$1508  6E B4                                      JMP [,Y]
+$150A  EC 42                                      LDD 2,U
+$150C  34 06                                      PSHS A,B
+$150E  EC C4                                      LDD ,U
+$1510  A3 E4                                      SUBD ,S
+$1512  34 06                                      PSHS A,B
+$1514  EC 46                                      LDD 6,U
+$1516  A3 62                                      SUBD 2,S
+$1518  10 A3 E4                                   CMPD ,S
+$151B  32 64                                      LEAS 4,S
+$151D  25 05                                      BCS $1524   ; C=1 (BLO)
+$151F  CC 00 00                                   LDD #$0000
+$1522  20 03                                      BRA $1527
+$1524  CC 00 01                                   LDD #$0001
+$1527  33 44                                      LEAU 4,U
+$1529  ED C4                                      STD ,U
+$152B  10 AE 81                                   LDY ,X++
+$152E  6E B4                                      JMP [,Y]
+$1530  34 10                                      PSHS X
+$1532  10 AE C4                                   LDY ,U
+$1535  AE 42                                      LDX 2,U
+$1537  33 42                                      LEAU 2,U
+$1539  A6 84                                      LDA ,X
+$153B  A0 A4                                      SUBA ,Y
+$153D  2A 01                                      BPL $1540
+$153F  40                                         NEGA 
+$1540  34 02                                      PSHS A
+$1542  A6 01                                      LDA 1,X
+$1544  A0 21                                      SUBA 1,Y
+$1546  2A 01                                      BPL $1549
+$1548  40                                         NEGA 
+$1549  AB E0                                      ADDA ,S+
+$154B  1F 89                                      TFR A,B
+$154D  4F                                         CLRA    ; A = 0
+$154E  ED C4                                      STD ,U
+$1550  35 10                                      PULS X
+$1552  10 AE 81                                   LDY ,X++
+$1555  6E B4                                      JMP [,Y]
+$1557  32 64                                      LEAS 4,S
+$1559  10 AE 81                                   LDY ,X++
+$155C  6E B4                                      JMP [,Y]
+$155E  EC C4                                      LDD ,U
+$1560  58                                         LSLB 
+$1561  49                                         ROLA 
+$1562  EC CB                                      LDD D,U
+$1564  ED C4                                      STD ,U
+$1566  10 AE 81                                   LDY ,X++
+$1569  6E B4                                      JMP [,Y]
+$156B  EC C4                                      LDD ,U
+$156D  43                                         COMA 
+$156E  53                                         COMB 
+$156F  ED C4                                      STD ,U
+$1571  10 AE 81                                   LDY ,X++
+$1574  6E B4                                      JMP [,Y]
+$1576  EC C4                                      LDD ,U
+$1578  A8 42                                      EORA 2,U
+$157A  E8 43                                      EORB 3,U
+$157C  33 42                                      LEAU 2,U
+$157E  ED C4                                      STD ,U
+$1580  10 AE 81                                   LDY ,X++
+$1583  6E B4                                      JMP [,Y]
+$1585  EC 64                                      LDD 4,S
+$1587  ED C3                                      STD ,--U
+$1589  10 AE 81                                   LDY ,X++
+$158C  6E B4                                      JMP [,Y]
+$158E  EC C4                                      LDD ,U
+$1590  33 42                                      LEAU 2,U
+$1592  34 06                                      PSHS A,B
+$1594  EC 62                                      LDD 2,S
+$1596  A3 64                                      SUBD 4,S
+$1598  1F 02                                      TFR D,Y
+$159A  EC E1                                      LDD ,S++
+$159C  E3 E4                                      ADDD ,S
+$159E  ED E4                                      STD ,S
+$15A0  A3 62                                      SUBD 2,S
+$15A2  34 02                                      PSHS A
+$15A4  1F 20                                      TFR Y,D
+$15A6  A8 E0                                      EORA ,S+
+$15A8  2B 0B                                      BMI $15B5
+$15AA  EC 84                                      LDD ,X
+$15AC  30 02                                      LEAX 2,X
+$15AE  30 8B                                      LEAX D,X
+$15B0  10 AE 81                                   LDY ,X++
+$15B3  6E B4                                      JMP [,Y]
+$15B5  32 64                                      LEAS 4,S
+$15B7  30 02                                      LEAX 2,X
+$15B9  10 AE 81                                   LDY ,X++
+$15BC  6E B4                                      JMP [,Y]
+$15BE  EC C4                                      LDD ,U
+$15C0  43                                         COMA 
+$15C1  53                                         COMB 
+$15C2  C3 00 01                                   ADDD #$0001
+$15C5  ED C4                                      STD ,U
+$15C7  10 AE 81                                   LDY ,X++
+$15CA  6E B4                                      JMP [,Y]
+$15CC  EC C4                                      LDD ,U
+$15CE  27 02                                      BEQ $15D2
+$15D0  ED C3                                      STD ,--U
+$15D2  10 AE 81                                   LDY ,X++
+$15D5  6E B4                                      JMP [,Y]
+$15D7  34 10                                      PSHS X
+$15D9  EC C4                                      LDD ,U
+$15DB  27 31                                      BEQ $160E
+$15DD  AE 42                                      LDX 2,U
+$15DF  34 06                                      PSHS A,B
+$15E1  A6 80                                      LDA ,X+
+$15E3  34 10                                      PSHS X
+$15E5  84 3F                                      ANDA #$3F
+$15E7  8A 40                                      ORA #$40
+$15E9  10 BE EF 03                                LDY $EF03
+$15ED  A7 A9 04 00                                STA 1024,Y
+$15F1  31 21                                      LEAY 1,Y
+$15F3  10 8C 02 00                                CMPY #$0200
+$15F7  25 04                                      BCS $15FD   ; C=1 (BLO)
+$15F9  10 8E 00 00                                LDY #$0000
+$15FD  10 BF EF 03                                STY $EF03
+$1601  35 10                                      PULS X
+$1603  EC E4                                      LDD ,S
+$1605  83 00 01                                   SUBD #$0001
+$1608  ED E4                                      STD ,S
+$160A  26 D5                                      BNE $15E1
+$160C  32 62                                      LEAS 2,S
+$160E  33 44                                      LEAU 4,U
+$1610  35 10                                      PULS X
+$1612  10 AE 81                                   LDY ,X++
+$1615  6E B4                                      JMP [,Y]
+$1617  10 AE C4                                   LDY ,U
+$161A  E6 A0                                      LDB ,Y+
+$161C  10 AF C4                                   STY ,U
+$161F  4F                                         CLRA    ; A = 0
+$1620  ED C3                                      STD ,--U
+$1622  10 AE 81                                   LDY ,X++
+$1625  6E B4                                      JMP [,Y]
+$1627  10 AE C1                                   LDY ,U++
+$162A  EC C1                                      LDD ,U++
+$162C  E3 A4                                      ADDD ,Y
+$162E  ED A4                                      STD ,Y
+$1630  10 AE 81                                   LDY ,X++
+$1633  6E B4                                      JMP [,Y]
+$1635  33 44                                      LEAU 4,U
+$1637  10 AE 81                                   LDY ,X++
+$163A  6E B4                                      JMP [,Y]
+$163C  EC 42                                      LDD 2,U
+$163E  ED C3                                      STD ,--U
+$1640  EC 42                                      LDD 2,U
+$1642  ED C3                                      STD ,--U
+$1644  10 AE 81                                   LDY ,X++
+$1647  6E B4                                      JMP [,Y]
+$1649  EC 44                                      LDD 4,U
+$164B  10 AE 42                                   LDY 2,U
+$164E  10 AF 44                                   STY 4,U
+$1651  10 AE C4                                   LDY ,U
+$1654  10 AF 42                                   STY 2,U
+$1657  ED C4                                      STD ,U
+$1659  10 AE 81                                   LDY ,X++
+$165C  6E B4                                      JMP [,Y]
+$165E  34 10                                      PSHS X
+$1660  E6 41                                      LDB 1,U
+$1662  27 4F                                      BEQ $16B3
+$1664  AE 42                                      LDX 2,U
+$1666  A6 45                                      LDA 5,U
+$1668  34 02                                      PSHS A
+$166A  A6 47                                      LDA 7,U
+$166C  34 02                                      PSHS A
+$166E  A6 49                                      LDA 9,U
+$1670  34 02                                      PSHS A
+$1672  33 4A                                      LEAU 10,U
+$1674  34 04                                      PSHS B
+$1676  10 8E 00 00                                LDY #$0000
+$167A  CC 00 01                                   LDD #$0001
+$167D  34 06                                      PSHS A,B
+$167F  A6 80                                      LDA ,X+
+$1681  A0 63                                      SUBA 3,S
+$1683  2A 01                                      BPL $1686
+$1685  40                                         NEGA 
+$1686  E6 80                                      LDB ,X+
+$1688  E0 64                                      SUBB 4,S
+$168A  2A 01                                      BPL $168D
+$168C  50                                         NEGB 
+$168D  34 02                                      PSHS A
+$168F  EB E0                                      ADDB ,S+
+$1691  25 0C                                      BCS $169F   ; C=1 (BLO)
+$1693  E1 65                                      CMPB 5,S
+$1695  24 08                                      BCC $169F   ; C=0 (BHS)
+$1697  1F 20                                      TFR Y,D
+$1699  AA E4                                      ORA ,S
+$169B  EA 61                                      ORB 1,S
+$169D  1F 02                                      TFR D,Y
+$169F  68 61                                      LSL 1,S
+$16A1  69 E4                                      ROL ,S
+$16A3  6A 62                                      DEC 2,S
+$16A5  26 D8                                      BNE $167F
+$16A7  32 66                                      LEAS 6,S
+$16A9  10 AF C3                                   STY ,--U
+$16AC  35 10                                      PULS X
+$16AE  10 AE 81                                   LDY ,X++
+$16B1  6E B4                                      JMP [,Y]
+$16B3  33 4A                                      LEAU 10,U
+$16B5  CC 00 00                                   LDD #$0000
+$16B8  ED C3                                      STD ,--U
+$16BA  35 10                                      PULS X
+$16BC  10 AE 81                                   LDY ,X++
+$16BF  6E B4                                      JMP [,Y]
+$16C1  EC C1                                      LDD ,U++
+$16C3  34 06                                      PSHS A,B
+$16C5  10 AE 81                                   LDY ,X++
+$16C8  6E B4                                      JMP [,Y]
+$16CA  35 06                                      PULS A,B
+$16CC  ED C3                                      STD ,--U
+$16CE  10 AE 81                                   LDY ,X++
+$16D1  6E B4                                      JMP [,Y]
+$16D3  EC E4                                      LDD ,S
+$16D5  ED C3                                      STD ,--U
+$16D7  10 AE 81                                   LDY ,X++
+$16DA  6E B4                                      JMP [,Y]
+$16DC  20 FE                                      BRA $16DC
+$16DE  4F                                         CLRA    ; A = 0
+$16DF  1F 8B                                      TFR A,DP
+$16E1  10 CE E0 00                                LDS #$E000
+$16E5  CE DE 00                                   LDU #$DE00
+$16E8  7F FF 01                                   CLR $FF01
+$16EB  7F FF 00                                   CLR $FF00
+$16EE  86 04                                      LDA #$04
+$16F0  B7 FF 01                                   STA $FF01
+$16F3  7F FF 03                                   CLR $FF03
+$16F6  86 FF                                      LDA #$FF
+$16F8  B7 FF 02                                   STA $FF02
+$16FB  86 04                                      LDA #$04
+$16FD  B7 FF 03                                   STA $FF03
+$1700  86 FF                                      LDA #$FF
+$1702  B7 FF 02                                   STA $FF02
+$1705  8E 04 00                                   LDX #$0400
+$1708  C6 60                                      LDB #$60   ; B = '`'
+$170A  E7 80                                      STB ,X+
+$170C  8C 06 00                                   CMPX #$0600
+$170F  26 F9                                      BNE $170A
+$1711  4F                                         CLRA    ; A = 0
+$1712  5F                                         CLRB    ; B = 0
+$1713  FD EF 03                                   STD $EF03
+$1716  8E 20 00                                   LDX #$2000
+$1719  10 AE 81                                   LDY ,X++
+$171C  6E B4                                      JMP [,Y]
+$171E  E9 07                                      ADCB 7,X
+$1720  34 10                                      PSHS X
+$1722  B6 FF 03                                   LDA $FF03
+$1725  2A FB                                      BPL $1722
+$1727  B6 FF 02                                   LDA $FF02
+$172A  35 10                                      PULS X
+$172C  10 AE 81                                   LDY ,X++
+$172F  6E B4                                      JMP [,Y]
+$1731  E9 1A                                      ADCB -6,X
+$1733  34 10                                      PSHS X
+$1735  E6 41                                      LDB 1,U
+$1737  33 42                                      LEAU 2,U
+$1739  CB 46                                      ADDB #$46
+$173B  27 0E                                      BEQ $174B
+$173D  B6 FF 00                                   LDA $FF00
+$1740  B6 FF 01                                   LDA $FF01
+$1743  2A FB                                      BPL $1740
+$1745  B6 FF 00                                   LDA $FF00
+$1748  5A                                         DECB 
+$1749  26 F5                                      BNE $1740
+$174B  35 10                                      PULS X
+$174D  10 AE 81                                   LDY ,X++
+$1750  6E B4                                      JMP [,Y]
+$1752  E9 3B                                      ADCB -5,Y
+$1754  34 10                                      PSHS X
+$1756  B6 FF 03                                   LDA $FF03
+$1759  2A FB                                      BPL $1756
+$175B  B6 FF 02                                   LDA $FF02
+$175E  4F                                         CLRA    ; A = 0
+$175F  5F                                         CLRB    ; B = 0
+$1760  10 8E 00 64                                LDY #$0064
+$1764  B6 FF 01                                   LDA $FF01
+$1767  2A FB                                      BPL $1764
+$1769  B6 FF 00                                   LDA $FF00
+$176C  C3 00 01                                   ADDD #$0001
+$176F  31 3F                                      LEAY -1,Y
+$1771  26 F1                                      BNE $1764
+$1773  33 5E                                      LEAU -2,U
+$1775  ED C4                                      STD ,U
+$1777  35 10                                      PULS X
+$1779  10 AE 81                                   LDY ,X++
+$177C  6E B4                                      JMP [,Y]
+$177E  E9 67                                      ADCB 7,S
+$1780  A6 45                                      LDA 5,U
+$1782  E6 43                                      LDB 3,U
+$1784  34 02                                      PSHS A
+$1786  86 20                                      LDA #$20   ; A = ' '
+$1788  3D                                         MUL    ; D = A×B unsigned
+$1789  F3 EF 0A                                   ADDD $EF0A
+$178C  1F 02                                      TFR D,Y
+$178E  A6 E4                                      LDA ,S
+$1790  44                                         LSRA 
+$1791  44                                         LSRA 
+$1792  31 A6                                      LEAY A,Y
+$1794  A6 E0                                      LDA ,S+
+$1796  84 03                                      ANDA #$03
+$1798  48                                         LSLA 
+$1799  40                                         NEGA 
+$179A  8B 06                                      ADDA #$06
+$179C  34 02                                      PSHS A
+$179E  A6 41                                      LDA 1,U
+$17A0  84 03                                      ANDA #$03
+$17A2  E6 E4                                      LDB ,S
+$17A4  27 04                                      BEQ $17AA
+$17A6  48                                         LSLA 
+$17A7  5A                                         DECB 
+$17A8  26 FC                                      BNE $17A6
+$17AA  34 02                                      PSHS A
+$17AC  86 03                                      LDA #$03
+$17AE  E6 61                                      LDB 1,S
+$17B0  27 04                                      BEQ $17B6
+$17B2  48                                         LSLA 
+$17B3  5A                                         DECB 
+$17B4  26 FC                                      BNE $17B2
+$17B6  43                                         COMA 
+$17B7  A4 A4                                      ANDA ,Y
+$17B9  AA E4                                      ORA ,S
+$17BB  A7 A4                                      STA ,Y
+$17BD  32 62                                      LEAS 2,S
+$17BF  33 46                                      LEAU 6,U
+$17C1  10 AE 81                                   LDY ,X++
+$17C4  6E B4                                      JMP [,Y]
+$17C6  E9 AF 34 10                                ADCB [$3410]
+$17CA  A6 41                                      LDA 1,U
+$17CC  B7 EF 18                                   STA $EF18
+$17CF  A6 45                                      LDA 5,U
+$17D1  B7 EF 0E                                   STA $EF0E
+$17D4  A6 43                                      LDA 3,U
+$17D6  B7 EF 0F                                   STA $EF0F
+$17D9  A6 49                                      LDA 9,U
+$17DB  B7 EF 0C                                   STA $EF0C
+$17DE  A6 47                                      LDA 7,U
+$17E0  B7 EF 0D                                   STA $EF0D
+$17E3  33 4A                                      LEAU 10,U
+$17E5  4F                                         CLRA    ; A = 0
+$17E6  F6 EF 0C                                   LDB $EF0C
+$17E9  34 06                                      PSHS A,B
+$17EB  4F                                         CLRA    ; A = 0
+$17EC  F6 EF 0E                                   LDB $EF0E
+$17EF  A3 E1                                      SUBD ,S++
+$17F1  2A 0F                                      BPL $1802
+$17F3  43                                         COMA 
+$17F4  53                                         COMB 
+$17F5  C3 00 01                                   ADDD #$0001
+$17F8  F7 EF 12                                   STB $EF12
+$17FB  86 FF                                      LDA #$FF
+$17FD  B7 EF 10                                   STA $EF10
+$1800  20 08                                      BRA $180A
+$1802  F7 EF 12                                   STB $EF12
+$1805  86 01                                      LDA #$01
+$1807  B7 EF 10                                   STA $EF10
+$180A  4F                                         CLRA    ; A = 0
+$180B  F6 EF 0D                                   LDB $EF0D
+$180E  34 06                                      PSHS A,B
+$1810  4F                                         CLRA    ; A = 0
+$1811  F6 EF 0F                                   LDB $EF0F
+$1814  A3 E1                                      SUBD ,S++
+$1816  2A 0F                                      BPL $1827
+$1818  43                                         COMA 
+$1819  53                                         COMB 
+$181A  C3 00 01                                   ADDD #$0001
+$181D  F7 EF 13                                   STB $EF13
+$1820  86 FF                                      LDA #$FF
+$1822  B7 EF 11                                   STA $EF11
+$1825  20 08                                      BRA $182F
+$1827  F7 EF 13                                   STB $EF13
+$182A  86 01                                      LDA #$01
+$182C  B7 EF 11                                   STA $EF11
+$182F  4F                                         CLRA    ; A = 0
+$1830  F6 EF 12                                   LDB $EF12
+$1833  FD EF 14                                   STD $EF14
+$1836  4F                                         CLRA    ; A = 0
+$1837  F6 EF 13                                   LDB $EF13
+$183A  34 06                                      PSHS A,B
+$183C  FC EF 14                                   LDD $EF14
+$183F  A3 E1                                      SUBD ,S++
+$1841  FD EF 14                                   STD $EF14
+$1844  B6 EF 0D                                   LDA $EF0D
+$1847  C6 20                                      LDB #$20   ; B = SS.ScSiz  (GetStt/SetStt subcode)
+$1849  3D                                         MUL    ; D = A×B unsigned
+$184A  F3 EF 0A                                   ADDD $EF0A
+$184D  1F 02                                      TFR D,Y
+$184F  B6 EF 0C                                   LDA $EF0C
+$1852  44                                         LSRA 
+$1853  44                                         LSRA 
+$1854  31 A6                                      LEAY A,Y
+$1856  B6 EF 0C                                   LDA $EF0C
+$1859  84 03                                      ANDA #$03
+$185B  48                                         LSLA 
+$185C  40                                         NEGA 
+$185D  8B 06                                      ADDA #$06
+$185F  34 02                                      PSHS A
+$1861  B6 EF 18                                   LDA $EF18
+$1864  84 03                                      ANDA #$03
+$1866  E6 E4                                      LDB ,S
+$1868  27 04                                      BEQ $186E
+$186A  48                                         LSLA 
+$186B  5A                                         DECB 
+$186C  26 FC                                      BNE $186A
+$186E  34 02                                      PSHS A
+$1870  86 03                                      LDA #$03
+$1872  E6 61                                      LDB 1,S
+$1874  27 04                                      BEQ $187A
+$1876  48                                         LSLA 
+$1877  5A                                         DECB 
+$1878  26 FC                                      BNE $1876
+$187A  43                                         COMA 
+$187B  A4 A4                                      ANDA ,Y
+$187D  AA E4                                      ORA ,S
+$187F  A7 A4                                      STA ,Y
+$1881  32 62                                      LEAS 2,S
+$1883  B6 EF 0C                                   LDA $EF0C
+$1886  B1 EF 0E                                   CMPA $EF0E
+$1889  26 08                                      BNE $1893
+$188B  B6 EF 0D                                   LDA $EF0D
+$188E  B1 EF 0F                                   CMPA $EF0F
+$1891  27 4E                                      BEQ $18E1
+$1893  FC EF 14                                   LDD $EF14
+$1896  58                                         LSLB 
+$1897  49                                         ROLA 
+$1898  FD EF 16                                   STD $EF16
+$189B  4F                                         CLRA    ; A = 0
+$189C  F6 EF 13                                   LDB $EF13
+$189F  43                                         COMA 
+$18A0  53                                         COMB 
+$18A1  C3 00 01                                   ADDD #$0001
+$18A4  10 B3 EF 16                                CMPD $EF16
+$18A8  2C 17                                      BGE $18C1
+$18AA  4F                                         CLRA    ; A = 0
+$18AB  F6 EF 13                                   LDB $EF13
+$18AE  34 06                                      PSHS A,B
+$18B0  FC EF 14                                   LDD $EF14
+$18B3  A3 E1                                      SUBD ,S++
+$18B5  FD EF 14                                   STD $EF14
+$18B8  B6 EF 0C                                   LDA $EF0C
+$18BB  BB EF 10                                   ADDA $EF10
+$18BE  B7 EF 0C                                   STA $EF0C
+$18C1  4F                                         CLRA    ; A = 0
+$18C2  F6 EF 12                                   LDB $EF12
+$18C5  10 B3 EF 16                                CMPD $EF16
+$18C9  2F 13                                      BLE $18DE
+$18CB  4F                                         CLRA    ; A = 0
+$18CC  F6 EF 12                                   LDB $EF12
+$18CF  F3 EF 14                                   ADDD $EF14
+$18D2  FD EF 14                                   STD $EF14
+$18D5  B6 EF 0D                                   LDA $EF0D
+$18D8  BB EF 11                                   ADDA $EF11
+$18DB  B7 EF 0D                                   STA $EF0D
+$18DE  16 FF 63                                   LBRA $1844
+$18E1  35 10                                      PULS X
+$18E3  10 AE 81                                   LDY ,X++
+$18E6  6E B4                                      JMP [,Y]
+$18E8  EA D1                                      ORB [,U++]
+$18EA  34 10                                      PSHS X
+$18EC  A6 43                                      LDA 3,U
+$18EE  B7 EF 1B                                   STA $EF1B
+$18F1  A6 41                                      LDA 1,U
+$18F3  B7 EF 1C                                   STA $EF1C
+$18F6  10 AE 44                                   LDY 4,U
+$18F9  33 46                                      LEAU 6,U
+$18FB  A6 A4                                      LDA ,Y
+$18FD  B7 EF 1D                                   STA $EF1D
+$1900  A6 21                                      LDA 1,Y
+$1902  B7 EF 1E                                   STA $EF1E
+$1905  31 22                                      LEAY 2,Y
+$1907  10 BF EF 19                                STY $EF19
+$190B  B6 EF 1D                                   LDA $EF1D
+$190E  8B 03                                      ADDA #$03
+$1910  44                                         LSRA 
+$1911  44                                         LSRA 
+$1912  B7 EF 1F                                   STA $EF1F
+$1915  7F EF 20                                   CLR $EF20
+$1918  B6 EF 1C                                   LDA $EF1C
+$191B  BB EF 20                                   ADDA $EF20
+$191E  C6 20                                      LDB #$20   ; B = SS.ScSiz  (GetStt/SetStt subcode)
+$1920  3D                                         MUL    ; D = A×B unsigned
+$1921  F3 EF 0A                                   ADDD $EF0A
+$1924  FD EF 22                                   STD $EF22
+$1927  B6 EF 20                                   LDA $EF20
+$192A  F6 EF 1F                                   LDB $EF1F
+$192D  3D                                         MUL    ; D = A×B unsigned
+$192E  F3 EF 19                                   ADDD $EF19
+$1931  FD EF 24                                   STD $EF24
+$1934  7F EF 21                                   CLR $EF21
+$1937  B6 EF 21                                   LDA $EF21
+$193A  44                                         LSRA 
+$193B  44                                         LSRA 
+$193C  10 BE EF 24                                LDY $EF24
+$1940  A6 A6                                      LDA A,Y
+$1942  F6 EF 21                                   LDB $EF21
+$1945  C4 03                                      ANDB #$03
+$1947  58                                         LSLB 
+$1948  50                                         NEGB 
+$1949  CB 06                                      ADDB #$06
+$194B  F7 EF 27                                   STB $EF27
+$194E  5D                                         TSTB 
+$194F  27 04                                      BEQ $1955
+$1951  44                                         LSRA 
+$1952  5A                                         DECB 
+$1953  26 FC                                      BNE $1951
+$1955  84 03                                      ANDA #$03
+$1957  27 41                                      BEQ $199A
+$1959  34 02                                      PSHS A
+$195B  B6 EF 1B                                   LDA $EF1B
+$195E  BB EF 21                                   ADDA $EF21
+$1961  34 02                                      PSHS A
+$1963  44                                         LSRA 
+$1964  44                                         LSRA 
+$1965  10 BE EF 22                                LDY $EF22
+$1969  31 A6                                      LEAY A,Y
+$196B  A6 E0                                      LDA ,S+
+$196D  84 03                                      ANDA #$03
+$196F  48                                         LSLA 
+$1970  40                                         NEGA 
+$1971  8B 06                                      ADDA #$06
+$1973  E6 E4                                      LDB ,S
+$1975  4D                                         TSTA 
+$1976  27 04                                      BEQ $197C
+$1978  58                                         LSLB 
+$1979  4A                                         DECA 
+$197A  26 FC                                      BNE $1978
+$197C  E7 E4                                      STB ,S
+$197E  B6 EF 1B                                   LDA $EF1B
+$1981  BB EF 21                                   ADDA $EF21
+$1984  84 03                                      ANDA #$03
+$1986  48                                         LSLA 
+$1987  40                                         NEGA 
+$1988  8B 06                                      ADDA #$06
+$198A  C6 03                                      LDB #$03   ; B = SS.Reset  (GetStt/SetStt subcode)
+$198C  4D                                         TSTA 
+$198D  27 04                                      BEQ $1993
+$198F  58                                         LSLB 
+$1990  4A                                         DECA 
+$1991  26 FC                                      BNE $198F
+$1993  53                                         COMB 
+$1994  E4 A4                                      ANDB ,Y
+$1996  EA E0                                      ORB ,S+
+$1998  E7 A4                                      STB ,Y
+$199A  7C EF 21                                   INC $EF21
+$199D  B6 EF 21                                   LDA $EF21
+$19A0  B1 EF 1D                                   CMPA $EF1D
+$19A3  26 92                                      BNE $1937
+$19A5  7C EF 20                                   INC $EF20
+$19A8  B6 EF 20                                   LDA $EF20
+$19AB  B1 EF 1E                                   CMPA $EF1E
+$19AE  10 26 FF 66                                LBNE $1918
+$19B2  35 10                                      PULS X
+$19B4  10 AE 81                                   LDY ,X++
+$19B7  6E B4                                      JMP [,Y]
+$19B9  EB A2                                      ADDB ,-Y
+$19BB  34 10                                      PSHS X
+$19BD  A6 43                                      LDA 3,U
+$19BF  B7 EF 1B                                   STA $EF1B
+$19C2  A6 41                                      LDA 1,U
+$19C4  B7 EF 1C                                   STA $EF1C
+$19C7  10 AE 44                                   LDY 4,U
+$19CA  33 46                                      LEAU 6,U
+$19CC  A6 A4                                      LDA ,Y
+$19CE  B7 EF 1D                                   STA $EF1D
+$19D1  A6 21                                      LDA 1,Y
+$19D3  B7 EF 1E                                   STA $EF1E
+$19D6  7F EF 20                                   CLR $EF20
+$19D9  B6 EF 1C                                   LDA $EF1C
+$19DC  BB EF 20                                   ADDA $EF20
+$19DF  C6 20                                      LDB #$20   ; B = SS.ScSiz  (GetStt/SetStt subcode)
+$19E1  3D                                         MUL    ; D = A×B unsigned
+$19E2  F3 EF 0A                                   ADDD $EF0A
+$19E5  FD EF 22                                   STD $EF22
+$19E8  7F EF 21                                   CLR $EF21
+$19EB  B6 EF 1B                                   LDA $EF1B
+$19EE  BB EF 21                                   ADDA $EF21
+$19F1  34 02                                      PSHS A
+$19F3  44                                         LSRA 
+$19F4  44                                         LSRA 
+$19F5  10 BE EF 22                                LDY $EF22
+$19F9  31 A6                                      LEAY A,Y
+$19FB  A6 E0                                      LDA ,S+
+$19FD  84 03                                      ANDA #$03
+$19FF  48                                         LSLA 
+$1A00  40                                         NEGA 
+$1A01  8B 06                                      ADDA #$06
+$1A03  C6 03                                      LDB #$03   ; B = SS.Reset  (GetStt/SetStt subcode)
+$1A05  4D                                         TSTA 
+$1A06  27 04                                      BEQ $1A0C
+$1A08  58                                         LSLB 
+$1A09  4A                                         DECA 
+$1A0A  26 FC                                      BNE $1A08
+$1A0C  53                                         COMB 
+$1A0D  E4 A4                                      ANDB ,Y
+$1A0F  E7 A4                                      STB ,Y
+$1A11  7C EF 21                                   INC $EF21
+$1A14  B6 EF 21                                   LDA $EF21
+$1A17  B1 EF 1D                                   CMPA $EF1D
+$1A1A  26 CF                                      BNE $19EB
+$1A1C  7C EF 20                                   INC $EF20
+$1A1F  B6 EF 20                                   LDA $EF20
+$1A22  B1 EF 1E                                   CMPA $EF1E
+$1A25  10 26 FF B0                                LBNE $19D9
+$1A29  35 10                                      PULS X
+$1A2B  10 AE 81                                   LDY ,X++
+$1A2E  6E B4                                      JMP [,Y]
+$1A30  EC 19                                      LDD -7,X
+$1A32  34 10                                      PSHS X
+$1A34  A6 41                                      LDA 1,U
+$1A36  F6 EF 2E                                   LDB $EF2E
+$1A39  3D                                         MUL    ; D = A×B unsigned
+$1A3A  1F 98                                      TFR B,A
+$1A3C  F6 EF 2D                                   LDB $EF2D
+$1A3F  3D                                         MUL    ; D = A×B unsigned
+$1A40  EB 43                                      ADDB 3,U
+$1A42  89 00                                      ADCA #$00
+$1A44  F3 EF 0A                                   ADDD $EF0A
+$1A47  34 06                                      PSHS A,B
+$1A49  A6 45                                      LDA 5,U
+$1A4B  B1 EF 2A                                   CMPA $EF2A
+$1A4E  24 03                                      BCC $1A53   ; C=0 (BHS)
+$1A50  B6 EF 2A                                   LDA $EF2A
+$1A53  B0 EF 2A                                   SUBA $EF2A
+$1A56  F6 EF 2B                                   LDB $EF2B
+$1A59  3D                                         MUL    ; D = A×B unsigned
+$1A5A  F3 EF 28                                   ADDD $EF28
+$1A5D  1F 02                                      TFR D,Y
+$1A5F  F6 EF 2C                                   LDB $EF2C
+$1A62  AE E1                                      LDX ,S++
+$1A64  A6 A0                                      LDA ,Y+
+$1A66  A7 84                                      STA ,X
+$1A68  B6 EF 2D                                   LDA $EF2D
+$1A6B  30 86                                      LEAX A,X
+$1A6D  5A                                         DECB 
+$1A6E  26 F4                                      BNE $1A64
+$1A70  33 46                                      LEAU 6,U
+$1A72  35 10                                      PULS X
+$1A74  10 AE 81                                   LDY ,X++
+$1A77  6E B4                                      JMP [,Y]
+$1A79  EC 62                                      LDD 2,S
+$1A7B  34 10                                      PSHS X
+$1A7D  EC C4                                      LDD ,U
+$1A7F  FD EF 2F                                   STD $EF2F
+$1A82  A6 45                                      LDA 5,U
+$1A84  B7 EF 0E                                   STA $EF0E
+$1A87  A6 43                                      LDA 3,U
+$1A89  B7 EF 0F                                   STA $EF0F
+$1A8C  A6 49                                      LDA 9,U
+$1A8E  B7 EF 0C                                   STA $EF0C
+$1A91  A6 47                                      LDA 7,U
+$1A93  B7 EF 0D                                   STA $EF0D
+$1A96  33 4A                                      LEAU 10,U
+$1A98  CC 00 00                                   LDD #$0000
+$1A9B  FD EF 33                                   STD $EF33
+$1A9E  4F                                         CLRA    ; A = 0
+$1A9F  F6 EF 0C                                   LDB $EF0C
+$1AA2  34 06                                      PSHS A,B
+$1AA4  4F                                         CLRA    ; A = 0
+$1AA5  F6 EF 0E                                   LDB $EF0E
+$1AA8  A3 E1                                      SUBD ,S++
+$1AAA  2A 0F                                      BPL $1ABB
+$1AAC  43                                         COMA 
+$1AAD  53                                         COMB 
+$1AAE  C3 00 01                                   ADDD #$0001
+$1AB1  F7 EF 12                                   STB $EF12
+$1AB4  86 FF                                      LDA #$FF
+$1AB6  B7 EF 10                                   STA $EF10
+$1AB9  20 08                                      BRA $1AC3
+$1ABB  F7 EF 12                                   STB $EF12
+$1ABE  86 01                                      LDA #$01
+$1AC0  B7 EF 10                                   STA $EF10
+$1AC3  4F                                         CLRA    ; A = 0
+$1AC4  F6 EF 0D                                   LDB $EF0D
+$1AC7  34 06                                      PSHS A,B
+$1AC9  4F                                         CLRA    ; A = 0
+$1ACA  F6 EF 0F                                   LDB $EF0F
+$1ACD  A3 E1                                      SUBD ,S++
+$1ACF  2A 0F                                      BPL $1AE0
+$1AD1  43                                         COMA 
+$1AD2  53                                         COMB 
+$1AD3  C3 00 01                                   ADDD #$0001
+$1AD6  F7 EF 13                                   STB $EF13
+$1AD9  86 FF                                      LDA #$FF
+$1ADB  B7 EF 11                                   STA $EF11
+$1ADE  20 08                                      BRA $1AE8
+$1AE0  F7 EF 13                                   STB $EF13
+$1AE3  86 01                                      LDA #$01
+$1AE5  B7 EF 11                                   STA $EF11
+$1AE8  4F                                         CLRA    ; A = 0
+$1AE9  F6 EF 12                                   LDB $EF12
+$1AEC  FD EF 14                                   STD $EF14
+$1AEF  4F                                         CLRA    ; A = 0
+$1AF0  F6 EF 13                                   LDB $EF13
+$1AF3  34 06                                      PSHS A,B
+$1AF5  FC EF 14                                   LDD $EF14
+$1AF8  A3 E1                                      SUBD ,S++
+$1AFA  FD EF 14                                   STD $EF14
+$1AFD  B6 EF 0D                                   LDA $EF0D
+$1B00  C6 20                                      LDB #$20   ; B = SS.ScSiz  (GetStt/SetStt subcode)
+$1B02  3D                                         MUL    ; D = A×B unsigned
+$1B03  F3 EF 0A                                   ADDD $EF0A
+$1B06  1F 02                                      TFR D,Y
+$1B08  B6 EF 0C                                   LDA $EF0C
+$1B0B  44                                         LSRA 
+$1B0C  44                                         LSRA 
+$1B0D  31 A6                                      LEAY A,Y
+$1B0F  B6 EF 0C                                   LDA $EF0C
+$1B12  84 03                                      ANDA #$03
+$1B14  48                                         LSLA 
+$1B15  40                                         NEGA 
+$1B16  8B 06                                      ADDA #$06
+$1B18  E6 A4                                      LDB ,Y
+$1B1A  34 02                                      PSHS A
+$1B1C  27 04                                      BEQ $1B22
+$1B1E  54                                         LSRB 
+$1B1F  4A                                         DECA 
+$1B20  26 FC                                      BNE $1B1E
+$1B22  C4 03                                      ANDB #$03
+$1B24  32 61                                      LEAS 1,S
+$1B26  10 BE EF 2F                                LDY $EF2F
+$1B2A  B6 EF 0C                                   LDA $EF0C
+$1B2D  A7 A0                                      STA ,Y+
+$1B2F  B6 EF 0D                                   LDA $EF0D
+$1B32  A7 A0                                      STA ,Y+
+$1B34  E7 A0                                      STB ,Y+
+$1B36  10 BF EF 2F                                STY $EF2F
+$1B3A  FC EF 33                                   LDD $EF33
+$1B3D  C3 00 01                                   ADDD #$0001
+$1B40  FD EF 33                                   STD $EF33
+$1B43  10 83 00 C8                                CMPD #$00C8
+$1B47  24 5E                                      BCC $1BA7   ; C=0 (BHS)
+$1B49  B6 EF 0C                                   LDA $EF0C
+$1B4C  B1 EF 0E                                   CMPA $EF0E
+$1B4F  26 08                                      BNE $1B59
+$1B51  B6 EF 0D                                   LDA $EF0D
+$1B54  B1 EF 0F                                   CMPA $EF0F
+$1B57  27 4E                                      BEQ $1BA7
+$1B59  FC EF 14                                   LDD $EF14
+$1B5C  58                                         LSLB 
+$1B5D  49                                         ROLA 
+$1B5E  FD EF 16                                   STD $EF16
+$1B61  4F                                         CLRA    ; A = 0
+$1B62  F6 EF 13                                   LDB $EF13
+$1B65  43                                         COMA 
+$1B66  53                                         COMB 
+$1B67  C3 00 01                                   ADDD #$0001
+$1B6A  10 B3 EF 16                                CMPD $EF16
+$1B6E  2C 17                                      BGE $1B87
+$1B70  4F                                         CLRA    ; A = 0
+$1B71  F6 EF 13                                   LDB $EF13
+$1B74  34 06                                      PSHS A,B
+$1B76  FC EF 14                                   LDD $EF14
+$1B79  A3 E1                                      SUBD ,S++
+$1B7B  FD EF 14                                   STD $EF14
+$1B7E  B6 EF 0C                                   LDA $EF0C
+$1B81  BB EF 10                                   ADDA $EF10
+$1B84  B7 EF 0C                                   STA $EF0C
+$1B87  4F                                         CLRA    ; A = 0
+$1B88  F6 EF 12                                   LDB $EF12
+$1B8B  10 B3 EF 16                                CMPD $EF16
+$1B8F  2F 13                                      BLE $1BA4
+$1B91  4F                                         CLRA    ; A = 0
+$1B92  F6 EF 12                                   LDB $EF12
+$1B95  F3 EF 14                                   ADDD $EF14
+$1B98  FD EF 14                                   STD $EF14
+$1B9B  B6 EF 0D                                   LDA $EF0D
+$1B9E  BB EF 11                                   ADDA $EF11
+$1BA1  B7 EF 0D                                   STA $EF0D
+$1BA4  16 FF 56                                   LBRA $1AFD
+$1BA7  FC EF 33                                   LDD $EF33
+$1BAA  ED C3                                      STD ,--U
+$1BAC  35 10                                      PULS X
+$1BAE  10 AE 81                                   LDY ,X++
+$1BB1  6E B4                                      JMP [,Y]
+$1BB3  ED 9C 34                                   STD [+52,PC]
+$1BB6  10 A6                                      FCB $10,$A6   ; unknown opcode $10A6
+$1BB8  41                                         FCB $41   ; undefined opcode $41 -- not a valid 6809 instruction
+$1BB9  84 03                                      ANDA #$03
+$1BBB  B7 EF 18                                   STA $EF18
+$1BBE  EC 42                                      LDD 2,U
+$1BC0  FD EF 33                                   STD $EF33
+$1BC3  EC 44                                      LDD 4,U
+$1BC5  34 06                                      PSHS A,B
+$1BC7  58                                         LSLB 
+$1BC8  49                                         ROLA 
+$1BC9  E3 E1                                      ADDD ,S++
+$1BCB  E3 46                                      ADDD 6,U
+$1BCD  FD EF 2F                                   STD $EF2F
+$1BD0  33 48                                      LEAU 8,U
+$1BD2  FC EF 33                                   LDD $EF33
+$1BD5  27 52                                      BEQ $1C29
+$1BD7  BE EF 2F                                   LDX $EF2F
+$1BDA  A6 84                                      LDA ,X
+$1BDC  E6 01                                      LDB 1,X
+$1BDE  34 10                                      PSHS X
+$1BE0  34 02                                      PSHS A
+$1BE2  86 20                                      LDA #$20   ; A = ' '
+$1BE4  3D                                         MUL    ; D = A×B unsigned
+$1BE5  F3 EF 0A                                   ADDD $EF0A
+$1BE8  1F 02                                      TFR D,Y
+$1BEA  A6 E4                                      LDA ,S
+$1BEC  44                                         LSRA 
+$1BED  44                                         LSRA 
+$1BEE  31 A6                                      LEAY A,Y
+$1BF0  A6 E0                                      LDA ,S+
+$1BF2  84 03                                      ANDA #$03
+$1BF4  48                                         LSLA 
+$1BF5  40                                         NEGA 
+$1BF6  8B 06                                      ADDA #$06
+$1BF8  34 02                                      PSHS A
+$1BFA  B6 EF 18                                   LDA $EF18
+$1BFD  E6 E4                                      LDB ,S
+$1BFF  27 04                                      BEQ $1C05
+$1C01  48                                         LSLA 
+$1C02  5A                                         DECB 
+$1C03  26 FC                                      BNE $1C01
+$1C05  34 02                                      PSHS A
+$1C07  86 03                                      LDA #$03
+$1C09  E6 61                                      LDB 1,S
+$1C0B  27 04                                      BEQ $1C11
+$1C0D  48                                         LSLA 
+$1C0E  5A                                         DECB 
+$1C0F  26 FC                                      BNE $1C0D
+$1C11  43                                         COMA 
+$1C12  A4 A4                                      ANDA ,Y
+$1C14  AA E4                                      ORA ,S
+$1C16  A7 A4                                      STA ,Y
+$1C18  32 62                                      LEAS 2,S
+$1C1A  35 10                                      PULS X
+$1C1C  30 03                                      LEAX 3,X
+$1C1E  FC EF 33                                   LDD $EF33
+$1C21  83 00 01                                   SUBD #$0001
+$1C24  FD EF 33                                   STD $EF33
+$1C27  26 B1                                      BNE $1BDA
+$1C29  35 10                                      PULS X
+$1C2B  10 AE 81                                   LDY ,X++
+$1C2E  6E B4                                      JMP [,Y]
+$1C30  EE 19                                      LDU -7,X
+$1C32  34 10                                      PSHS X
+$1C34  EC C4                                      LDD ,U
+$1C36  FD EF 33                                   STD $EF33
+$1C39  EC 42                                      LDD 2,U
+$1C3B  34 06                                      PSHS A,B
+$1C3D  58                                         LSLB 
+$1C3E  49                                         ROLA 
+$1C3F  E3 E1                                      ADDD ,S++
+$1C41  E3 44                                      ADDD 4,U
+$1C43  FD EF 2F                                   STD $EF2F
+$1C46  33 46                                      LEAU 6,U
+$1C48  FC EF 33                                   LDD $EF33
+$1C4B  27 55                                      BEQ $1CA2
+$1C4D  BE EF 2F                                   LDX $EF2F
+$1C50  A6 84                                      LDA ,X
+$1C52  E6 01                                      LDB 1,X
+$1C54  34 10                                      PSHS X
+$1C56  34 02                                      PSHS A
+$1C58  86 20                                      LDA #$20   ; A = ' '
+$1C5A  3D                                         MUL    ; D = A×B unsigned
+$1C5B  F3 EF 0A                                   ADDD $EF0A
+$1C5E  1F 02                                      TFR D,Y
+$1C60  A6 E4                                      LDA ,S
+$1C62  44                                         LSRA 
+$1C63  44                                         LSRA 
+$1C64  31 A6                                      LEAY A,Y
+$1C66  A6 E0                                      LDA ,S+
+$1C68  84 03                                      ANDA #$03
+$1C6A  48                                         LSLA 
+$1C6B  40                                         NEGA 
+$1C6C  8B 06                                      ADDA #$06
+$1C6E  34 02                                      PSHS A
+$1C70  AE 61                                      LDX 1,S
+$1C72  A6 02                                      LDA 2,X
+$1C74  84 03                                      ANDA #$03
+$1C76  E6 E4                                      LDB ,S
+$1C78  27 04                                      BEQ $1C7E
+$1C7A  48                                         LSLA 
+$1C7B  5A                                         DECB 
+$1C7C  26 FC                                      BNE $1C7A
+$1C7E  34 02                                      PSHS A
+$1C80  86 03                                      LDA #$03
+$1C82  E6 61                                      LDB 1,S
+$1C84  27 04                                      BEQ $1C8A
+$1C86  48                                         LSLA 
+$1C87  5A                                         DECB 
+$1C88  26 FC                                      BNE $1C86
+$1C8A  43                                         COMA 
+$1C8B  A4 A4                                      ANDA ,Y
+$1C8D  AA E4                                      ORA ,S
+$1C8F  A7 A4                                      STA ,Y
+$1C91  32 62                                      LEAS 2,S
+$1C93  35 10                                      PULS X
+$1C95  30 03                                      LEAX 3,X
+$1C97  FC EF 33                                   LDD $EF33
+$1C9A  83 00 01                                   SUBD #$0001
+$1C9D  FD EF 33                                   STD $EF33
+$1CA0  26 AE                                      BNE $1C50
+$1CA2  35 10                                      PULS X
+$1CA4  10 AE 81                                   LDY ,X++
+$1CA7  6E B4                                      JMP [,Y]
+$1CA9  EE 92                                      LDU ?$92
+$1CAB  34 10                                      PSHS X
+$1CAD  EC C4                                      LDD ,U
+$1CAF  AE 42                                      LDX 2,U
+$1CB1  33 44                                      LEAU 4,U
+$1CB3  10 83 00 00                                CMPD #$0000
+$1CB7  27 11                                      BEQ $1CCA
+$1CB9  1F 02                                      TFR D,Y
+$1CBB  4F                                         CLRA    ; A = 0
+$1CBC  5F                                         CLRB    ; B = 0
+$1CBD  6D 02                                      TST 2,X
+$1CBF  26 09                                      BNE $1CCA
+$1CC1  30 03                                      LEAX 3,X
+$1CC3  C3 00 01                                   ADDD #$0001
+$1CC6  31 3F                                      LEAY -1,Y
+$1CC8  26 F3                                      BNE $1CBD
+$1CCA  33 5E                                      LEAU -2,U
+$1CCC  ED C4                                      STD ,U
+$1CCE  35 10                                      PULS X
+$1CD0  10 AE 81                                   LDY ,X++
+$1CD3  6E B4                                      JMP [,Y]
+$1CD5  EE BE 34                                   LDU [+52,PC]
+$1CD8  10 EC                                      FCB $10,$EC   ; unknown opcode $10EC
+$1CDA  44                                         LSRA 
+$1CDB  27 38                                      BEQ $1D15
+$1CDD  1F 02                                      TFR D,Y
+$1CDF  AE 46                                      LDX 6,U
+$1CE1  A6 43                                      LDA 3,U
+$1CE3  80 04                                      SUBA #$04
+$1CE5  34 02                                      PSHS A
+$1CE7  8B 08                                      ADDA #$08
+$1CE9  34 02                                      PSHS A
+$1CEB  A6 41                                      LDA 1,U
+$1CED  80 03                                      SUBA #$03
+$1CEF  34 02                                      PSHS A
+$1CF1  8B 06                                      ADDA #$06
+$1CF3  34 02                                      PSHS A
+$1CF5  33 48                                      LEAU 8,U
+$1CF7  A6 84                                      LDA ,X
+$1CF9  A1 63                                      CMPA 3,S
+$1CFB  25 10                                      BCS $1D0D   ; C=1 (BLO)
+$1CFD  A1 62                                      CMPA 2,S
+$1CFF  22 0C                                      BHI $1D0D
+$1D01  A6 01                                      LDA 1,X
+$1D03  A1 61                                      CMPA 1,S
+$1D05  25 06                                      BCS $1D0D   ; C=1 (BLO)
+$1D07  A1 E4                                      CMPA ,S
+$1D09  22 02                                      BHI $1D0D
+$1D0B  6F 02                                      CLR 2,X
+$1D0D  30 03                                      LEAX 3,X
+$1D0F  31 3F                                      LEAY -1,Y
+$1D11  26 E4                                      BNE $1CF7
+$1D13  32 64                                      LEAS 4,S
+$1D15  35 10                                      PULS X
+$1D17  10 AE 81                                   LDY ,X++
+$1D1A  6E B4                                      JMP [,Y]
+$1D1C  00 00                                      NEG <$00
+$1D1E  00 00                                      NEG <$00
+$1D20  00 00                                      NEG <$00
+$1D22  00 06                                      NEG <$06
+$1D24  00 00                                      NEG <$00
+$1D26  00 00                                      NEG <$00
+$1D28  00 00                                      NEG <$00
+$1D2A  00 00                                      NEG <$00
+$1D2C  00 00                                      NEG <$00
+$1D2E  00 00                                      NEG <$00
+$1D30  00 00                                      NEG <$00
+$1D32  00 00                                      NEG <$00
+$1D34  00 00                                      NEG <$00
+$1D36  00 00                                      NEG <$00
+$1D38  00 00                                      NEG <$00
+$1D3A  00 00                                      NEG <$00
+$1D3C  00 00                                      NEG <$00
+$1D3E  00 00                                      NEG <$00
+$1D40  00 74                                      NEG <$74
+$1D42  00 20                                      NEG <$20
+$1D44  08 08                                      LSL <$08
+$1D46  20 0A                                      BRA $1D52
+$1D48  00 00                                      NEG <$00
+$1D4A  00 00                                      NEG <$00
+$1D4C  00 00                                      NEG <$00
+$1D4E  00 00                                      NEG <$00
+$1D50  00 00                                      NEG <$00
+$1D52  00 00                                      NEG <$00
+$1D54  00 00                                      NEG <$00
+$1D56  00 00                                      NEG <$00
+$1D58  00 00                                      NEG <$00
+$1D5A  00 00                                      NEG <$00
+$1D5C  00 00                                      NEG <$00
+$1D5E  00 00                                      NEG <$00
+$1D60  00 00                                      NEG <$00
+$1D62  00 00                                      NEG <$00
+$1D64  00 00                                      NEG <$00
+$1D66  00 00                                      NEG <$00
+$1D68  00 00                                      NEG <$00
+$1D6A  00 00                                      NEG <$00
+$1D6C  00 00                                      NEG <$00
+$1D6E  00 00                                      NEG <$00
+$1D70  00 00                                      NEG <$00
+$1D72  00 00                                      NEG <$00
+$1D74  00 00                                      NEG <$00
+$1D76  00 00                                      NEG <$00
+$1D78  00 00                                      NEG <$00
+$1D7A  00 00                                      NEG <$00
+$1D7C  00 00                                      NEG <$00
+$1D7E  00 00                                      NEG <$00
+$1D80  00 00                                      NEG <$00
+$1D82  00 00                                      NEG <$00
+$1D84  00 00                                      NEG <$00
+$1D86  00 00                                      NEG <$00
+$1D88  00 00                                      NEG <$00
+$1D8A  00 00                                      NEG <$00
+$1D8C  00 00                                      NEG <$00
+$1D8E  00 00                                      NEG <$00
+$1D90  00 00                                      NEG <$00
+$1D92  00 00                                      NEG <$00
+$1D94  00 00                                      NEG <$00
+$1D96  00 00                                      NEG <$00
+$1D98  00 00                                      NEG <$00
+$1D9A  00 00                                      NEG <$00
+$1D9C  00 00                                      NEG <$00
+$1D9E  00 00                                      NEG <$00
+$1DA0  00 00                                      NEG <$00
+$1DA2  00 00                                      NEG <$00
+$1DA4  00 00                                      NEG <$00
+$1DA6  00 00                                      NEG <$00
+$1DA8  00 00                                      NEG <$00
+$1DAA  00 00                                      NEG <$00
+$1DAC  00 00                                      NEG <$00
+$1DAE  00 00                                      NEG <$00
+$1DB0  00 00                                      NEG <$00
+$1DB2  00 00                                      NEG <$00
+$1DB4  00 00                                      NEG <$00
+$1DB6  00 00                                      NEG <$00
+$1DB8  00 00                                      NEG <$00
+$1DBA  00 00                                      NEG <$00
+$1DBC  00 00                                      NEG <$00
+$1DBE  00 00                                      NEG <$00
+$1DC0  00 00                                      NEG <$00
+$1DC2  00 00                                      NEG <$00
+$1DC4  00 00                                      NEG <$00
+$1DC6  00 00                                      NEG <$00
+$1DC8  00 00                                      NEG <$00
+$1DCA  00 00                                      NEG <$00
+$1DCC  00 00                                      NEG <$00
+$1DCE  00 00                                      NEG <$00
+$1DD0  00 00                                      NEG <$00
+$1DD2  00 00                                      NEG <$00
+$1DD4  00 00                                      NEG <$00
+$1DD6  00 00                                      NEG <$00
+$1DD8  00 00                                      NEG <$00
+$1DDA  00 00                                      NEG <$00
+$1DDC  00 00                                      NEG <$00
+$1DDE  00 00                                      NEG <$00
+$1DE0  00 00                                      NEG <$00
+$1DE2  00 00                                      NEG <$00
+$1DE4  00 00                                      NEG <$00
+$1DE6  00 00                                      NEG <$00
+$1DE8  00 00                                      NEG <$00
+$1DEA  00 00                                      NEG <$00
+$1DEC  00 00                                      NEG <$00
+$1DEE  00 00                                      NEG <$00
+$1DF0  00 00                                      NEG <$00
+$1DF2  00 00                                      NEG <$00
+$1DF4  00 00                                      NEG <$00
+$1DF6  00 00                                      NEG <$00
+$1DF8  00 00                                      NEG <$00
+$1DFA  00 00                                      NEG <$00
+$1DFC  00 00                                      NEG <$00
+$1DFE  00 00                                      NEG <$00
+$1E00  00 00                                      NEG <$00
+$1E02  00 00                                      NEG <$00
+$1E04  00 00                                      NEG <$00
+$1E06  00 00                                      NEG <$00
+$1E08  00 00                                      NEG <$00
+$1E0A  00 00                                      NEG <$00
+$1E0C  00 00                                      NEG <$00
+$1E0E  00 00                                      NEG <$00
+$1E10  00 00                                      NEG <$00
+$1E12  00 00                                      NEG <$00
+$1E14  00 00                                      NEG <$00
+$1E16  00 00                                      NEG <$00
+$1E18  00 00                                      NEG <$00
+$1E1A  00 00                                      NEG <$00
+$1E1C  00 00                                      NEG <$00
+$1E1E  00 00                                      NEG <$00
+$1E20  00 00                                      NEG <$00
+$1E22  00 00                                      NEG <$00
+$1E24  00 00                                      NEG <$00
+$1E26  00 00                                      NEG <$00
+$1E28  00 00                                      NEG <$00
+$1E2A  00 00                                      NEG <$00
+$1E2C  00 00                                      NEG <$00
+$1E2E  00 00                                      NEG <$00
+$1E30  00 00                                      NEG <$00
+$1E32  00 00                                      NEG <$00
+$1E34  00 00                                      NEG <$00
+$1E36  00 00                                      NEG <$00
+$1E38  00 00                                      NEG <$00
+$1E3A  00 00                                      NEG <$00
+$1E3C  00 00                                      NEG <$00
+$1E3E  00 00                                      NEG <$00
+$1E40  00 00                                      NEG <$00
+$1E42  00 00                                      NEG <$00
+$1E44  00 00                                      NEG <$00
+$1E46  00 00                                      NEG <$00
+$1E48  00 00                                      NEG <$00
+$1E4A  00 00                                      NEG <$00
+$1E4C  00 00                                      NEG <$00
+$1E4E  00 00                                      NEG <$00
+$1E50  00 00                                      NEG <$00
+$1E52  00 00                                      NEG <$00
+$1E54  00 00                                      NEG <$00
+$1E56  00 00                                      NEG <$00
+$1E58  00 00                                      NEG <$00
+$1E5A  00 00                                      NEG <$00
+$1E5C  00 00                                      NEG <$00
+$1E5E  00 00                                      NEG <$00
+$1E60  00 00                                      NEG <$00
+$1E62  00 00                                      NEG <$00
+$1E64  00 00                                      NEG <$00
+$1E66  00 00                                      NEG <$00
+$1E68  00 00                                      NEG <$00
+$1E6A  00 00                                      NEG <$00
+$1E6C  00 00                                      NEG <$00
+$1E6E  00 00                                      NEG <$00
+$1E70  00 00                                      NEG <$00
+$1E72  00 00                                      NEG <$00
+$1E74  00 00                                      NEG <$00
+$1E76  00 00                                      NEG <$00
+$1E78  00 00                                      NEG <$00
+$1E7A  00 00                                      NEG <$00
+$1E7C  00 00                                      NEG <$00
+$1E7E  00 00                                      NEG <$00
+$1E80  00 00                                      NEG <$00
+$1E82  00 00                                      NEG <$00
+$1E84  00 00                                      NEG <$00
+$1E86  00 00                                      NEG <$00
+$1E88  00 00                                      NEG <$00
+$1E8A  00 00                                      NEG <$00
+$1E8C  00 00                                      NEG <$00
+$1E8E  00 00                                      NEG <$00
+$1E90  00 00                                      NEG <$00
+$1E92  00 00                                      NEG <$00
+$1E94  00 00                                      NEG <$00
+$1E96  00 00                                      NEG <$00
+$1E98  00 00                                      NEG <$00
+$1E9A  00 00                                      NEG <$00
+$1E9C  00 00                                      NEG <$00
+$1E9E  00 00                                      NEG <$00
+$1EA0  00 00                                      NEG <$00
+$1EA2  00 00                                      NEG <$00
+$1EA4  00 00                                      NEG <$00
+$1EA6  00 00                                      NEG <$00
+$1EA8  00 00                                      NEG <$00
+$1EAA  00 00                                      NEG <$00
+$1EAC  00 00                                      NEG <$00
+$1EAE  00 00                                      NEG <$00
+$1EB0  00 00                                      NEG <$00
+$1EB2  00 00                                      NEG <$00
+$1EB4  00 00                                      NEG <$00
+$1EB6  00 00                                      NEG <$00
+$1EB8  00 00                                      NEG <$00
+$1EBA  00 00                                      NEG <$00
+$1EBC  00 00                                      NEG <$00
+$1EBE  00 00                                      NEG <$00
+$1EC0  00 00                                      NEG <$00
+$1EC2  00 00                                      NEG <$00
+$1EC4  00 00                                      NEG <$00
+$1EC6  00 00                                      NEG <$00
+$1EC8  00 00                                      NEG <$00
+$1ECA  00 00                                      NEG <$00
+$1ECC  00 00                                      NEG <$00
+$1ECE  00 00                                      NEG <$00
+$1ED0  00 00                                      NEG <$00
+$1ED2  00 00                                      NEG <$00
+$1ED4  00 00                                      NEG <$00
+$1ED6  00 00                                      NEG <$00
+$1ED8  00 00                                      NEG <$00
+$1EDA  00 00                                      NEG <$00
+$1EDC  00 00                                      NEG <$00
+$1EDE  00 00                                      NEG <$00
+$1EE0  00 00                                      NEG <$00
+$1EE2  00 00                                      NEG <$00
+$1EE4  00 00                                      NEG <$00
+$1EE6  00 00                                      NEG <$00
+$1EE8  00 00                                      NEG <$00
+$1EEA  00 00                                      NEG <$00
+$1EEC  00 00                                      NEG <$00
+$1EEE  00 00                                      NEG <$00
+$1EF0  00 00                                      NEG <$00
+$1EF2  00 00                                      NEG <$00
+$1EF4  00 00                                      NEG <$00
+$1EF6  00 00                                      NEG <$00
+$1EF8  00 00                                      NEG <$00
+$1EFA  00 00                                      NEG <$00
+$1EFC  00 00                                      NEG <$00
+$1EFE  00 00                                      NEG <$00
+$1F00  00 00                                      NEG <$00
+$1F02  00 00                                      NEG <$00
+$1F04  00 00                                      NEG <$00
+$1F06  00 00                                      NEG <$00
+$1F08  00 00                                      NEG <$00
+$1F0A  00 00                                      NEG <$00
+$1F0C  00 00                                      NEG <$00
+$1F0E  00 00                                      NEG <$00
+$1F10  00 00                                      NEG <$00
+$1F12  00 00                                      NEG <$00
+$1F14  00 00                                      NEG <$00
+$1F16  00 00                                      NEG <$00
+$1F18  00 00                                      NEG <$00
+$1F1A  00 00                                      NEG <$00
+$1F1C  00 00                                      NEG <$00
+$1F1E  00 00                                      NEG <$00
+$1F20  00 00                                      NEG <$00
+$1F22  00 00                                      NEG <$00
+$1F24  00 00                                      NEG <$00
+$1F26  00 00                                      NEG <$00
+$1F28  00 00                                      NEG <$00
+$1F2A  00 00                                      NEG <$00
+$1F2C  00 00                                      NEG <$00
+$1F2E  00 00                                      NEG <$00
+$1F30  00 00                                      NEG <$00
+$1F32  00 00                                      NEG <$00
+$1F34  00 00                                      NEG <$00
+$1F36  00 00                                      NEG <$00
+$1F38  00 00                                      NEG <$00
+$1F3A  00 00                                      NEG <$00
+$1F3C  00 00                                      NEG <$00
+$1F3E  00 00                                      NEG <$00
+$1F40  00 00                                      NEG <$00
+$1F42  00 00                                      NEG <$00
+$1F44  00 00                                      NEG <$00
+$1F46  00 00                                      NEG <$00
+$1F48  00 00                                      NEG <$00
+$1F4A  00 00                                      NEG <$00
+$1F4C  00 00                                      NEG <$00
+$1F4E  00 00                                      NEG <$00
+$1F50  00 00                                      NEG <$00
+$1F52  00 00                                      NEG <$00
+$1F54  00 00                                      NEG <$00
+$1F56  00 00                                      NEG <$00
+$1F58  00 00                                      NEG <$00
+$1F5A  00 00                                      NEG <$00
+$1F5C  00 00                                      NEG <$00
+$1F5E  00 00                                      NEG <$00
+$1F60  00 00                                      NEG <$00
+$1F62  00 00                                      NEG <$00
+$1F64  00 00                                      NEG <$00
+$1F66  00 00                                      NEG <$00
+$1F68  00 00                                      NEG <$00
+$1F6A  00 00                                      NEG <$00
+$1F6C  00 00                                      NEG <$00
+$1F6E  00 00                                      NEG <$00
+$1F70  00 00                                      NEG <$00
+$1F72  00 00                                      NEG <$00
+$1F74  00 00                                      NEG <$00
+$1F76  00 00                                      NEG <$00
+$1F78  00 00                                      NEG <$00
+$1F7A  00 00                                      NEG <$00
+$1F7C  00 00                                      NEG <$00
+$1F7E  00 00                                      NEG <$00
+$1F80  00 00                                      NEG <$00
+$1F82  00 00                                      NEG <$00
+$1F84  00 00                                      NEG <$00
+$1F86  00 00                                      NEG <$00
+$1F88  00 00                                      NEG <$00
+$1F8A  00 00                                      NEG <$00
+$1F8C  00 00                                      NEG <$00
+$1F8E  00 00                                      NEG <$00
+$1F90  00 00                                      NEG <$00
+$1F92  00 00                                      NEG <$00
+$1F94  00 00                                      NEG <$00
+$1F96  00 00                                      NEG <$00
+$1F98  00 00                                      NEG <$00
+$1F9A  00 00                                      NEG <$00
+$1F9C  00 00                                      NEG <$00
+$1F9E  00 00                                      NEG <$00
+$1FA0  00 00                                      NEG <$00
+$1FA2  00 00                                      NEG <$00
+$1FA4  00 00                                      NEG <$00
+$1FA6  00 00                                      NEG <$00
+$1FA8  00 00                                      NEG <$00
+$1FAA  00 00                                      NEG <$00
+$1FAC  00 00                                      NEG <$00
+$1FAE  00 00                                      NEG <$00
+$1FB0  00 00                                      NEG <$00
+$1FB2  00 00                                      NEG <$00
+$1FB4  00 00                                      NEG <$00
+$1FB6  00 00                                      NEG <$00
+$1FB8  00 00                                      NEG <$00
+$1FBA  00 00                                      NEG <$00
+$1FBC  00 00                                      NEG <$00
+$1FBE  00 00                                      NEG <$00
+$1FC0  00 00                                      NEG <$00
+$1FC2  00 00                                      NEG <$00
+$1FC4  00 00                                      NEG <$00
+$1FC6  00 00                                      NEG <$00
+$1FC8  00 00                                      NEG <$00
+$1FCA  00 00                                      NEG <$00
+$1FCC  00 00                                      NEG <$00
+$1FCE  00 00                                      NEG <$00
+$1FD0  00 00                                      NEG <$00
+$1FD2  00 00                                      NEG <$00
+$1FD4  00 00                                      NEG <$00
+$1FD6  00 00                                      NEG <$00
+$1FD8  00 00                                      NEG <$00
+$1FDA  00 00                                      NEG <$00
+$1FDC  00 00                                      NEG <$00
+$1FDE  00 00                                      NEG <$00
+$1FE0  00 00                                      NEG <$00
+$1FE2  00 00                                      NEG <$00
+$1FE4  00 00                                      NEG <$00
+$1FE6  00 00                                      NEG <$00
+$1FE8  00 00                                      NEG <$00
+$1FEA  00 00                                      NEG <$00
+$1FEC  00 00                                      NEG <$00
+$1FEE  00 00                                      NEG <$00
+$1FF0  00 00                                      NEG <$00
+$1FF2  00 00                                      NEG <$00
+$1FF4  00 00                                      NEG <$00
+$1FF6  00 00                                      NEG <$00
+$1FF8  00 00                                      NEG <$00
+$1FFA  00 00                                      NEG <$00
+$1FFC  00 00                                      NEG <$00
+$1FFE  00 00                                      NEG <$00
+$2000  21 BE                                      BRN $1FC0
+$2002  E0 00                                      SUBB 0,X
+$2004  E0 15                                      SUBB -11,X
+$2006  02                                         FCB $02   ; undefined opcode $02 -- not a valid 6809 instruction
+$2007  00 E0                                      NEG <$E0
+$2009  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$200A  00 00                                      NEG <$00
+$200C  E0 2D                                      SUBB 13,Y
+$200E  E0 15                                      SUBB -11,X
+$2010  00 80                                      NEG <$80
+$2012  E0 15                                      SUBB -11,X
+$2014  04 00                                      LSR <$00
+$2016  E0 31                                      SUBB -15,Y
+$2018  E0 1B                                      SUBB -5,X
+$201A  E0 49                                      SUBB 9,U
+$201C  E0 2F                                      SUBB 15,Y
+$201E  FF EE E0                                   STU $EEE0
+$2021  13                                         SYNC    ; wait for interrupt
+$2022  E0 00                                      SUBB 0,X
+$2024  E0 15                                      SUBB -11,X
+$2026  02                                         FCB $02   ; undefined opcode $02 -- not a valid 6809 instruction
+$2027  00 E0                                      NEG <$E0
+$2029  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$202A  00 00                                      NEG <$00
+$202C  E0 2D                                      SUBB 13,Y
+$202E  E0 15                                      SUBB -11,X
+$2030  00 60                                      NEG <$60
+$2032  E0 15                                      SUBB -11,X
+$2034  04 00                                      LSR <$00
+$2036  E0 31                                      SUBB -15,Y
+$2038  E0 1B                                      SUBB -5,X
+$203A  E0 49                                      SUBB 9,U
+$203C  E0 2F                                      SUBB 15,Y
+$203E  FF EE E0                                   STU $EEE0
+$2041  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$2042  00 00                                      NEG <$00
+$2044  E0 15                                      SUBB -11,X
+$2046  00 00                                      NEG <$00
+$2048  E0 47                                      SUBB 7,U
+$204A  E0 13                                      SUBB -13,X
+$204C  E0 00                                      SUBB 0,X
+$204E  24 68                                      BCC $20B8   ; C=0 (BHS)
+$2050  E0 29                                      SUBB 9,Y
+$2052  E0 15                                      SUBB -11,X
+$2054  62                                         FCB $62   ; undefined opcode $62 -- not a valid 6809 instruction
+$2055  55                                         FCB $55   ; undefined opcode $55 -- not a valid 6809 instruction
+$2056  E0 33                                      SUBB -13,Y
+$2058  E0 15                                      SUBB -11,X
+$205A  36 19                                      PSHU CC,DP,X
+$205C  E0 1B                                      SUBB -5,X
+$205E  24 68                                      BCC $20C8   ; C=0 (BHS)
+$2060  E0 2B                                      SUBB 11,Y
+$2062  E0 13                                      SUBB -13,X
+$2064  E0 00                                      SUBB 0,X
+$2066  20 4C                                      BRA $20B4
+$2068  E0 15                                      SUBB -11,X
+$206A  00 01                                      NEG <$01
+$206C  E0 1D                                      SUBB -3,X
+$206E  24 68                                      BCC $20D8   ; C=0 (BHS)
+$2070  E0 4B                                      SUBB 11,U
+$2072  E0 4D                                      SUBB 13,U
+$2074  E0 13                                      SUBB -13,X
+$2076  E0 00                                      SUBB 0,X
+$2078  E0 15                                      SUBB -11,X
+$207A  00 00                                      NEG <$00
+$207C  E0 15                                      SUBB -11,X
+$207E  FF 02 E0                                   STU $02E0
+$2081  49                                         ROLA 
+$2082  E0 15                                      SUBB -11,X
+$2084  FF 00 E0                                   STU $00E0
+$2087  4B                                         FCB $4B   ; undefined opcode $4B -- not a valid 6809 instruction
+$2088  E0 15                                      SUBB -11,X
+$208A  00 7F                                      NEG <$7F
+$208C  E0 4D                                      SUBB 13,U
+$208E  E0 15                                      SUBB -11,X
+$2090  00 7F                                      NEG <$7F
+$2092  E0 3D                                      SUBB -3,Y
+$2094  E0 45                                      SUBB 5,U
+$2096  E0 13                                      SUBB -13,X
+$2098  E0 00                                      SUBB 0,X
+$209A  22 C9                                      BHI $2065
+$209C  E0 15                                      SUBB -11,X
+$209E  00 0B                                      NEG <$0B
+$20A0  E0 15                                      SUBB -11,X
+$20A2  00 00                                      NEG <$00
+$20A4  E0 2D                                      SUBB 13,Y
+$20A6  24 78                                      BCC $2120   ; C=0 (BHS)
+$20A8  E0 29                                      SUBB 9,Y
+$20AA  E0 15                                      SUBB -11,X
+$20AC  00 1F                                      NEG <$1F
+$20AE  E0 4D                                      SUBB 13,U
+$20B0  23 05                                      BLS $20B7
+$20B2  24 78                                      BCC $212C   ; C=0 (BHS)
+$20B4  E0 29                                      SUBB 9,Y
+$20B6  E0 15                                      SUBB -11,X
+$20B8  00 01                                      NEG <$01
+$20BA  E0 1B                                      SUBB -5,X
+$20BC  24 78                                      BCC $2136   ; C=0 (BHS)
+$20BE  E0 2B                                      SUBB 11,Y
+$20C0  E0 2F                                      SUBB 15,Y
+$20C2  FF E2 E0                                   STU $E2E0
+$20C5  13                                         SYNC    ; wait for interrupt
+$20C6  E0 00                                      SUBB 0,X
+$20C8  24 6C                                      BCC $2136   ; C=0 (BHS)
+$20CA  E0 29                                      SUBB 9,Y
+$20CC  E0 39                                      SUBB -7,Y
+$20CE  00 1E                                      NEG <$1E
+$20D0  22 90                                      BHI $2062
+$20D2  E0 15                                      SUBB -11,X
+$20D4  04 00                                      LSR <$00
+$20D6  24 70                                      BCC $2148   ; C=0 (BHS)
+$20D8  E0 2B                                      SUBB 11,Y
+$20DA  E0 15                                      SUBB -11,X
+$20DC  06 00                                      ROR <$00
+$20DE  24 74                                      BCC $2154   ; C=0 (BHS)
+$20E0  E0 2B                                      SUBB 11,Y
+$20E2  E0 15                                      SUBB -11,X
+$20E4  00 00                                      NEG <$00
+$20E6  24 6C                                      BCC $2154   ; C=0 (BHS)
+$20E8  E0 2B                                      SUBB 11,Y
+$20EA  E0 3B                                      SUBB -5,Y
+$20EC  00 1A                                      NEG <$1A
+$20EE  22 70                                      BHI $2160
+$20F0  E0 15                                      SUBB -11,X
+$20F2  06 00                                      ROR <$00
+$20F4  24 70                                      BCC $2166   ; C=0 (BHS)
+$20F6  E0 2B                                      SUBB 11,Y
+$20F8  E0 15                                      SUBB -11,X
+$20FA  04 00                                      LSR <$00
+$20FC  24 74                                      BCC $2172   ; C=0 (BHS)
+$20FE  E0 2B                                      SUBB 11,Y
+$2100  E0 15                                      SUBB -11,X
+$2102  00 01                                      NEG <$01
+$2104  24 6C                                      BCC $2172   ; C=0 (BHS)
+$2106  E0 2B                                      SUBB 11,Y
+$2108  E0 13                                      SUBB -13,X
+$210A  E0 00                                      SUBB 0,X
+$210C  E0 15                                      SUBB -11,X
+$210E  00 3F                                      NEG <$3F
+$2110  E0 4D                                      SUBB 13,U
+$2112  E0 15                                      SUBB -11,X
+$2114  EF 03                                      STU 3,X
+$2116  E0 29                                      SUBB 9,Y
+$2118  E0 15                                      SUBB -11,X
+$211A  04 00                                      LSR <$00
+$211C  E0 1B                                      SUBB -5,X
+$211E  E0 49                                      SUBB 9,U
+$2120  E0 15                                      SUBB -11,X
+$2122  EF 03                                      STU 3,X
+$2124  E0 29                                      SUBB 9,Y
+$2126  E0 15                                      SUBB -11,X
+$2128  00 01                                      NEG <$01
+$212A  E0 1B                                      SUBB -5,X
+$212C  E0 15                                      SUBB -11,X
+$212E  EF 03                                      STU 3,X
+$2130  E0 2B                                      SUBB 11,Y
+$2132  E0 13                                      SUBB -13,X
+$2134  E0 00                                      SUBB 0,X
+$2136  E0 15                                      SUBB -11,X
+$2138  00 0D                                      NEG <$0D
+$213A  E0 15                                      SUBB -11,X
+$213C  00 06                                      NEG <$06
+$213E  E0 47                                      SUBB 7,U
+$2140  E0 15                                      SUBB -11,X
+$2142  00 46                                      NEG <$46
+$2144  21 0A                                      BRN $2150
+$2146  E0 15                                      SUBB -11,X
+$2148  00 4C                                      NEG <$4C
+$214A  21 0A                                      BRN $2156
+$214C  E0 15                                      SUBB -11,X
+$214E  00 41                                      NEG <$41
+$2150  21 0A                                      BRN $215C
+$2152  E0 15                                      SUBB -11,X
+$2154  00 4D                                      NEG <$4D
+$2156  21 0A                                      BRN $2162
+$2158  E0 15                                      SUBB -11,X
+$215A  00 45                                      NEG <$45
+$215C  21 0A                                      BRN $2168
+$215E  E0 15                                      SUBB -11,X
+$2160  00 53                                      NEG <$53
+$2162  21 0A                                      BRN $216E
+$2164  E0 15                                      SUBB -11,X
+$2166  00 09                                      NEG <$09
+$2168  E0 15                                      SUBB -11,X
+$216A  00 09                                      NEG <$09
+$216C  E0 47                                      SUBB 7,U
+$216E  E0 15                                      SUBB -11,X
+$2170  00 50                                      NEG <$50
+$2172  21 0A                                      BRN $217E
+$2174  E0 15                                      SUBB -11,X
+$2176  00 52                                      NEG <$52
+$2178  21 0A                                      BRN $2184
+$217A  E0 15                                      SUBB -11,X
+$217C  00 45                                      NEG <$45
+$217E  21 0A                                      BRN $218A
+$2180  E0 15                                      SUBB -11,X
+$2182  00 53                                      NEG <$53
+$2184  21 0A                                      BRN $2190
+$2186  E0 15                                      SUBB -11,X
+$2188  00 53                                      NEG <$53
+$218A  21 0A                                      BRN $2196
+$218C  E0 15                                      SUBB -11,X
+$218E  00 20                                      NEG <$20
+$2190  21 0A                                      BRN $219C
+$2192  E0 15                                      SUBB -11,X
+$2194  00 41                                      NEG <$41
+$2196  21 0A                                      BRN $21A2
+$2198  E0 15                                      SUBB -11,X
+$219A  00 4E                                      NEG <$4E
+$219C  21 0A                                      BRN $21A8
+$219E  E0 15                                      SUBB -11,X
+$21A0  00 59                                      NEG <$59
+$21A2  21 0A                                      BRN $21AE
+$21A4  E0 15                                      SUBB -11,X
+$21A6  00 20                                      NEG <$20
+$21A8  21 0A                                      BRN $21B4
+$21AA  E0 15                                      SUBB -11,X
+$21AC  00 4B                                      NEG <$4B
+$21AE  21 0A                                      BRN $21BA
+$21B0  E0 15                                      SUBB -11,X
+$21B2  00 45                                      NEG <$45
+$21B4  21 0A                                      BRN $21C0
+$21B6  E0 15                                      SUBB -11,X
+$21B8  00 59                                      NEG <$59
+$21BA  21 0A                                      BRN $21C6
+$21BC  E0 13                                      SUBB -13,X
+$21BE  E0 00                                      SUBB 0,X
+$21C0  20 02                                      BRA $21C4
+$21C2  21 34                                      BRN $21F8
+$21C4  E0 15                                      SUBB -11,X
+$21C6  00 00                                      NEG <$00
+$21C8  24 68                                      BCC $2232   ; C=0 (BHS)
+$21CA  E0 2B                                      SUBB 11,Y
+$21CC  E9 05                                      ADCB 5,X
+$21CE  24 68                                      BCC $2238   ; C=0 (BHS)
+$21D0  E0 29                                      SUBB 9,Y
+$21D2  E0 15                                      SUBB -11,X
+$21D4  00 01                                      NEG <$01
+$21D6  E0 1B                                      SUBB -5,X
+$21D8  24 68                                      BCC $2242   ; C=0 (BHS)
+$21DA  E0 2B                                      SUBB 11,Y
+$21DC  E0 53                                      SUBB -13,U
+$21DE  E0 39                                      SUBB -7,Y
+$21E0  FF EA E9                                   STU $EAE9
+$21E3  05                                         FCB $05   ; undefined opcode $05 -- not a valid 6809 instruction
+$21E4  E0 53                                      SUBB -13,U
+$21E6  E0 45                                      SUBB 5,U
+$21E8  E0 39                                      SUBB -7,Y
+$21EA  FF F6 E0                                   STU $F6E0
+$21ED  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$21EE  40                                         NEGA 
+$21EF  00 E0                                      NEG <$E0
+$21F1  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$21F2  02                                         FCB $02   ; undefined opcode $02 -- not a valid 6809 instruction
+$21F3  20 E0                                      BRA $21D5
+$21F5  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$21F6  00 00                                      NEG <$00
+$21F8  E0 55                                      SUBB -11,U
+$21FA  E0 15                                      SUBB -11,X
+$21FC  00 00                                      NEG <$00
+$21FE  24 78                                      BCC $2278   ; C=0 (BHS)
+$2200  E0 2B                                      SUBB 11,Y
+$2202  E0 15                                      SUBB -11,X
+$2204  04 00                                      LSR <$00
+$2206  E0 15                                      SUBB -11,X
+$2208  02                                         FCB $02   ; undefined opcode $02 -- not a valid 6809 instruction
+$2209  00 E0                                      NEG <$E0
+$220B  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$220C  00 80                                      NEG <$80
+$220E  E0 55                                      SUBB -11,U
+$2210  E0 15                                      SUBB -11,X
+$2212  06 00                                      ROR <$00
+$2214  E0 15                                      SUBB -11,X
+$2216  02                                         FCB $02   ; undefined opcode $02 -- not a valid 6809 instruction
+$2217  00 E0                                      NEG <$E0
+$2219  15                                         FCB $15   ; undefined opcode $15 -- not a valid 6809 instruction
+$221A  00 80                                      NEG <$80
+$221C  E0 55                                      SUBB -11,U
+$221E  22 70                                      BHI $2290
+$2220  E0 15                                      SUBB -11,X
+$2222  06 00                                      ROR <$00
+$2224  24 70                                      BCC $2296   ; C=0 (BHS)
+$2226  E0 2B                                      SUBB 11,Y
+$2228  E0 15                                      SUBB -11,X
+$222A  04 00                                      LSR <$00
+$222C  24 74                                      BCC $22A2   ; C=0 (BHS)
+$222E  E0 2B                                      SUBB 11,Y
+$2230  E0 15                                      SUBB -11,X
+$2232  00 01                                      NEG <$01
+$2234  24 6C                                      BCC $22A2   ; C=0 (BHS)
+$2236  E0 2B                                      SUBB 11,Y
+$2238  E0 15                                      SUBB -11,X
+$223A  00 FF                                      NEG <$FF
+$223C  E0 15                                      SUBB -11,X
+$223E  FF D7 E0                                   STU $D7E0
+$2241  49                                         ROLA 
+$2242  20 76                                      BRA $22BA
+$2244  E0 39                                      SUBB -7,Y
+$2246  00 08                                      NEG <$08
+$2248  E0 15                                      SUBB -11,X
+$224A  00 00                                      NEG <$00
+$224C  E0 3B                                      SUBB -5,Y
+$224E  00 04                                      NEG <$04
+$2250  E0 15                                      SUBB -11,X
+$2252  00 08                                      NEG <$08
+$2254  22 B0                                      BHI $2206
+$2256  20 98                                      BRA $21F0
+$2258  E0 15                                      SUBB -11,X
+$225A  00 FF                                      NEG <$FF
+$225C  E0 15                                      SUBB -11,X
+$225E  FF D6 E0                                   STU $D6E0
+$2261  49                                         ROLA 
+$2262  E9 05                                      ADCB 5,X
+$2264  20 C6                                      BRA $222C
+$2266  E0 15                                      SUBB -11,X
+$2268  00 00                                      NEG <$00
+$226A  E0 39                                      SUBB -7,Y
+$226C  FF CA E0                                   STU $CAE0
+$226F  13                                         SYNC    ; wait for interrupt
+$2270  22 72                                      BHI $22E4
+$2272  34 10                                      PSHS X
+$2274  B7 FF C6                                   STA $FFC6
+$2277  B7 FF C9                                   STA $FFC9
+$227A  B7 FF CA                                   STA $FFCA
+$227D  B7 FF CC                                   STA $FFCC
+$2280  B7 FF CE                                   STA $FFCE
+$2283  B7 FF D0                                   STA $FFD0
+$2286  B7 FF D2                                   STA $FFD2
+$2289  35 10                                      PULS X
+$228B  10 AE 81                                   LDY ,X++
+$228E  6E B4                                      JMP [,Y]
+$2290  22 92                                      BHI $2224
+$2292  34 10                                      PSHS X
+$2294  B7 FF C7                                   STA $FFC7
+$2297  B7 FF C9                                   STA $FFC9
+$229A  B7 FF CA                                   STA $FFCA
+$229D  B7 FF CC                                   STA $FFCC
+$22A0  B7 FF CE                                   STA $FFCE
+$22A3  B7 FF D0                                   STA $FFD0
+$22A6  B7 FF D2                                   STA $FFD2
+$22A9  35 10                                      PULS X
+$22AB  10 AE 81                                   LDY ,X++
+$22AE  6E B4                                      JMP [,Y]
+$22B0  22 B2                                      BHI $2264
+$22B2  34 10                                      PSHS X
+$22B4  EC C1                                      LDD ,U++
+$22B6  1F 98                                      TFR B,A
+$22B8  8E 42 00                                   LDX #$4200
+$22BB  C6 20                                      LDB #$20   ; B = SS.ScSiz  (GetStt/SetStt subcode)
+$22BD  A7 80                                      STA ,X+
+$22BF  5A                                         DECB 
+$22C0  26 FB                                      BNE $22BD
+$22C2  35 10                                      PULS X
+$22C4  10 AE 81                                   LDY ,X++
+$22C7  6E B4                                      JMP [,Y]
+$22C9  22 CB                                      BHI $2296
+$22CB  34 10                                      PSHS X
+$22CD  BE 24 76                                   LDX $2476
+$22D0  10 BE 24 72                                LDY $2472
+$22D4  86 20                                      LDA #$20   ; A = ' '
+$22D6  34 02                                      PSHS A
+$22D8  EC 81                                      LDD ,X++
+$22DA  ED A1                                      STD ,Y++
+$22DC  EC 81                                      LDD ,X++
+$22DE  ED A1                                      STD ,Y++
+$22E0  EC 81                                      LDD ,X++
+$22E2  ED A1                                      STD ,Y++
+$22E4  EC 81                                      LDD ,X++
+$22E6  ED A1                                      STD ,Y++
+$22E8  EC 81                                      LDD ,X++
+$22EA  ED A1                                      STD ,Y++
+$22EC  EC 81                                      LDD ,X++
+$22EE  ED A1                                      STD ,Y++
+$22F0  EC 81                                      LDD ,X++
+$22F2  ED A1                                      STD ,Y++
+$22F4  EC 81                                      LDD ,X++
+$22F6  ED A1                                      STD ,Y++
+$22F8  6A E4                                      DEC ,S
+$22FA  26 DC                                      BNE $22D8
+$22FC  35 02                                      PULS A
+$22FE  35 10                                      PULS X
+$2300  10 AE 81                                   LDY ,X++
+$2303  6E B4                                      JMP [,Y]
+$2305  23 07                                      BLS $230E
+$2307  34 10                                      PSHS X
+$2309  EC C1                                      LDD ,U++
+$230B  34 04                                      PSHS B
+$230D  E6 E4                                      LDB ,S
+$230F  8E 40 00                                   LDX #$4000
+$2312  3A                                         ABX 
+$2313  E6 E4                                      LDB ,S
+$2315  10 BE 24 72                                LDY $2472
+$2319  31 A5                                      LEAY B,Y
+$231B  86 08                                      LDA #$08   ; A = BS
+$231D  34 02                                      PSHS A
+$231F  B6 24 6B                                   LDA $246B
+$2322  C6 55                                      LDB #$55   ; B = 'U'
+$2324  3D                                         MUL    ; D = A×B unsigned
+$2325  34 06                                      PSHS A,B
+$2327  B6 24 6A                                   LDA $246A
+$232A  C6 55                                      LDB #$55   ; B = 'U'
+$232C  3D                                         MUL    ; D = A×B unsigned
+$232D  EB E4                                      ADDB ,S
+$232F  E7 E4                                      STB ,S
+$2331  B6 24 6B                                   LDA $246B
+$2334  C6 62                                      LDB #$62   ; B = 'b'
+$2336  3D                                         MUL    ; D = A×B unsigned
+$2337  EB E4                                      ADDB ,S
+$2339  E7 E4                                      STB ,S
+$233B  35 06                                      PULS A,B
+$233D  C3 36 19                                   ADDD #$3619
+$2340  FD 24 6A                                   STD $246A
+$2343  34 02                                      PSHS A
+$2345  84 03                                      ANDA #$03
+$2347  27 09                                      BEQ $2352
+$2349  81 03                                      CMPA #$03
+$234B  27 0E                                      BEQ $235B
+$234D  E6 88 20                                   LDB 32,X
+$2350  20 17                                      BRA $2369
+$2352  A6 62                                      LDA 2,S
+$2354  27 10                                      BEQ $2366
+$2356  E6 88 1F                                   LDB 31,X
+$2359  20 0E                                      BRA $2369
+$235B  A6 62                                      LDA 2,S
+$235D  81 1F                                      CMPA #$1F
+$235F  27 05                                      BEQ $2366
+$2361  E6 88 21                                   LDB 33,X
+$2364  20 03                                      BRA $2369
+$2366  E6 88 20                                   LDB 32,X
+$2369  A6 E4                                      LDA ,S
+$236B  85 04                                      BITA #$04
+$236D  27 04                                      BEQ $2373
+$236F  5A                                         DECB 
+$2370  2A 01                                      BPL $2373
+$2372  5F                                         CLRB    ; B = 0
+$2373  E7 84                                      STB ,X
+$2375  30 88 20                                   LEAX 32,X
+$2378  86 80                                      LDA #$80
+$237A  5D                                         TSTB 
+$237B  27 46                                      BEQ $23C3
+$237D  C1 01                                      CMPB #$01
+$237F  26 0E                                      BNE $238F
+$2381  A6 E4                                      LDA ,S
+$2383  85 08                                      BITA #$08
+$2385  26 04                                      BNE $238B
+$2387  86 B5                                      LDA #$B5
+$2389  20 38                                      BRA $23C3
+$238B  86 BA                                      LDA #$BA
+$238D  20 34                                      BRA $23C3
+$238F  C1 02                                      CMPB #$02
+$2391  26 04                                      BNE $2397
+$2393  86 BF                                      LDA #$BF
+$2395  20 2C                                      BRA $23C3
+$2397  C1 03                                      CMPB #$03
+$2399  26 0E                                      BNE $23A9
+$239B  A6 E4                                      LDA ,S
+$239D  85 08                                      BITA #$08
+$239F  26 04                                      BNE $23A5
+$23A1  86 F5                                      LDA #$F5
+$23A3  20 1E                                      BRA $23C3
+$23A5  86 FA                                      LDA #$FA
+$23A7  20 1A                                      BRA $23C3
+$23A9  C1 04                                      CMPB #$04
+$23AB  26 04                                      BNE $23B1
+$23AD  86 FF                                      LDA #$FF
+$23AF  20 12                                      BRA $23C3
+$23B1  C1 05                                      CMPB #$05
+$23B3  26 04                                      BNE $23B9
+$23B5  86 FF                                      LDA #$FF
+$23B7  20 0A                                      BRA $23C3
+$23B9  C1 07                                      CMPB #$07
+$23BB  22 04                                      BHI $23C1
+$23BD  86 9F                                      LDA #$9F
+$23BF  20 02                                      BRA $23C3
+$23C1  86 CF                                      LDA #$CF
+$23C3  A7 A4                                      STA ,Y
+$23C5  31 A8 20                                   LEAY 32,Y
+$23C8  A6 E4                                      LDA ,S
+$23CA  44                                         LSRA 
+$23CB  44                                         LSRA 
+$23CC  44                                         LSRA 
+$23CD  44                                         LSRA 
+$23CE  84 03                                      ANDA #$03
+$23D0  27 09                                      BEQ $23DB
+$23D2  81 03                                      CMPA #$03
+$23D4  27 0E                                      BEQ $23E4
+$23D6  E6 88 20                                   LDB 32,X
+$23D9  20 17                                      BRA $23F2
+$23DB  A6 62                                      LDA 2,S
+$23DD  27 10                                      BEQ $23EF
+$23DF  E6 88 1F                                   LDB 31,X
+$23E2  20 0E                                      BRA $23F2
+$23E4  A6 62                                      LDA 2,S
+$23E6  81 1F                                      CMPA #$1F
+$23E8  27 05                                      BEQ $23EF
+$23EA  E6 88 21                                   LDB 33,X
+$23ED  20 03                                      BRA $23F2
+$23EF  E6 88 20                                   LDB 32,X
+$23F2  A6 E4                                      LDA ,S
+$23F4  44                                         LSRA 
+$23F5  44                                         LSRA 
+$23F6  44                                         LSRA 
+$23F7  44                                         LSRA 
+$23F8  85 04                                      BITA #$04
+$23FA  27 04                                      BEQ $2400
+$23FC  5A                                         DECB 
+$23FD  2A 01                                      BPL $2400
+$23FF  5F                                         CLRB    ; B = 0
+$2400  E7 84                                      STB ,X
+$2402  30 88 20                                   LEAX 32,X
+$2405  86 80                                      LDA #$80
+$2407  5D                                         TSTB 
+$2408  27 46                                      BEQ $2450
+$240A  C1 01                                      CMPB #$01
+$240C  26 0E                                      BNE $241C
+$240E  A6 E4                                      LDA ,S
+$2410  85 80                                      BITA #$80
+$2412  26 04                                      BNE $2418
+$2414  86 B5                                      LDA #$B5
+$2416  20 38                                      BRA $2450
+$2418  86 BA                                      LDA #$BA
+$241A  20 34                                      BRA $2450
+$241C  C1 02                                      CMPB #$02
+$241E  26 04                                      BNE $2424
+$2420  86 BF                                      LDA #$BF
+$2422  20 2C                                      BRA $2450
+$2424  C1 03                                      CMPB #$03
+$2426  26 0E                                      BNE $2436
+$2428  A6 E4                                      LDA ,S
+$242A  85 80                                      BITA #$80
+$242C  26 04                                      BNE $2432
+$242E  86 F5                                      LDA #$F5
+$2430  20 1E                                      BRA $2450
+$2432  86 FA                                      LDA #$FA
+$2434  20 1A                                      BRA $2450
+$2436  C1 04                                      CMPB #$04
+$2438  26 04                                      BNE $243E
+$243A  86 FF                                      LDA #$FF
+$243C  20 12                                      BRA $2450
+$243E  C1 05                                      CMPB #$05
+$2440  26 04                                      BNE $2446
+$2442  86 FF                                      LDA #$FF
+$2444  20 0A                                      BRA $2450
+$2446  C1 07                                      CMPB #$07
+$2448  22 04                                      BHI $244E
+$244A  86 9F                                      LDA #$9F
+$244C  20 02                                      BRA $2450
+$244E  86 CF                                      LDA #$CF
+$2450  A7 A4                                      STA ,Y
+$2452  31 A8 20                                   LEAY 32,Y
+$2455  35 02                                      PULS A
+$2457  6A E4                                      DEC ,S
+$2459  10 26 FE C2                                LBNE $231F
+$245D  35 02                                      PULS A
+$245F  35 02                                      PULS A
+$2461  35 10                                      PULS X
+$2463  10 AE 81                                   LDY ,X++
+$2466  6E B4                                      JMP [,Y]
+$2468  E0 09                                      SUBB 9,X
+$246A  00 00                                      NEG <$00
+$246C  E0 09                                      SUBB 9,X
+$246E  00 00                                      NEG <$00
+$2470  E0 09                                      SUBB 9,X
+$2472  00 00                                      NEG <$00
+$2474  E0 09                                      SUBB 9,X
+$2476  00 00                                      NEG <$00
+$2478  E0 09                                      SUBB 9,X
+$247A  00 00                                      NEG <$00
+; ══════════════════════════════════════════════════════════════
+; MARKUP QUICK REFERENCE  (markup.py directives)
+; ══════════════════════════════════════════════════════════════
+;
+; Run:  python markup.py proj.dasm [proj.json]
+; Then: python dis6x09.py --source bin --proj proj.json -n
+;
+; ── Labeling ──────────────────────────────────────────────────
+;
+; /label/ Name
+;     Name the next $XXXX address in the listing.
+;     Example:
+;         /label/ Sub_ReadDir
+;         $0126  96 00    LDA <$00
+;
+; /label/ $addr Name
+;     Name a specific address directly — works for data labels too.
+;     Example:
+;         /label/ $046A cwdChar
+;         /label/ $046B cwdAndCR
+;
+; /rename-label/ OldName NewName
+;     Rename an existing label by its current name.
+;     Works for both code and data labels — no address scanning needed.
+;     Example:
+;         /rename-label/ Dat_046A cwdChar
+;         /rename-label/ Dat_046B cwdAndCR
+;
+; /bss/ $XX Name
+;     Declare a BSS variable at direct page or U-relative offset $XX.
+;     Optional quoted comment appended to the EQU line.
+;     Example:
+;         /bss/ $00 BSS.DirPath
+;         /bss/ $58 BSS.DEntName "29-byte filename field of RBF directory entry"
+;
+; ── Data regions ──────────────────────────────────────────────
+;
+; /region/ $start $end [format] [label] [endlabel]
+; /dlabel/ $start $end [format] [label] [endlabel]
+;     Declare a data region. /dlabel/ is an alias for /region/ with a name
+;     that signals "this is a named data label".
+;     Format: auto text fdb hexdump raw writeblock
+;     +endlabel — emit a NameEnd label at the region boundary.
+;     Example:
+;         /dlabel/ $046A $046B auto cwdChar
+;         /dlabel/ $046B $046C auto cwdAndCR
+;         /region/ $052C $06A7 text +endlabel
+;
+; /format/ fmt
+;     Set format for the preceding data label's region.
+;     Example:
+;         Dat_046E
+;         /format/ text
+;
+; /end-label/
+;     Mark end of a data region at the next address.
+;     Example:
+;         /end-label/
+;         $06A7  5A    Sub_06A7: DECB
+;
+; ── Comments ──────────────────────────────────────────────────
+;
+; /; comment text/
+;     Inline comment appended to the instruction on this line.
+;     Example:
+;         $00E9  A6 80    LDA ,X+    /; loop copying path to buffer/
+;
+; /; /
+;     Empty inline comment — inhibits any auto-generated comment for
+;     this address permanently (stores "" in JSON as a suppressor).
+;     The inhibitor persists across disassembler runs.
+;     Use /remove-line-comment/ $addr to lift the inhibition.
+;
+; /comment/ [$addr]
+; comment line 1
+; comment line 2
+; /end-comment/
+;     Block comment inserted before the target address.
+;     Optional $addr targets a specific address directly.
+;     Without $addr, targets the next $XXXX line.
+;     Example:
+;         /comment/ $0519
+;         This FCC line is a format template updated in place.
+;         /end-comment/
+;
+; /remove-comment/
+; comment line to remove
+; /end-remove-comment/
+;     Remove a block comment matching the given content from the JSON.
+;     Prefix '; ' on each line is stripped before matching.
+;     Example:
+;         /remove-comment/
+;         ; This comment is no longer needed.
+;         /end-remove-comment/
+;
+; /remove-line-comment/ $addr
+;     Remove a line comment or inhibitor from the JSON at the given address.
+;     Auto-generated comments will return on the next disassembler run.
+;     Example:
+;         /remove-line-comment/ $06BC
+;
+; ── Substitutions ─────────────────────────────────────────────
+;
+; /replace/
+; <original disassembler lines>
+; /with/
+; <replacement source lines>
+; /end-replace/
+;     Replace disassembler output with analyst-supplied source.
+;     WARNING: byte counts must match. Instruction substitutions
+;     trigger a confirmation prompt — mismatch breaks byte-perfect.
+;     Example:
+;         /replace/
+;                  FCB    $0A               ; LF
+;                  FCC    "Dir"
+;         /with/
+;                  FCB    C$LF
+;                  FCS    /Dir/
+;         /end-replace/
+;
+; ── Routines ──────────────────────────────────────────────────
+;
+; /routine/ Name
+; ...code...
+; /end-routine/ Name
+;     Mark a routine boundary for structural annotation.
+;
+; ══════════════════════════════════════════════════════════════
