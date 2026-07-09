@@ -45,8 +45,8 @@ BLINKKY  EQU    $A1B1    ; blink cursor, wait for keypress (ROM-version dependen
 ; ================================================================
 
 ; ==============================================================
-; Disassembly:  wasm\flames.bin
-; Module:       wasm\flames.bin
+; Disassembly:  wasm/flames.bin
+; Module:       wasm/flames.bin
 ; Type:         DECB/BIN  ($00)
 ; Size:         $167C  (5756 bytes)
 ; Entry:        $0E00
@@ -681,7 +681,7 @@ $1313  27 07                              BEQ Br_131C
 $1315  7D EF 06                           TST $EF06             
 $1318  27 02                              BEQ Br_131C           
 $131A  8D 01                              BSR $131D             
-$131B  01                  Br_131B:       FCB $01                ; undefined opcode $01 -- not a valid 6809 instruction
+$131B  01                  Br_131B:             EQU    $131B            ; [*1] branch target 1 byte(s) inside Insn_131A -- see [*1]
 $131C  39                  Br_131C:       RTS                   
 
 $131D  81 2C                                      CMPA #$2C
@@ -2361,7 +2361,7 @@ $20B0  23 05                              BLS Br_20B7
 $20B2  24 78                              BCC Br_212C            ; C=0 (BHS)
 $20B4  E0 29               Br_20B4:       SUBB 9,Y              
 $20B6  E0 15                              SUBB -11,X            
-$20B7  15                  Br_20B7:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
+$20B7  15                  Br_20B7:             EQU    $20B7            ; [*2] branch target 1 byte(s) inside Insn_20B6 -- see [*2]
 $20B8  00 01               Br_20B8:       NEG <$01              
 $20BA  E0 1B                              SUBB -5,X             
 $20BC  24 78                              BCC Br_2136            ; C=0 (BHS)
@@ -2506,7 +2506,7 @@ $21CE  24 68                              BCC Br_2238            ; C=0 (BHS)
 $21D0  E0 29                              SUBB 9,Y              
 $21D2  E0 15                              SUBB -11,X            
 $21D4  00 01                              NEG <$01              
-$21D5  01                  Br_21D5:       FCB $01                ; undefined opcode $01 -- not a valid 6809 instruction
+$21D5  01                  Br_21D5:             EQU    $21D5            ; [*3] branch target 1 byte(s) inside Insn_21D4 -- see [*3]
 $21D6  E0 1B                              SUBB -5,X             
 $21D8  24 68                              BCC Br_2242            ; C=0 (BHS)
 $21DA  E0 2B                              SUBB 11,Y             
@@ -2607,7 +2607,7 @@ $228E  6E B4                              JMP [,Y]
 $2290  22 92               Br_2290:       BHI Br_2224           
 $2292  34 10                              PSHS X                
 $2294  B7 FF C7                           STA $FFC7             
-$2296  C7                  Br_2296:       FCB $C7                ; undefined opcode $C7 -- not a valid 6809 instruction
+$2296  C7                  Br_2296:             EQU    $2296            ; [*4] branch target 2 byte(s) inside Insn_2294 -- see [*4]
 $2297  B7 FF C9                           STA $FFC9             
 $229A  B7 FF CA                           STA $FFCA             
 $229D  B7 FF CC                           STA $FFCC             
