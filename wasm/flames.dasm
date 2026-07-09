@@ -92,17 +92,10 @@ $0E1D  10 AE 81                           LDY ,X++
 $0E20  6E B4                              JMP [,Y]              
 $0E22  31 22                              LEAY 2,Y              
 $0E24  10 AF C3                           STY ,--U              
-<<<<<<< HEAD
-$0E26  C3 10 AE            Br_0E26:       ADDD #$10AE           
-$0E29  81 6E                              CMPA #$6E             
-$0E2B  B4 E2 A3                           ANDA $E2A3            
-$0E2E  E2 AA               Br_0E2E:       SBCB ?$AA             
-=======
 $0E27  10 AE 81                           LDY ,X++              
 $0E2A  6E B4                              JMP [,Y]              
 $0E2C  E2 A3                              SBCB ,--Y             
 $0E2E  E2 AA                              SBCB ?$AA             
->>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $0E30  E2 B3                              SBCB [,--Y]           
 $0E32  E8 C3                              EORB ,--U             
 $0E34  E2 D8 E2                           SBCB [-30,U]          
@@ -694,11 +687,7 @@ $131C  39                  Br_131C:       RTS
 $131D  81 2C                                      CMPA #$2C
 $131F  25 11                                      BCS Br_1332   ; C=1 (BLO)
 $1321  81 2F                                      CMPA #$2F
-<<<<<<< HEAD
-$1323  23 0B                                      BLS $1330
-=======
 $1323  23 0B                                      BLS Br_1330
->>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $1325  81 31                                      CMPA #$31
 $1327  25 09                                      BCS Br_1332   ; C=1 (BLO)
 $1329  81 3B                                      CMPA #$3B
@@ -1400,13 +1389,8 @@ $18DE  16 FF 63            Br_18DE:       LBRA Br_1844
 ; --------------------------------------------------------------
 $18E1  35 10               Br_18E1:       PULS X                
 $18E3  10 AE 81                           LDY ,X++              
-<<<<<<< HEAD
-$18E5  81 6E               Br_18E5:       CMPA #$6E             
-$18E7  B4 EA D1            Br_18E7:       ANDA $EAD1            
-=======
 $18E6  6E B4                              JMP [,Y]              
 $18E8  EA D1                              ORB [,U++]            
->>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $18EA  34 10                              PSHS X                
 $18EC  A6 43                              LDA 3,U               
 $18EE  B7 EF 1B                           STA $EF1B             
@@ -1430,11 +1414,7 @@ $1918  B6 EF 1C            Br_1918:       LDA $EF1C
 $191B  BB EF 20                           ADDA $EF20            
 $191E  C6 20                              LDB #$20              
 $1920  3D                                 MUL                   
-<<<<<<< HEAD
-$1921  F3 EF 0A            Br_1921:       ADDD $EF0A            
-=======
 $1921  F3 EF 0A                           ADDD $EF0A            
->>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $1924  FD EF 22                           STD $EF22             
 $1927  B6 EF 20                           LDA $EF20             
 $192A  F6 EF 1F                           LDB $EF1F             
@@ -1487,11 +1467,7 @@ $1986  48                                 LSLA
 $1987  40                                 NEGA                  
 $1988  8B 06                              ADDA #$06             
 $198A  C6 03                              LDB #$03              
-<<<<<<< HEAD
-$198B  03 4D               Br_198B:       COM <$4D              
-=======
 $198C  4D                                 TSTA                  
->>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $198D  27 04                              BEQ Br_1993           
 $198F  58                  Br_198F:       LSLB                  
 $1990  4A                                 DECA                  
@@ -1544,11 +1520,7 @@ $19FF  48                                 LSLA
 $1A00  40                                 NEGA                  
 $1A01  8B 06                              ADDA #$06             
 $1A03  C6 03                              LDB #$03              
-<<<<<<< HEAD
-$1A04  03 4D               Br_1A04:       COM <$4D              
-=======
 $1A05  4D                                 TSTA                  
->>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $1A06  27 04                              BEQ Br_1A0C           
 $1A08  58                  Br_1A08:       LSLB                  
 $1A09  4A                                 DECA                  
