@@ -93,7 +93,7 @@ $0E20  6E B4                              JMP [,Y]
 $0E22  31 22                              LEAY 2,Y              
 $0E24  10 AF C3                           STY ,--U              
 $0E26  C3 10 AE            Br_0E26:       ADDD #$10AE           
-$0E29  81 6E                              CMPA #$6E              ; compare A with 'n'
+$0E29  81 6E                              CMPA #$6E             
 $0E2B  B4 E2 A3                           ANDA $E2A3            
 $0E2E  E2 AA               Br_0E2E:       SBCB ?$AA             
 $0E30  E2 B3                              SBCB [,--Y]           
@@ -492,16 +492,16 @@ $119B  10 AE 81                           LDY ,X++
 $119E  6E B4                              JMP [,Y]              
 $11A0  A6 42                              LDA 2,U               
 $11A2  E6 41                              LDB 1,U               
-$11A4  3D                                 MUL                    ; D = A×B unsigned
+$11A4  3D                                 MUL                   
 $11A5  34 04                              PSHS B                
 $11A7  A6 43                              LDA 3,U               
 $11A9  E6 C4                              LDB ,U                
-$11AB  3D                                 MUL                    ; D = A×B unsigned
+$11AB  3D                                 MUL                   
 $11AC  EB E0                              ADDB ,S+              
 $11AE  34 04                              PSHS B                
 $11B0  A6 43                              LDA 3,U               
 $11B2  E6 41                              LDB 1,U               
-$11B4  3D                                 MUL                    ; D = A×B unsigned
+$11B4  3D                                 MUL                   
 $11B5  AB E0                              ADDA ,S+              
 $11B7  33 44                              LEAU 4,U              
 $11B9  ED C3                              STD ,--U              
@@ -560,7 +560,7 @@ $122B  EF 05                              STU 5,X
 $122D  20 CC                              BRA Br_11FB           
 
 ; --------------------------------------------------------------
-$122F  C6 28               Br_122F:       LDB #$28               ; B = SS.EnRTS  (GetStt/SetStt subcode)
+$122F  C6 28               Br_122F:       LDB #$28              
 $1231  F7 EF 07                           STB $EF07             
 $1234  B1 EF 05                           CMPA $EF05            
 $1237  27 14                              BEQ Br_124D           
@@ -609,7 +609,7 @@ $1298  1A 01                              ORCC #$01              ; set CC: C
 $129A  49                                 ROLA                  
 $129B  81 FF                              CMPA #$FF             
 $129D  26 E2                              BNE Br_1281           
-$129F  86 00                              LDA #$00               ; A = NUL
+$129F  86 00                              LDA #$00              
 $12A1  20 04                              BRA Br_12A7           
 
 ; --------------------------------------------------------------
@@ -690,13 +690,13 @@ $131A  8D 01                              BSR $131D
 $131B  01                  Br_131B:       FCB $01                ; undefined opcode $01 -- not a valid 6809 instruction
 $131C  39                  Br_131C:       RTS                   
 
-$131D  81 2C                                      CMPA #$2C   ; compare A with ','
+$131D  81 2C                                      CMPA #$2C
 $131F  25 11                                      BCS Br_1332   ; C=1 (BLO)
-$1321  81 2F                                      CMPA #$2F   ; compare A with '/'
+$1321  81 2F                                      CMPA #$2F
 $1323  23 0B                                      BLS $1330
-$1325  81 31                                      CMPA #$31   ; compare A with '1'
+$1325  81 31                                      CMPA #$31
 $1327  25 09                                      BCS Br_1332   ; C=1 (BLO)
-$1329  81 3B                                      CMPA #$3B   ; compare A with ';'
+$1329  81 3B                                      CMPA #$3B
 $132B  22 05                                      BHI Br_1332
 $132D  80 10                                      SUBA #$10
 $132F  39                                         RTS 
@@ -780,8 +780,8 @@ $13C0  ED C4               Br_13C0:       STD ,U
 $13C2  10 AE 81                           LDY ,X++              
 $13C5  6E B4                              JMP [,Y]              
 $13C7  E6 41                              LDB 1,U               
-$13C9  86 20                              LDA #$20               ; A = ' '
-$13CB  3D                                 MUL                    ; D = A×B unsigned
+$13C9  86 20                              LDA #$20              
+$13CB  3D                                 MUL                   
 $13CC  EB 43                              ADDB 3,U              
 $13CE  89 00                              ADCA #$00             
 $13D0  33 44                              LEAU 4,U              
@@ -1173,7 +1173,7 @@ $16FD  B7 FF 03                                   STA $FF03
 $1700  86 FF                                      LDA #$FF
 $1702  B7 FF 02                                   STA $FF02
 $1705  8E 04 00                                   LDX #$0400
-$1708  C6 60                                      LDB #$60   ; B = '`'
+$1708  C6 60                                      LDB #$60
 $170A  E7 80               Br_170A:       STB ,X+               
 $170C  8C 06 00                           CMPX #$0600           
 $170F  26 F9                              BNE Br_170A           
@@ -1229,8 +1229,8 @@ $177E  E9 67                              ADCB 7,S
 $1780  A6 45                              LDA 5,U               
 $1782  E6 43                              LDB 3,U               
 $1784  34 02                              PSHS A                
-$1786  86 20                              LDA #$20               ; A = ' '
-$1788  3D                                 MUL                    ; D = A×B unsigned
+$1786  86 20                              LDA #$20              
+$1788  3D                                 MUL                   
 $1789  F3 EF 0A                           ADDD $EF0A            
 $178C  1F 02                              TFR D,Y               
 $178E  A6 E4                              LDA ,S                
@@ -1325,8 +1325,8 @@ $183C  FC EF 14                           LDD $EF14
 $183F  A3 E1                              SUBD ,S++             
 $1841  FD EF 14                           STD $EF14             
 $1844  B6 EF 0D            Br_1844:       LDA $EF0D             
-$1847  C6 20                              LDB #$20               ; B = SS.ScSiz  (GetStt/SetStt subcode)
-$1849  3D                                 MUL                    ; D = A×B unsigned
+$1847  C6 20                              LDB #$20              
+$1849  3D                                 MUL                   
 $184A  F3 EF 0A                           ADDD $EF0A            
 $184D  1F 02                              TFR D,Y               
 $184F  B6 EF 0C                           LDA $EF0C             
@@ -1402,7 +1402,7 @@ $18DE  16 FF 63            Br_18DE:       LBRA Br_1844
 ; --------------------------------------------------------------
 $18E1  35 10               Br_18E1:       PULS X                
 $18E3  10 AE 81                           LDY ,X++              
-$18E5  81 6E               Br_18E5:       CMPA #$6E              ; compare A with 'n'
+$18E5  81 6E               Br_18E5:       CMPA #$6E             
 $18E7  B4 EA D1            Br_18E7:       ANDA $EAD1            
 $18EA  34 10                              PSHS X                
 $18EC  A6 43                              LDA 3,U               
@@ -1427,13 +1427,13 @@ $1912  B7 EF 1F                           STA $EF1F
 $1915  7F EF 20                           CLR $EF20             
 $1918  B6 EF 1C            Br_1918:       LDA $EF1C             
 $191B  BB EF 20                           ADDA $EF20            
-$191E  C6 20                              LDB #$20               ; B = SS.ScSiz  (GetStt/SetStt subcode)
-$1920  3D                                 MUL                    ; D = A×B unsigned
+$191E  C6 20                              LDB #$20              
+$1920  3D                                 MUL                   
 $1921  F3 EF 0A            Br_1921:       ADDD $EF0A            
 $1924  FD EF 22                           STD $EF22             
 $1927  B6 EF 20                           LDA $EF20             
 $192A  F6 EF 1F                           LDB $EF1F             
-$192D  3D                                 MUL                    ; D = A×B unsigned
+$192D  3D                                 MUL                   
 $192E  F3 EF 19                           ADDD $EF19            
 $1931  FD EF 24                           STD $EF24             
 $1934  7F EF 21                           CLR $EF21             
@@ -1485,7 +1485,7 @@ $1984  84 03                              ANDA #$03
 $1986  48                                 LSLA                  
 $1987  40                                 NEGA                  
 $1988  8B 06                              ADDA #$06             
-$198A  C6 03                              LDB #$03               ; B = SS.Reset  (GetStt/SetStt subcode)
+$198A  C6 03                              LDB #$03              
 $198B  03 4D               Br_198B:       COM <$4D              
 $198D  27 04                              BEQ Br_1993           
 $198F  58                  Br_198F:       LSLB                  
@@ -1528,8 +1528,8 @@ $19D4  EF 1E               Br_19D4:       STU -2,X
 $19D6  7F EF 20            Br_19D6:       CLR $EF20             
 $19D9  B6 EF 1C            Br_19D9:       LDA $EF1C             
 $19DC  BB EF 20                           ADDA $EF20            
-$19DF  C6 20                              LDB #$20               ; B = SS.ScSiz  (GetStt/SetStt subcode)
-$19E1  3D                                 MUL                    ; D = A×B unsigned
+$19DF  C6 20                              LDB #$20              
+$19E1  3D                                 MUL                   
 $19E2  F3 EF 0A                           ADDD $EF0A            
 $19E5  FD EF 22                           STD $EF22             
 $19E8  7F EF 21                           CLR $EF21             
@@ -1545,7 +1545,7 @@ $19FD  84 03                              ANDA #$03
 $19FF  48                                 LSLA                  
 $1A00  40                                 NEGA                  
 $1A01  8B 06                              ADDA #$06             
-$1A03  C6 03                              LDB #$03               ; B = SS.Reset  (GetStt/SetStt subcode)
+$1A03  C6 03                              LDB #$03              
 $1A04  03 4D               Br_1A04:       COM <$4D              
 $1A06  27 04                              BEQ Br_1A0C           
 $1A08  58                  Br_1A08:       LSLB                  
@@ -1571,10 +1571,10 @@ $1A30  EC 19                              LDD -7,X
 $1A32  34 10                              PSHS X                
 $1A34  A6 41                              LDA 1,U               
 $1A36  F6 EF 2E                           LDB $EF2E             
-$1A39  3D                                 MUL                    ; D = A×B unsigned
+$1A39  3D                                 MUL                   
 $1A3A  1F 98                              TFR B,A               
 $1A3C  F6 EF 2D                           LDB $EF2D             
-$1A3F  3D                                 MUL                    ; D = A×B unsigned
+$1A3F  3D                                 MUL                   
 $1A40  EB 43                              ADDB 3,U              
 $1A42  89 00                              ADCA #$00             
 $1A44  F3 EF 0A                           ADDD $EF0A            
@@ -1586,7 +1586,7 @@ $1A4F  03 B6                              COM <$B6
 $1A51  EF 2A                              STU 10,Y              
 $1A53  B0 EF 2A                           SUBA $EF2A            
 $1A56  F6 EF 2B                           LDB $EF2B             
-$1A59  3D                                 MUL                    ; D = A×B unsigned
+$1A59  3D                                 MUL                   
 $1A5A  F3 EF 28                           ADDD $EF28            
 $1A5D  1F 02                              TFR D,Y               
 $1A5F  F6 EF 2C                           LDB $EF2C             
@@ -1668,8 +1668,8 @@ $1AF5  FC EF 14                           LDD $EF14
 $1AF8  A3 E1                              SUBD ,S++             
 $1AFA  FD EF 14                           STD $EF14             
 $1AFD  B6 EF 0D            Br_1AFD:       LDA $EF0D             
-$1B00  C6 20                              LDB #$20               ; B = SS.ScSiz  (GetStt/SetStt subcode)
-$1B02  3D                                 MUL                    ; D = A×B unsigned
+$1B00  C6 20                              LDB #$20              
+$1B02  3D                                 MUL                   
 $1B03  F3 EF 0A                           ADDD $EF0A            
 $1B06  1F 02                              TFR D,Y               
 $1B08  B6 EF 0C                           LDA $EF0C             
@@ -1769,8 +1769,8 @@ $1BDA  A6 84               Br_1BDA:       LDA ,X
 $1BDC  E6 01                              LDB 1,X               
 $1BDE  34 10                              PSHS X                
 $1BE0  34 02                              PSHS A                
-$1BE2  86 20                              LDA #$20               ; A = ' '
-$1BE4  3D                                 MUL                    ; D = A×B unsigned
+$1BE2  86 20                              LDA #$20              
+$1BE4  3D                                 MUL                   
 $1BE5  F3 EF 0A                           ADDD $EF0A            
 $1BE8  1F 02                              TFR D,Y               
 $1BEA  A6 E4                              LDA ,S                
@@ -1832,8 +1832,8 @@ $1C50  A6 84               Br_1C50:       LDA ,X
 $1C52  E6 01                              LDB 1,X               
 $1C54  34 10                              PSHS X                
 $1C56  34 02                              PSHS A                
-$1C58  86 20                              LDA #$20               ; A = ' '
-$1C5A  3D                                 MUL                    ; D = A×B unsigned
+$1C58  86 20                              LDA #$20              
+$1C5A  3D                                 MUL                   
 $1C5B  F3 EF 0A                           ADDD $EF0A            
 $1C5E  1F 02                              TFR D,Y               
 $1C60  A6 E4                              LDA ,S                
@@ -2698,7 +2698,7 @@ $22C9  22 CB                              BHI Br_2296
 $22CB  34 10                              PSHS X                
 $22CD  BE 24 76                           LDX $2476             
 $22D0  10 BE 24 72                        LDY $2472             
-$22D4  86 20                              LDA #$20               ; A = ' '
+$22D4  86 20                              LDA #$20              
 $22D6  34 02                              PSHS A                
 $22D8  EC 81               Br_22D8:       LDD ,X++              
 $22DA  ED A1                              STD ,Y++              
@@ -2734,20 +2734,20 @@ $2311  00 3A                              NEG <$3A
 $2313  E6 E4                              LDB ,S                
 $2315  10 BE 24 72                        LDY $2472             
 $2319  31 A5                              LEAY B,Y              
-$231B  86 08                              LDA #$08               ; A = BS
+$231B  86 08                              LDA #$08              
 $231D  34 02                              PSHS A                
 $231F  B6 24 6B            Br_231F:       LDA $246B             
-$2322  C6 55                              LDB #$55               ; B = 'U'
-$2324  3D                                 MUL                    ; D = A×B unsigned
+$2322  C6 55                              LDB #$55              
+$2324  3D                                 MUL                   
 $2325  34 06                              PSHS A,B              
 $2327  B6 24 6A                           LDA $246A             
-$232A  C6 55                              LDB #$55               ; B = 'U'
-$232C  3D                                 MUL                    ; D = A×B unsigned
+$232A  C6 55                              LDB #$55              
+$232C  3D                                 MUL                   
 $232D  EB E4                              ADDB ,S               
 $232F  E7 E4                              STB ,S                
 $2331  B6 24 6B                           LDA $246B             
-$2334  C6 62                              LDB #$62               ; B = 'b'
-$2336  3D                                 MUL                    ; D = A×B unsigned
+$2334  C6 62                              LDB #$62              
+$2336  3D                                 MUL                   
 $2337  EB E4                              ADDB ,S               
 $2339  E7 E4                              STB ,S                
 $233B  35 06                              PULS A,B              
