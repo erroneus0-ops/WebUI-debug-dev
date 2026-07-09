@@ -45,8 +45,8 @@ BLINKKY  EQU    $A1B1    ; blink cursor, wait for keypress (ROM-version dependen
 ; ================================================================
 
 ; ==============================================================
-; Disassembly:  wasm/flames.bin
-; Module:       wasm/flames.bin
+; Disassembly:  wasm\flames.bin
+; Module:       wasm\flames.bin
 ; Type:         DECB/BIN  ($00)
 ; Size:         $167C  (5756 bytes)
 ; Entry:        $0E00
