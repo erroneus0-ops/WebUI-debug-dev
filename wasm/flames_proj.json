@@ -1,0 +1,25 @@
+{
+  "binary": "wasm\\flames.bin",
+  "binary_crc": "2D3F9FB8C5CD7FA6",
+  "cpu": "6809",
+  "output": "wasm\\flames_proj.dasm",
+  "entry": null,
+  "module_notes": [
+    "Add notes about this module here."
+  ],
+  "custom_equates": [],
+  "emit_equates": true,
+  "defs_file": null,
+  "hex_offsets": [],
+  "target": "os9",
+  "labels": {},
+  "bss": {},
+  "data_regions": [],
+  "line_comments": {},
+  "block_comments": {},
+  "substitutions": {},
+  "routines": [],
+  "footnotes": {},
+  "forced_equs": {},
+  "patches": {}
+}
