@@ -92,14 +92,20 @@ $0E1D  10 AE 81                           LDY ,X++
 $0E20  6E B4                              JMP [,Y]              
 $0E22  31 22                              LEAY 2,Y              
 $0E24  10 AF C3                           STY ,--U              
+<<<<<<< HEAD
 $0E26  C3 10 AE            Br_0E26:       ADDD #$10AE           
 $0E29  81 6E                              CMPA #$6E             
 $0E2B  B4 E2 A3                           ANDA $E2A3            
 $0E2E  E2 AA               Br_0E2E:       SBCB ?$AA             
+=======
+$0E27  10 AE 81                           LDY ,X++              
+$0E2A  6E B4                              JMP [,Y]              
+$0E2C  E2 A3                              SBCB ,--Y             
+$0E2E  E2 AA                              SBCB ?$AA             
+>>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $0E30  E2 B3                              SBCB [,--Y]           
 $0E32  E8 C3                              EORB ,--U             
 $0E34  E2 D8 E2                           SBCB [-30,U]          
-$0E35  D8 E2               Br_0E35:       EORB <$E2             
 $0E37  E5 E2                              BITB ,-S              
 $0E39  F2 E3 0B                           SBCB $E30B            
 $0E3C  E3 14                              ADDD -12,X            
@@ -127,8 +133,6 @@ $0E66  E5 DC E5                           BITB [-27,PC]
 $0E69  EB E3                              ADDB ,--S             
 $0E6A  E3 CA               Br_0E6A:       ADDD ?$CA             
 $0E6C  E4 CD E5 FA                        ANDB -6662,PC         
-$0E6D  CD                  Br_0E6D:       FCB $CD                ; undefined opcode $CD -- not a valid 6809 instruction
-$0E6E  E5 FA                              BITB [F,S]            
 $0E70  E6 14                              LDB -12,X             
 $0E72  E6 39                              LDB -7,Y              
 $0E74  E6 56                              LDB -10,U             
@@ -172,48 +176,49 @@ $0EBD  05                                 FCB $05                ; undefined opc
 $0EBE  02                                 FCB $02                ; undefined opcode $02 -- not a valid 6809 instruction
 $0EBF  00 08                              NEG <$08              
 $0EC1  80 22                              SUBA #$22             
-$0EC3  20 08                              BRA $0ECD             
+$0EC3  20 08                              BRA Br_0ECD           
 
 $0EC5  80 02                                      SUBA #$02
 $0EC7  00 07                                      NEG <$07
 $0EC9  07 05                                      ASR <$05
 $0ECB  40                                         NEGA 
 $0ECC  11 10                                      FCB $11,$10   ; unknown opcode $1110
-$0ECE  41                                         FCB $41   ; undefined opcode $41 -- not a valid 6809 instruction
-$0ECF  04 54                                      LSR <$54
-$0ED1  54                                         LSRB 
-$0ED2  41                                         FCB $41   ; undefined opcode $41 -- not a valid 6809 instruction
-$0ED3  04 11                                      LSR <$11
-$0ED5  10 05 40 03 03                             BIEOR $40,$03,$03
-$0EDA  20 A8                                      BRA Br_0E84
+$0ECD  10 41               Br_0ECD:       FCB $10,$41            ; unknown opcode $1041
+$0ECF  04 54                              LSR <$54              
+$0ED1  54                                 LSRB                  
+$0ED2  41                                 FCB $41                ; undefined opcode $41 -- not a valid 6809 instruction
+$0ED3  04 11                              LSR <$11              
+$0ED5  10 05 40 03 03                     BIEOR $40,$03,$03     
+$0EDA  20 A8                              BRA Br_0E84           
+
 $0EDC  20 03                                      BRA Br_0EE1
 $0EDE  03 88                                      COM <$88
 $0EE0  20 88                                      BRA Br_0E6A
 $0EE1  88 E0               Br_0EE1:       EORA #$E0             
 $0EE3  09 00                              ROL <$00              
-$0EE4  00 00               Br_0EE4:       NEG <$00              
-$0EE6  00 00                              NEG <$00              
-$0EE8  00 00                              NEG <$00              
-$0EEA  00 00                              NEG <$00              
-$0EEC  30 30                              LEAX -16,Y            
-$0EEE  30 30                              LEAX -16,Y            
-$0EF0  30 00                              LEAX 0,X              
-$0EF2  30 00                              LEAX 0,X              
-$0EF4  00 00                              NEG <$00              
-$0EF6  00 00                              NEG <$00              
-$0EF8  00 00                              NEG <$00              
-$0EFA  00 00                              NEG <$00              
-$0EFC  00 00                              NEG <$00              
-$0EFE  00 00                              NEG <$00              
-$0F00  00 00                              NEG <$00              
-$0F02  00 00                              NEG <$00              
-$0F04  00 00                              NEG <$00              
-$0F06  00 00                              NEG <$00              
-$0F08  00 00                              NEG <$00              
-$0F0A  00 00                              NEG <$00              
-$0F0C  E3 03                              ADDD 3,X              
-$0F0E  0C 30                              INC <$30              
-$0F10  C3 00 00                           ADDD #$0000           
+$0EE5  00 00                              NEG <$00              
+$0EE7  00 00                              NEG <$00              
+$0EE9  00 00                              NEG <$00              
+$0EEB  00 30                              NEG <$30              
+$0EED  30 30                              LEAX -16,Y            
+$0EEF  30 30                              LEAX -16,Y            
+$0EF1  00 30                              NEG <$30              
+$0EF3  00 00                              NEG <$00              
+$0EF5  00 00                              NEG <$00              
+$0EF7  00 00                              NEG <$00              
+$0EF9  00 00                              NEG <$00              
+$0EFB  00 00                              NEG <$00              
+$0EFD  00 00                              NEG <$00              
+$0EFF  00 00                              NEG <$00              
+$0F01  00 00                              NEG <$00              
+$0F03  00 00                              NEG <$00              
+$0F05  00 00                              NEG <$00              
+$0F07  00 00                              NEG <$00              
+$0F09  00 00                              NEG <$00              
+$0F0B  00 E3                              NEG <$E3              
+$0F0D  03 0C                              COM <$0C              
+$0F0F  30 C3                              LEAX ,--U             
+$0F11  00 00                              NEG <$00              
 $0F13  00 00                              NEG <$00              
 $0F15  00 00                              NEG <$00              
 $0F17  00 00                              NEG <$00              
@@ -407,7 +412,6 @@ $10CE  33 42                              LEAU 2,U
 $10D0  C4 3F                              ANDB #$3F             
 $10D2  CA 40                              ORB #$40              
 $10D4  10 BE EF 03                        LDY $EF03             
-$10D6  EF 03               Br_10D6:       STU 3,X               
 $10D8  E7 A9 04 00                        STB 1024,Y            
 $10DC  31 21                              LEAY 1,Y              
 $10DE  10 8C 02 00                        CMPY #$0200           
@@ -415,7 +419,7 @@ $10E2  25 04                              BCS Br_10E8            ; C=1 (BLO)
 $10E4  10 8E 00 00                        LDY #$0000            
 $10E8  10 BF EF 03         Br_10E8:       STY $EF03             
 $10EC  10 AE 81                           LDY ,X++              
-$10EF  6E B4               Br_10EF:       JMP [,Y]              
+$10EF  6E B4                              JMP [,Y]              
 $10F1  EC C4                              LDD ,U                
 $10F3  33 42                              LEAU 2,U              
 $10F5  E3 C4                              ADDD ,U               
@@ -512,11 +516,11 @@ $11C2  34 06                              PSHS A,B
 $11C4  EC 42                              LDD 2,U               
 $11C6  33 44                              LEAU 4,U              
 $11C8  10 8E 00 00                        LDY #$0000            
-$11CC  10 A3 E4                           CMPD ,S               
+$11CC  10 A3 E4            Br_11CC:       CMPD ,S               
 $11CF  25 06                              BCS Br_11D7            ; C=1 (BLO)
 $11D1  A3 E4                              SUBD ,S               
 $11D3  31 21                              LEAY 1,Y              
-$11D5  20 F5                              BRA $11CC             
+$11D5  20 F5                              BRA Br_11CC           
 
 ; --------------------------------------------------------------
 $11D7  32 62               Br_11D7:       LEAS 2,S              
@@ -533,7 +537,7 @@ $11EE  86 FF                              LDA #$FF
 $11F0  B7 FF 02                           STA $FF02             
 $11F3  4F                                 CLRA                   ; A = 0
 $11F4  ED C4                              STD ,U                
-$11F6  10 AE 81            Br_11F6:       LDY ,X++              
+$11F6  10 AE 81                           LDY ,X++              
 $11F9  6E B4                              JMP [,Y]              
 $11FB  86 7F               Br_11FB:       LDA #$7F              
 $11FD  B7 FF 02                           STA $FF02             
@@ -555,8 +559,7 @@ $1222  27 D7                              BEQ Br_11FB
 $1224  4A                                 DECA                  
 $1225  B7 EF 07                           STA $EF07             
 $1228  26 D1                              BNE Br_11FB           
-$1229  D1 7F               Br_1229:       CMPB <$7F             
-$122B  EF 05                              STU 5,X               
+$122A  7F EF 05                           CLR $EF05             
 $122D  20 CC                              BRA Br_11FB           
 
 ; --------------------------------------------------------------
@@ -646,11 +649,10 @@ $12CC  54                                         LSRB
 $12CD  1D                                         SEX    ; sign-extend B into A
 $12CE  34 2C                                      PSHS B,DP,Y
 $12D0  00 45                                      NEG <$45
-$12D1  45                  Br_12D1:       FCB $45                ; undefined opcode $45 -- not a valid 6809 instruction
-$12D2  4D                                 TSTA                  
-$12D3  55                                 FCB $55                ; undefined opcode $55 -- not a valid 6809 instruction
-$12D4  1E 35                              EXG U,PC              
-$12D6  2D 00                              BLT Br_12D8           
+$12D2  4D                                         TSTA 
+$12D3  55                                         FCB $55   ; undefined opcode $55 -- not a valid 6809 instruction
+$12D4  1E 35                                      EXG U,PC
+$12D6  2D 00                                      BLT Br_12D8
 $12D8  46                  Br_12D8:       RORA                  
 $12D9  4E                                 FCB $4E                ; undefined opcode $4E -- not a valid 6809 instruction
 $12DA  56                                 RORB                  
@@ -667,7 +669,6 @@ $12E8  1F 89                              TFR A,B
 $12EA  4F                                 CLRA                   ; A = 0
 $12EB  ED C3                              STD ,--U              
 $12ED  10 AE 81                           LDY ,X++              
-$12EE  AE 81               Br_12EE:       LDX ,X++              
 $12F0  6E B4                              JMP [,Y]              
 $12F2  7F FF 02                           CLR $FF02             
 $12F5  B6 FF 00                           LDA $FF00             
@@ -693,14 +694,18 @@ $131C  39                  Br_131C:       RTS
 $131D  81 2C                                      CMPA #$2C
 $131F  25 11                                      BCS Br_1332   ; C=1 (BLO)
 $1321  81 2F                                      CMPA #$2F
+<<<<<<< HEAD
 $1323  23 0B                                      BLS $1330
+=======
+$1323  23 0B                                      BLS Br_1330
+>>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $1325  81 31                                      CMPA #$31
 $1327  25 09                                      BCS Br_1332   ; C=1 (BLO)
 $1329  81 3B                                      CMPA #$3B
 $132B  22 05                                      BHI Br_1332
 $132D  80 10                                      SUBA #$10
 $132F  39                                         RTS 
-$1330  8B 10                                      ADDA #$10
+$1330  8B 10               Br_1330:       ADDA #$10             
 $1332  39                  Br_1332:       RTS                   
 
 $1333  EC C4                                      LDD ,U
@@ -712,9 +717,7 @@ $133D  30 8B                                      LEAX D,X
 $133F  10 AE 81                                   LDY ,X++
 $1342  6E B4                                      JMP [,Y]
 $1344  30 02               Br_1344:       LEAX 2,X              
-$1345  02                  Br_1345:       FCB $02                ; undefined opcode $02 -- not a valid 6809 instruction
 $1346  10 AE 81                           LDY ,X++              
-$1347  AE 81               Br_1347:       LDX ,X++              
 $1349  6E B4                              JMP [,Y]              
 $134B  EC 84                              LDD ,X                
 $134D  30 02                              LEAX 2,X              
@@ -810,8 +813,7 @@ $1402  6E B4                              JMP [,Y]
 $1404  EC C4                              LDD ,U                
 $1406  33 42                              LEAU 2,U              
 $1408  AA C4                              ORA ,U                
-$1409  C4 EA               Br_1409:       ANDB #$EA             
-$140B  41                                 FCB $41                ; undefined opcode $41 -- not a valid 6809 instruction
+$140A  EA 41                              ORB 1,U               
 $140C  ED C4                              STD ,U                
 $140E  10 AE 81                           LDY ,X++              
 $1411  6E B4                              JMP [,Y]              
@@ -967,15 +969,14 @@ $153F  40                                 NEGA
 $1540  34 02               Br_1540:       PSHS A                
 $1542  A6 01                              LDA 1,X               
 $1544  A0 21                              SUBA 1,Y              
-$1546  2A 01                              BPL $1549             
+$1546  2A 01                              BPL Br_1549           
 $1548  40                                 NEGA                  
-$1549  AB E0                              ADDA ,S+              
+$1549  AB E0               Br_1549:       ADDA ,S+              
 $154B  1F 89                              TFR A,B               
 $154D  4F                                 CLRA                   ; A = 0
 $154E  ED C4                              STD ,U                
-$154F  C4 35               Br_154F:       ANDB #$35             
-$1551  10 10                              FCB $10,$10            ; unknown opcode $1010
-$1553  AE 81                              LDX ,X++              
+$1550  35 10                              PULS X                
+$1552  10 AE 81                           LDY ,X++              
 $1555  6E B4                              JMP [,Y]              
 $1557  32 64                              LEAS 4,S              
 $1559  10 AE 81                           LDY ,X++              
@@ -991,7 +992,7 @@ $156B  EC C4                              LDD ,U
 $156D  43                                 COMA                  
 $156E  53                                 COMB                  
 $156F  ED C4                              STD ,U                
-$1571  10 AE 81            Br_1571:       LDY ,X++              
+$1571  10 AE 81                           LDY ,X++              
 $1574  6E B4                              JMP [,Y]              
 $1576  EC C4                              LDD ,U                
 $1578  A8 42                              EORA 2,U              
@@ -1057,8 +1058,7 @@ $15F9  10 8E 00 00                        LDY #$0000
 $15FD  10 BF EF 03         Br_15FD:       STY $EF03             
 $1601  35 10                              PULS X                
 $1603  EC E4                              LDD ,S                
-$1604  E4 83               Br_1604:       ANDB ,--X             
-$1606  00 01                              NEG <$01              
+$1605  83 00 01                           SUBD #$0001           
 $1608  ED E4                              STD ,S                
 $160A  26 D5                              BNE Br_15E1           
 $160C  32 62                              LEAS 2,S              
@@ -1086,7 +1086,7 @@ $163C  EC 42                              LDD 2,U
 $163E  ED C3                              STD ,--U              
 $1640  EC 42                              LDD 2,U               
 $1642  ED C3                              STD ,--U              
-$1644  10 AE 81            Br_1644:       LDY ,X++              
+$1644  10 AE 81                           LDY ,X++              
 $1647  6E B4                              JMP [,Y]              
 $1649  EC 44                              LDD 4,U               
 $164B  10 AE 42                           LDY 2,U               
@@ -1181,7 +1181,7 @@ $1711  4F                                 CLRA                   ; A = 0
 $1712  5F                                 CLRB                   ; B = 0
 $1713  FD EF 03                           STD $EF03             
 $1716  8E 20 00                           LDX #$2000            
-$1719  10 AE 81            Br_1719:       LDY ,X++              
+$1719  10 AE 81                           LDY ,X++              
 $171C  6E B4                              JMP [,Y]              
 $171E  E9 07                              ADCB 7,X              
 $1720  34 10                              PSHS X                
@@ -1265,7 +1265,7 @@ $17BD  32 62                              LEAS 2,S
 $17BF  33 46                              LEAU 6,U              
 $17C1  10 AE 81                           LDY ,X++              
 $17C4  6E B4                              JMP [,Y]              
-$17C6  E9 AF 34 10         Br_17C6:       ADCB [$3410]          
+$17C6  E9 AF 34 10                        ADCB [$3410]          
 $17CA  A6 41                              LDA 1,U               
 $17CC  B7 EF 18                           STA $EF18             
 $17CF  A6 45                              LDA 5,U               
@@ -1360,7 +1360,6 @@ $187F  A7 A4                              STA ,Y
 $1881  32 62                              LEAS 2,S              
 $1883  B6 EF 0C                           LDA $EF0C             
 $1886  B1 EF 0E                           CMPA $EF0E            
-$1887  EF 0E               Br_1887:       STU 14,X              
 $1889  26 08                              BNE Br_1893           
 $188B  B6 EF 0D                           LDA $EF0D             
 $188E  B1 EF 0F                           CMPA $EF0F            
@@ -1375,7 +1374,7 @@ $189F  43                                 COMA
 $18A0  53                                 COMB                  
 $18A1  C3 00 01                           ADDD #$0001           
 $18A4  10 B3 EF 16                        CMPD $EF16            
-$18A8  2C 17                              BGE $18C1             
+$18A8  2C 17                              BGE Br_18C1           
 $18AA  4F                                 CLRA                   ; A = 0
 $18AB  F6 EF 13                           LDB $EF13             
 $18AE  34 06                              PSHS A,B              
@@ -1383,16 +1382,15 @@ $18B0  FC EF 14                           LDD $EF14
 $18B3  A3 E1                              SUBD ,S++             
 $18B5  FD EF 14                           STD $EF14             
 $18B8  B6 EF 0C                           LDA $EF0C             
-$18BA  0C BB               Br_18BA:       INC <$BB              
-$18BC  EF 10                              STU -16,X             
+$18BB  BB EF 10                           ADDA $EF10            
 $18BE  B7 EF 0C                           STA $EF0C             
-$18C1  4F                                 CLRA                   ; A = 0
+$18C1  4F                  Br_18C1:       CLRA                   ; A = 0
 $18C2  F6 EF 12                           LDB $EF12             
 $18C5  10 B3 EF 16                        CMPD $EF16            
 $18C9  2F 13                              BLE Br_18DE           
 $18CB  4F                                 CLRA                   ; A = 0
 $18CC  F6 EF 12                           LDB $EF12             
-$18CF  F3 EF 14            Br_18CF:       ADDD $EF14            
+$18CF  F3 EF 14                           ADDD $EF14            
 $18D2  FD EF 14                           STD $EF14             
 $18D5  B6 EF 0D                           LDA $EF0D             
 $18D8  BB EF 11                           ADDA $EF11            
@@ -1402,11 +1400,16 @@ $18DE  16 FF 63            Br_18DE:       LBRA Br_1844
 ; --------------------------------------------------------------
 $18E1  35 10               Br_18E1:       PULS X                
 $18E3  10 AE 81                           LDY ,X++              
+<<<<<<< HEAD
 $18E5  81 6E               Br_18E5:       CMPA #$6E             
 $18E7  B4 EA D1            Br_18E7:       ANDA $EAD1            
+=======
+$18E6  6E B4                              JMP [,Y]              
+$18E8  EA D1                              ORB [,U++]            
+>>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $18EA  34 10                              PSHS X                
 $18EC  A6 43                              LDA 3,U               
-$18EE  B7 EF 1B            Br_18EE:       STA $EF1B             
+$18EE  B7 EF 1B                           STA $EF1B             
 $18F1  A6 41                              LDA 1,U               
 $18F3  B7 EF 1C                           STA $EF1C             
 $18F6  10 AE 44                           LDY 4,U               
@@ -1417,8 +1420,6 @@ $1900  A6 21                              LDA 1,Y
 $1902  B7 EF 1E                           STA $EF1E             
 $1905  31 22                              LEAY 2,Y              
 $1907  10 BF EF 19                        STY $EF19             
-$1909  EF 19               Br_1909:       STU -7,X              
-$190A  19                  Br_190A:       DAA                   
 $190B  B6 EF 1D                           LDA $EF1D             
 $190E  8B 03                              ADDA #$03             
 $1910  44                                 LSRA                  
@@ -1429,7 +1430,11 @@ $1918  B6 EF 1C            Br_1918:       LDA $EF1C
 $191B  BB EF 20                           ADDA $EF20            
 $191E  C6 20                              LDB #$20              
 $1920  3D                                 MUL                   
+<<<<<<< HEAD
 $1921  F3 EF 0A            Br_1921:       ADDD $EF0A            
+=======
+$1921  F3 EF 0A                           ADDD $EF0A            
+>>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $1924  FD EF 22                           STD $EF22             
 $1927  B6 EF 20                           LDA $EF20             
 $192A  F6 EF 1F                           LDB $EF1F             
@@ -1451,16 +1456,13 @@ $194B  F7 EF 27                           STB $EF27
 $194E  5D                                 TSTB                  
 $194F  27 04                              BEQ Br_1955           
 $1951  44                  Br_1951:       LSRA                  
-$1952  5A                  Br_1952:       DECB                  
+$1952  5A                                 DECB                  
 $1953  26 FC                              BNE Br_1951           
-$1954  FC 84 03            Br_1954:       LDD $8403             
 $1955  84 03               Br_1955:       ANDA #$03             
 $1957  27 41                              BEQ Br_199A           
 $1959  34 02                              PSHS A                
 $195B  B6 EF 1B                           LDA $EF1B             
-$195D  1B                  Br_195D:       FCB $1B                ; undefined opcode $1B -- not a valid 6809 instruction
-$195E  BB EF 21            Br_195E:       ADDA $EF21            
-$195F  EF 21               Br_195F:       STU 1,Y               
+$195E  BB EF 21                           ADDA $EF21            
 $1961  34 02                              PSHS A                
 $1963  44                                 LSRA                  
 $1964  44                                 LSRA                  
@@ -1479,36 +1481,35 @@ $1979  4A                                 DECA
 $197A  26 FC                              BNE Br_1978           
 $197C  E7 E4               Br_197C:       STB ,S                
 $197E  B6 EF 1B                           LDA $EF1B             
-$197F  EF 1B               Br_197F:       STU -5,X              
 $1981  BB EF 21                           ADDA $EF21            
 $1984  84 03                              ANDA #$03             
 $1986  48                                 LSLA                  
 $1987  40                                 NEGA                  
 $1988  8B 06                              ADDA #$06             
 $198A  C6 03                              LDB #$03              
+<<<<<<< HEAD
 $198B  03 4D               Br_198B:       COM <$4D              
+=======
+$198C  4D                                 TSTA                  
+>>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $198D  27 04                              BEQ Br_1993           
 $198F  58                  Br_198F:       LSLB                  
-$1990  4A                  Br_1990:       DECA                  
+$1990  4A                                 DECA                  
 $1991  26 FC                              BNE Br_198F           
 $1993  53                  Br_1993:       COMB                  
 $1994  E4 A4                              ANDB ,Y               
-$1996  EA E0               Br_1996:       ORB ,S+               
+$1996  EA E0                              ORB ,S+               
 $1998  E7 A4                              STB ,Y                
 $199A  7C EF 21            Br_199A:       INC $EF21             
-$199B  EF 21               Br_199B:       STU 1,Y               
 $199D  B6 EF 21                           LDA $EF21             
 $19A0  B1 EF 1D                           CMPA $EF1D            
-$19A2  1D                  Br_19A2:       SEX                    ; sign-extend B into A
 $19A3  26 92                              BNE Br_1937           
 $19A5  7C EF 20                           INC $EF20             
-$19A6  EF 20               Br_19A6:       STU 0,Y               
 $19A8  B6 EF 20                           LDA $EF20             
 $19AB  B1 EF 1E                           CMPA $EF1E            
-$19AC  EF 1E               Br_19AC:       STU -2,X              
 $19AE  10 26 FF 66                        LBNE Br_1918          
 $19B2  35 10                              PULS X                
-$19B4  10 AE 81            Br_19B4:       LDY ,X++              
+$19B4  10 AE 81                           LDY ,X++              
 $19B7  6E B4                              JMP [,Y]              
 $19B9  EB A2                              ADDB ,-Y              
 $19BB  34 10                              PSHS X                
@@ -1517,15 +1518,12 @@ $19BF  B7 EF 1B                           STA $EF1B
 $19C2  A6 41                              LDA 1,U               
 $19C4  B7 EF 1C                           STA $EF1C             
 $19C7  10 AE 44                           LDY 4,U               
-$19C9  44                  Br_19C9:       LSRA                  
 $19CA  33 46                              LEAU 6,U              
-$19CB  46                  Br_19CB:       RORA                  
 $19CC  A6 A4                              LDA ,Y                
 $19CE  B7 EF 1D                           STA $EF1D             
 $19D1  A6 21                              LDA 1,Y               
 $19D3  B7 EF 1E                           STA $EF1E             
-$19D4  EF 1E               Br_19D4:       STU -2,X              
-$19D6  7F EF 20            Br_19D6:       CLR $EF20             
+$19D6  7F EF 20                           CLR $EF20             
 $19D9  B6 EF 1C            Br_19D9:       LDA $EF1C             
 $19DC  BB EF 20                           ADDA $EF20            
 $19DF  C6 20                              LDB #$20              
@@ -1546,7 +1544,11 @@ $19FF  48                                 LSLA
 $1A00  40                                 NEGA                  
 $1A01  8B 06                              ADDA #$06             
 $1A03  C6 03                              LDB #$03              
+<<<<<<< HEAD
 $1A04  03 4D               Br_1A04:       COM <$4D              
+=======
+$1A05  4D                                 TSTA                  
+>>>>>>> fe1d535f6085ce7e4552a1a491087c9120402323
 $1A06  27 04                              BEQ Br_1A0C           
 $1A08  58                  Br_1A08:       LSLB                  
 $1A09  4A                                 DECA                  
@@ -1554,18 +1556,16 @@ $1A0A  26 FC                              BNE Br_1A08
 $1A0C  53                  Br_1A0C:       COMB                  
 $1A0D  E4 A4                              ANDB ,Y               
 $1A0F  E7 A4                              STB ,Y                
-$1A11  7C EF 21            Br_1A11:       INC $EF21             
+$1A11  7C EF 21                           INC $EF21             
 $1A14  B6 EF 21                           LDA $EF21             
 $1A17  B1 EF 1D                           CMPA $EF1D            
 $1A1A  26 CF                              BNE Br_19EB           
 $1A1C  7C EF 20                           INC $EF20             
-$1A1F  B6 EF 20            Br_1A1F:       LDA $EF20             
+$1A1F  B6 EF 20                           LDA $EF20             
 $1A22  B1 EF 1E                           CMPA $EF1E            
 $1A25  10 26 FF B0                        LBNE Br_19D9          
-$1A26  26 FF               Br_1A26:       BNE $1A27             
-$1A28  B0 35 10                           SUBA $3510            
-$1A29  35 10               Br_1A29:       PULS X                
-$1A2B  10 AE 81            Br_1A2B:       LDY ,X++              
+$1A29  35 10                              PULS X                
+$1A2B  10 AE 81                           LDY ,X++              
 $1A2E  6E B4                              JMP [,Y]              
 $1A30  EC 19                              LDD -7,X              
 $1A32  34 10                              PSHS X                
@@ -1581,10 +1581,9 @@ $1A44  F3 EF 0A                           ADDD $EF0A
 $1A47  34 06                              PSHS A,B              
 $1A49  A6 45                              LDA 5,U               
 $1A4B  B1 EF 2A                           CMPA $EF2A            
-$1A4D  2A 24               Br_1A4D:       BPL Br_1A73           
-$1A4F  03 B6                              COM <$B6              
-$1A51  EF 2A                              STU 10,Y              
-$1A53  B0 EF 2A                           SUBA $EF2A            
+$1A4E  24 03                              BCC Br_1A53            ; C=0 (BHS)
+$1A50  B6 EF 2A                           LDA $EF2A             
+$1A53  B0 EF 2A            Br_1A53:       SUBA $EF2A            
 $1A56  F6 EF 2B                           LDB $EF2B             
 $1A59  3D                                 MUL                   
 $1A5A  F3 EF 28                           ADDD $EF28            
@@ -1593,18 +1592,17 @@ $1A5F  F6 EF 2C                           LDB $EF2C
 $1A62  AE E1                              LDX ,S++              
 $1A64  A6 A0               Br_1A64:       LDA ,Y+               
 $1A66  A7 84                              STA ,X                
-$1A68  B6 EF 2D            Br_1A68:       LDA $EF2D             
+$1A68  B6 EF 2D                           LDA $EF2D             
 $1A6B  30 86                              LEAX A,X              
 $1A6D  5A                                 DECB                  
 $1A6E  26 F4                              BNE Br_1A64           
 $1A70  33 46                              LEAU 6,U              
 $1A72  35 10                              PULS X                
-$1A73  10 10               Br_1A73:       FCB $10,$10            ; unknown opcode $1010
-$1A75  AE 81                              LDX ,X++              
-$1A77  6E B4               Br_1A77:       JMP [,Y]              
+$1A74  10 AE 81                           LDY ,X++              
+$1A77  6E B4                              JMP [,Y]              
 $1A79  EC 62                              LDD 2,S               
 $1A7B  34 10                              PSHS X                
-$1A7D  EC C4               Br_1A7D:       LDD ,U                
+$1A7D  EC C4                              LDD ,U                
 $1A7F  FD EF 2F                           STD $EF2F             
 $1A82  A6 45                              LDA 5,U               
 $1A84  B7 EF 0E                           STA $EF0E             
@@ -1615,10 +1613,8 @@ $1A8E  B7 EF 0C                           STA $EF0C
 $1A91  A6 47                              LDA 7,U               
 $1A93  B7 EF 0D                           STA $EF0D             
 $1A96  33 4A                              LEAU 10,U             
-$1A97  4A                  Br_1A97:       DECA                  
 $1A98  CC 00 00                           LDD #$0000            
 $1A9B  FD EF 33                           STD $EF33             
-$1A9C  EF 33               Br_1A9C:       STU -13,Y             
 $1A9E  4F                                 CLRA                   ; A = 0
 $1A9F  F6 EF 0C                           LDB $EF0C             
 $1AA2  34 06                              PSHS A,B              
@@ -1655,7 +1651,6 @@ $1ADE  20 08                              BRA Br_1AE8
 
 ; --------------------------------------------------------------
 $1AE0  F7 EF 13            Br_1AE0:       STB $EF13             
-$1AE1  EF 13               Br_1AE1:       STU -13,X             
 $1AE3  86 01                              LDA #$01              
 $1AE5  B7 EF 11                           STA $EF11             
 $1AE8  4F                  Br_1AE8:       CLRA                   ; A = 0
@@ -1696,10 +1691,9 @@ $1B2F  B6 EF 0D                           LDA $EF0D
 $1B32  A7 A0                              STA ,Y+               
 $1B34  E7 A0                              STB ,Y+               
 $1B36  10 BF EF 2F                        STY $EF2F             
-$1B37  BF EF 2F            Br_1B37:       STX $EF2F             
 $1B3A  FC EF 33                           LDD $EF33             
 $1B3D  C3 00 01                           ADDD #$0001           
-$1B40  FD EF 33            Br_1B40:       STD $EF33             
+$1B40  FD EF 33                           STD $EF33             
 $1B43  10 83 00 C8                        CMPD #$00C8           
 $1B47  24 5E                              BCC Br_1BA7            ; C=0 (BHS)
 $1B49  B6 EF 0C                           LDA $EF0C             
@@ -1718,7 +1712,7 @@ $1B65  43                                 COMA
 $1B66  53                                 COMB                  
 $1B67  C3 00 01                           ADDD #$0001           
 $1B6A  10 B3 EF 16                        CMPD $EF16            
-$1B6E  2C 17                              BGE $1B87             
+$1B6E  2C 17                              BGE Br_1B87           
 $1B70  4F                                 CLRA                   ; A = 0
 $1B71  F6 EF 13                           LDB $EF13             
 $1B74  34 06                              PSHS A,B              
@@ -1726,12 +1720,12 @@ $1B76  FC EF 14                           LDD $EF14
 $1B79  A3 E1                              SUBD ,S++             
 $1B7B  FD EF 14                           STD $EF14             
 $1B7E  B6 EF 0C                           LDA $EF0C             
-$1B81  BB EF 10            Br_1B81:       ADDA $EF10            
+$1B81  BB EF 10                           ADDA $EF10            
 $1B84  B7 EF 0C                           STA $EF0C             
-$1B87  4F                                 CLRA                   ; A = 0
+$1B87  4F                  Br_1B87:       CLRA                   ; A = 0
 $1B88  F6 EF 12                           LDB $EF12             
 $1B8B  10 B3 EF 16                        CMPD $EF16            
-$1B8F  2F 13                              BLE $1BA4             
+$1B8F  2F 13                              BLE Br_1BA4           
 $1B91  4F                                 CLRA                   ; A = 0
 $1B92  F6 EF 12                           LDB $EF12             
 $1B95  F3 EF 14                           ADDD $EF14            
@@ -1739,7 +1733,7 @@ $1B98  FD EF 14                           STD $EF14
 $1B9B  B6 EF 0D                           LDA $EF0D             
 $1B9E  BB EF 11                           ADDA $EF11            
 $1BA1  B7 EF 0D                           STA $EF0D             
-$1BA4  16 FF 56                           LBRA Br_1AFD          
+$1BA4  16 FF 56            Br_1BA4:       LBRA Br_1AFD          
 
 ; --------------------------------------------------------------
 $1BA7  FC EF 33            Br_1BA7:       LDD $EF33             
@@ -1782,15 +1776,13 @@ $1BF2  84 03                              ANDA #$03
 $1BF4  48                                 LSLA                  
 $1BF5  40                                 NEGA                  
 $1BF6  8B 06                              ADDA #$06             
-$1BF7  06 34               Br_1BF7:       ROR <$34              
-$1BF9  02                                 FCB $02                ; undefined opcode $02 -- not a valid 6809 instruction
+$1BF8  34 02                              PSHS A                
 $1BFA  B6 EF 18                           LDA $EF18             
 $1BFD  E6 E4                              LDB ,S                
 $1BFF  27 04                              BEQ Br_1C05           
 $1C01  48                  Br_1C01:       LSLA                  
 $1C02  5A                                 DECB                  
 $1C03  26 FC                              BNE Br_1C01           
-$1C04  FC 34 02            Br_1C04:       LDD $3402             
 $1C05  34 02               Br_1C05:       PSHS A                
 $1C07  86 03                              LDA #$03              
 $1C09  E6 61                              LDB 1,S               
@@ -1807,7 +1799,6 @@ $1C1A  35 10                              PULS X
 $1C1C  30 03                              LEAX 3,X              
 $1C1E  FC EF 33                           LDD $EF33             
 $1C21  83 00 01                           SUBD #$0001           
-$1C22  00 01               Br_1C22:       NEG <$01              
 $1C24  FD EF 33                           STD $EF33             
 $1C27  26 B1                              BNE Br_1BDA           
 $1C29  35 10               Br_1C29:       PULS X                
@@ -1869,7 +1860,6 @@ $1C91  32 62                              LEAS 2,S
 $1C93  35 10                              PULS X                
 $1C95  30 03                              LEAX 3,X              
 $1C97  FC EF 33                           LDD $EF33             
-$1C98  EF 33               Br_1C98:       STU -13,Y             
 $1C9A  83 00 01                           SUBD #$0001           
 $1C9D  FD EF 33                           STD $EF33             
 $1CA0  26 AE                              BNE Br_1C50           
@@ -1958,9 +1948,8 @@ $1D46  20 0A                              BRA Br_1D52
 $1D48  00 00                                      NEG <$00
 $1D4A  00 00                                      NEG <$00
 $1D4C  00 00                                      NEG <$00
-$1D4D  00 00               Br_1D4D:       NEG <$00              
-$1D4F  00 00                              NEG <$00              
-$1D51  00 00                              NEG <$00              
+$1D4E  00 00                                      NEG <$00
+$1D50  00 00                                      NEG <$00
 $1D52  00 00               Br_1D52:       NEG <$00              
 $1D54  00 00                              NEG <$00              
 $1D56  00 00                              NEG <$00              
@@ -2296,16 +2285,16 @@ $1FE8  00 00                              NEG <$00
 $1FEA  00 00                              NEG <$00              
 $1FEC  00 00                              NEG <$00              
 $1FEE  00 00                              NEG <$00              
-$1FEF  00 00               Br_1FEF:       NEG <$00              
-$1FF1  00 00                              NEG <$00              
-$1FF3  00 00                              NEG <$00              
-$1FF5  00 00                              NEG <$00              
-$1FF7  00 00                              NEG <$00              
-$1FF9  00 00                              NEG <$00              
-$1FFB  00 00                              NEG <$00              
-$1FFD  00 00                              NEG <$00              
-$1FFF  00 21                              NEG <$21              
-$2001  BE E0 00                           LDX $E000             
+$1FF0  00 00                              NEG <$00              
+$1FF2  00 00                              NEG <$00              
+$1FF4  00 00                              NEG <$00              
+$1FF6  00 00                              NEG <$00              
+$1FF8  00 00                              NEG <$00              
+$1FFA  00 00                              NEG <$00              
+$1FFC  00 00                              NEG <$00              
+$1FFE  00 00                              NEG <$00              
+$2000  21 BE                              BRN Br_1FC0           
+$2002  E0 00                              SUBB 0,X              
 $2004  E0 15                              SUBB -11,X            
 $2006  02                                 FCB $02                ; undefined opcode $02 -- not a valid 6809 instruction
 $2007  00 E0                              NEG <$E0              
@@ -2313,7 +2302,6 @@ $2009  15                                 FCB $15                ; undefined opc
 $200A  00 00                              NEG <$00              
 $200C  E0 2D                              SUBB 13,Y             
 $200E  E0 15                              SUBB -11,X            
-$200F  15                  Br_200F:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $2010  00 80                              NEG <$80              
 $2012  E0 15                              SUBB -11,X            
 $2014  04 00                              LSR <$00              
@@ -2321,7 +2309,7 @@ $2016  E0 31                              SUBB -15,Y
 $2018  E0 1B                              SUBB -5,X             
 $201A  E0 49                              SUBB 9,U              
 $201C  E0 2F                              SUBB 15,Y             
-$201E  FF EE E0            Br_201E:       STU $EEE0             
+$201E  FF EE E0                           STU $EEE0             
 $2021  13                                 SYNC                   ; wait for interrupt
 $2022  E0 00                              SUBB 0,X              
 $2024  E0 15                              SUBB -11,X            
@@ -2333,17 +2321,15 @@ $202C  E0 2D                              SUBB 13,Y
 $202E  E0 15                              SUBB -11,X            
 $2030  00 60                              NEG <$60              
 $2032  E0 15                              SUBB -11,X            
-$2033  15                  Br_2033:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $2034  04 00                              LSR <$00              
 $2036  E0 31                              SUBB -15,Y            
 $2038  E0 1B                              SUBB -5,X             
 $203A  E0 49                              SUBB 9,U              
 $203C  E0 2F                              SUBB 15,Y             
-$203E  FF EE E0            Br_203E:       STU $EEE0             
+$203E  FF EE E0                           STU $EEE0             
 $2041  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $2042  00 00                              NEG <$00              
-$2043  00 E0               Br_2043:       NEG <$E0              
-$2045  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
+$2044  E0 15                              SUBB -11,X            
 $2046  00 00                              NEG <$00              
 $2048  E0 47                              SUBB 7,U              
 $204A  E0 13                              SUBB -13,X            
@@ -2381,27 +2367,24 @@ $2084  FF 00 E0                           STU $00E0
 $2087  4B                                 FCB $4B                ; undefined opcode $4B -- not a valid 6809 instruction
 $2088  E0 15                              SUBB -11,X            
 $208A  00 7F                              NEG <$7F              
-$208B  7F E0 4D            Br_208B:       CLR $E04D             
+$208C  E0 4D                              SUBB 13,U             
 $208E  E0 15                              SUBB -11,X            
 $2090  00 7F                              NEG <$7F              
 $2092  E0 3D                              SUBB -3,Y             
 $2094  E0 45                              SUBB 5,U              
 $2096  E0 13                              SUBB -13,X            
-$2097  13                  Br_2097:       SYNC                   ; wait for interrupt
 $2098  E0 00                              SUBB 0,X              
 $209A  22 C9                              BHI Br_2065           
 $209C  E0 15                              SUBB -11,X            
 $209E  00 0B                              NEG <$0B              
 $20A0  E0 15                              SUBB -11,X            
-$20A1  15                  Br_20A1:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $20A2  00 00                              NEG <$00              
 $20A4  E0 2D                              SUBB 13,Y             
-$20A6  24 78                              BCC $2120              ; C=0 (BHS)
+$20A6  24 78                              BCC Br_2120            ; C=0 (BHS)
 $20A8  E0 29                              SUBB 9,Y              
 $20AA  E0 15                              SUBB -11,X            
 $20AC  00 1F                              NEG <$1F              
-$20AD  1F E0               Br_20AD:       TFR E,D               
-$20AF  4D                                 TSTA                  
+$20AE  E0 4D                              SUBB 13,U             
 $20B0  23 05                              BLS Br_20B7           
 $20B2  24 78                              BCC Br_212C            ; C=0 (BHS)
 $20B4  E0 29               Br_20B4:       SUBB 9,Y              
@@ -2409,46 +2392,37 @@ $20B6  E0 15                              SUBB -11,X
 $20B7  15                  Br_20B7:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $20B8  00 01               Br_20B8:       NEG <$01              
 $20BA  E0 1B                              SUBB -5,X             
-$20BB  1B                  Br_20BB:       FCB $1B                ; undefined opcode $1B -- not a valid 6809 instruction
 $20BC  24 78                              BCC Br_2136            ; C=0 (BHS)
 $20BE  E0 2B                              SUBB 11,Y             
 $20C0  E0 2F                              SUBB 15,Y             
-$20C2  FF E2 E0            Br_20C2:       STU $E2E0             
-$20C3  E2 E0               Br_20C3:       SBCB ,S+              
+$20C2  FF E2 E0                           STU $E2E0             
 $20C5  13                                 SYNC                   ; wait for interrupt
 $20C6  E0 00                              SUBB 0,X              
 $20C8  24 6C               Br_20C8:       BCC Br_2136            ; C=0 (BHS)
 $20CA  E0 29                              SUBB 9,Y              
-$20CB  29 E0               Br_20CB:       BVS Br_20AD           
-$20CD  39                                 RTS                   
-
-$20CE  00 1E                                      NEG <$1E
-$20D0  22 90                                      BHI Br_2062
-$20D2  E0 15                                      SUBB -11,X
-$20D4  04 00                                      LSR <$00
-$20D6  24 70                                      BCC Br_2148   ; C=0 (BHS)
+$20CC  E0 39                              SUBB -7,Y             
+$20CE  00 1E                              NEG <$1E              
+$20D0  22 90                              BHI Br_2062           
+$20D2  E0 15                              SUBB -11,X            
+$20D4  04 00                              LSR <$00              
+$20D6  24 70                              BCC Br_2148            ; C=0 (BHS)
 $20D8  E0 2B               Br_20D8:       SUBB 11,Y             
-$20D9  2B E0               Br_20D9:       BMI Br_20BB           
-$20DB  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
+$20DA  E0 15                              SUBB -11,X            
 $20DC  06 00                              ROR <$00              
 $20DE  24 74                              BCC Br_2154            ; C=0 (BHS)
 $20E0  E0 2B                              SUBB 11,Y             
-$20E1  2B E0               Br_20E1:       BMI Br_20C3           
-$20E3  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
+$20E2  E0 15                              SUBB -11,X            
 $20E4  00 00                              NEG <$00              
 $20E6  24 6C                              BCC Br_2154            ; C=0 (BHS)
 $20E8  E0 2B                              SUBB 11,Y             
-$20E9  2B E0               Br_20E9:       BMI Br_20CB           
-$20EB  3B                                 RTI                    ; return from interrupt
-
-$20EC  00 1A                                      NEG <$1A
-$20EE  22 70                                      BHI Br_2160
-$20F0  E0 15                                      SUBB -11,X
-$20F2  06 00                                      ROR <$00
-$20F4  24 70                                      BCC Br_2166   ; C=0 (BHS)
-$20F6  E0 2B                                      SUBB 11,Y
-$20F8  E0 15                                      SUBB -11,X
-$20F9  15                  Br_20F9:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
+$20EA  E0 3B                              SUBB -5,Y             
+$20EC  00 1A                              NEG <$1A              
+$20EE  22 70                              BHI Br_2160           
+$20F0  E0 15                              SUBB -11,X            
+$20F2  06 00                              ROR <$00              
+$20F4  24 70                              BCC Br_2166            ; C=0 (BHS)
+$20F6  E0 2B                              SUBB 11,Y             
+$20F8  E0 15                              SUBB -11,X            
 $20FA  04 00                              LSR <$00              
 $20FC  24 74                              BCC Br_2172            ; C=0 (BHS)
 $20FE  E0 2B                              SUBB 11,Y             
@@ -2456,21 +2430,19 @@ $2100  E0 15                              SUBB -11,X
 $2102  00 01                              NEG <$01              
 $2104  24 6C                              BCC Br_2172            ; C=0 (BHS)
 $2106  E0 2B                              SUBB 11,Y             
-$2107  2B E0               Br_2107:       BMI Br_20E9           
-$2109  13                                 SYNC                   ; wait for interrupt
+$2108  E0 13                              SUBB -13,X            
 $210A  E0 00                              SUBB 0,X              
 $210C  E0 15                              SUBB -11,X            
 $210E  00 3F                              NEG <$3F              
 $2110  E0 4D                              SUBB 13,U             
 $2112  E0 15                              SUBB -11,X            
-$2113  15                  Br_2113:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $2114  EF 03                              STU 3,X               
 $2116  E0 29                              SUBB 9,Y              
 $2118  E0 15                              SUBB -11,X            
 $211A  04 00                              LSR <$00              
 $211C  E0 1B                              SUBB -5,X             
 $211E  E0 49                              SUBB 9,U              
-$2120  E0 15                              SUBB -11,X            
+$2120  E0 15               Br_2120:       SUBB -11,X            
 $2122  EF 03                              STU 3,X               
 $2124  E0 29                              SUBB 9,Y              
 $2126  E0 15                              SUBB -11,X            
@@ -2526,31 +2498,29 @@ $2188  00 53                              NEG <$53
 $218A  21 0A               Br_218A:       BRN Br_2196           
 $218C  E0 15                              SUBB -11,X            
 $218E  00 20                              NEG <$20              
-$2190  21 0A               Br_2190:       BRN $219C             
+$2190  21 0A               Br_2190:       BRN Br_219C           
 $2192  E0 15                              SUBB -11,X            
 $2194  00 41                              NEG <$41              
 $2196  21 0A               Br_2196:       BRN Br_21A2           
 $2198  E0 15                              SUBB -11,X            
 $219A  00 4E                              NEG <$4E              
-$219C  21 0A                              BRN Br_21A8           
+$219C  21 0A               Br_219C:       BRN Br_21A8           
 $219E  E0 15                              SUBB -11,X            
 $21A0  00 59                              NEG <$59              
 $21A2  21 0A               Br_21A2:       BRN Br_21AE           
 $21A4  E0 15                              SUBB -11,X            
 $21A6  00 20                              NEG <$20              
-$21A8  21 0A               Br_21A8:       BRN $21B4             
+$21A8  21 0A               Br_21A8:       BRN Br_21B4           
 $21AA  E0 15                              SUBB -11,X            
 $21AC  00 4B                              NEG <$4B              
 $21AE  21 0A               Br_21AE:       BRN Br_21BA           
 $21B0  E0 15                              SUBB -11,X            
-$21B2  00 45               Br_21B2:       NEG <$45              
-$21B3  45                  Br_21B3:       FCB $45                ; undefined opcode $45 -- not a valid 6809 instruction
-$21B4  21 0A                              BRN Br_21C0           
-$21B6  E0 15               Br_21B6:       SUBB -11,X            
+$21B2  00 45                              NEG <$45              
+$21B4  21 0A               Br_21B4:       BRN Br_21C0           
+$21B6  E0 15                              SUBB -11,X            
 $21B8  00 59                              NEG <$59              
 $21BA  21 0A               Br_21BA:       BRN Br_21C6           
 $21BC  E0 13                              SUBB -13,X            
-$21BD  13                  Br_21BD:       SYNC                   ; wait for interrupt
 $21BE  E0 00                              SUBB 0,X              
 $21C0  20 02               Br_21C0:       BRA Br_21C4           
 
@@ -2558,7 +2528,7 @@ $21C2  21 34                                      BRN Br_21F8
 $21C4  E0 15               Br_21C4:       SUBB -11,X            
 $21C6  00 00               Br_21C6:       NEG <$00              
 $21C8  24 68                              BCC Br_2232            ; C=0 (BHS)
-$21CA  E0 2B               Br_21CA:       SUBB 11,Y             
+$21CA  E0 2B                              SUBB 11,Y             
 $21CC  E9 05                              ADCB 5,X              
 $21CE  24 68                              BCC Br_2238            ; C=0 (BHS)
 $21D0  E0 29                              SUBB 9,Y              
@@ -2571,7 +2541,7 @@ $21DA  E0 2B                              SUBB 11,Y
 $21DC  E0 53                              SUBB -13,U            
 $21DE  E0 39                              SUBB -7,Y             
 $21E0  FF EA E9                           STU $EAE9             
-$21E3  05                  Br_21E3:       FCB $05                ; undefined opcode $05 -- not a valid 6809 instruction
+$21E3  05                                 FCB $05                ; undefined opcode $05 -- not a valid 6809 instruction
 $21E4  E0 53                              SUBB -13,U            
 $21E6  E0 45                              SUBB 5,U              
 $21E8  E0 39                              SUBB -7,Y             
@@ -2594,17 +2564,16 @@ $2202  E0 15                              SUBB -11,X
 $2204  04 00                              LSR <$00              
 $2206  E0 15               Br_2206:       SUBB -11,X            
 $2208  02                                 FCB $02                ; undefined opcode $02 -- not a valid 6809 instruction
-$2209  00 E0               Br_2209:       NEG <$E0              
+$2209  00 E0                              NEG <$E0              
 $220B  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $220C  00 80                              NEG <$80              
 $220E  E0 55                              SUBB -11,U            
 $2210  E0 15                              SUBB -11,X            
-$2211  15                  Br_2211:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $2212  06 00                              ROR <$00              
 $2214  E0 15                              SUBB -11,X            
 $2216  02                                 FCB $02                ; undefined opcode $02 -- not a valid 6809 instruction
 $2217  00 E0                              NEG <$E0              
-$2219  15                  Br_2219:       FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
+$2219  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
 $221A  00 80                              NEG <$80              
 $221C  E0 55                              SUBB -11,U            
 $221E  22 70                              BHI Br_2290           
@@ -2645,17 +2614,15 @@ $2261  49                                         ROLA
 $2262  E9 05                                      ADCB 5,X
 $2264  20 C6               Br_2264:       BRA Br_222C           
 
-; --------------------------------------------------------------
-$2265  C6 E0               Br_2265:       LDB #$E0              
-$2267  15                                 FCB $15                ; undefined opcode $15 -- not a valid 6809 instruction
-$2268  00 00                              NEG <$00              
-$226A  E0 39                              SUBB -7,Y             
-$226C  FF CA E0                           STU $CAE0             
-$226F  13                                 SYNC                   ; wait for interrupt
-$2270  22 72                              BHI Br_22E4           
-$2272  34 10                              PSHS X                
-$2274  B7 FF C6                           STA $FFC6             
-$2277  B7 FF C9                           STA $FFC9             
+$2266  E0 15                                      SUBB -11,X
+$2268  00 00                                      NEG <$00
+$226A  E0 39                                      SUBB -7,Y
+$226C  FF CA E0                                   STU $CAE0
+$226F  13                                         SYNC    ; wait for interrupt
+$2270  22 72                                      BHI Br_22E4
+$2272  34 10                                      PSHS X
+$2274  B7 FF C6                                   STA $FFC6
+$2277  B7 FF C9                                   STA $FFC9
 $2278  FF C9 B7            Br_2278:       STU $C9B7             
 $227B  FF CA B7                           STU $CAB7             
 $227E  FF CC B7                           STU $CCB7             
@@ -2685,7 +2652,7 @@ $22B4  EC C1                              LDD ,U++
 $22B6  1F 98                              TFR B,A               
 $22B8  8E 42 00                           LDX #$4200            
 $22BA  00 C6               Br_22BA:       NEG <$C6              
-$22BC  20 A7                              BRA Br_2265           
+$22BC  20 A7                              BRA $2265             
 
 ; --------------------------------------------------------------
 $22BD  A7 80               Br_22BD:       STA ,X+               
@@ -2720,16 +2687,14 @@ $22F8  6A E4                              DEC ,S
 $22FA  26 DC                              BNE Br_22D8           
 $22FC  35 02                              PULS A                
 $22FE  35 10                              PULS X                
-$22FF  10 10               Br_22FF:       FCB $10,$10            ; unknown opcode $1010
-$2301  AE 81                              LDX ,X++              
+$2300  10 AE 81                           LDY ,X++              
 $2303  6E B4                              JMP [,Y]              
 $2305  23 07                              BLS Br_230E           
 $2307  34 10                              PSHS X                
 $2309  EC C1                              LDD ,U++              
-$230B  34 04               Br_230B:       PSHS B                
+$230B  34 04                              PSHS B                
 $230D  E6 E4                              LDB ,S                
 $230E  E4 8E 40            Br_230E:       ANDB [+64,PC]         
-$2310  40                  Br_2310:       NEGA                  
 $2311  00 3A                              NEG <$3A              
 $2313  E6 E4                              LDB ,S                
 $2315  10 BE 24 72                        LDY $2472             
@@ -2755,11 +2720,10 @@ $233D  C3 36 19                           ADDD #$3619
 $2340  FD 24 6A                           STD $246A             
 $2343  34 02                              PSHS A                
 $2345  84 03                              ANDA #$03             
-$2346  03 27               Br_2346:       COM <$27              
-$2348  09 81                              ROL <$81              
-$234A  03 27                              COM <$27              
-$234C  0E E6                              JMP <$E6              
-$234E  88 20                              EORA #$20             
+$2347  27 09                              BEQ Br_2352           
+$2349  81 03                              CMPA #$03             
+$234B  27 0E                              BEQ Br_235B           
+$234D  E6 88 20                           LDB 32,X              
 $2350  20 17                              BRA Br_2369           
 
 ; --------------------------------------------------------------
@@ -2780,9 +2744,8 @@ $2366  E6 88 20            Br_2366:       LDB 32,X
 $2369  A6 E4               Br_2369:       LDA ,S                
 $236B  85 04                              BITA #$04             
 $236D  27 04                              BEQ Br_2373           
-$236F  5A                  Br_236F:       DECB                  
+$236F  5A                                 DECB                  
 $2370  2A 01                              BPL Br_2373           
-$2371  01                  Br_2371:       FCB $01                ; undefined opcode $01 -- not a valid 6809 instruction
 $2372  5F                                 CLRB                   ; B = 0
 $2373  E7 84               Br_2373:       STB ,X                
 $2375  30 88 20                           LEAX 32,X             
@@ -2793,25 +2756,26 @@ $237D  C1 01                              CMPB #$01
 $237F  26 0E                              BNE Br_238F           
 $2381  A6 E4                              LDA ,S                
 $2383  85 08                              BITA #$08             
-$2385  26 04               Br_2385:       BNE Br_238B           
+$2385  26 04                              BNE Br_238B           
 $2387  86 B5                              LDA #$B5              
 $2389  20 38                              BRA Br_23C3           
 
 ; --------------------------------------------------------------
 $238B  86 BA               Br_238B:       LDA #$BA              
-$238C  BA 20 34            Br_238C:       ORA $2034             
-$238D  20 34               Br_238D:       BRA Br_23C3           
+$238D  20 34                              BRA Br_23C3           
 
 ; --------------------------------------------------------------
 $238F  C1 02               Br_238F:       CMPB #$02             
 $2391  26 04                              BNE Br_2397           
 $2393  86 BF                              LDA #$BF              
-$2394  BF 20 2C            Br_2394:       STX $202C             
+$2395  20 2C                              BRA Br_23C3           
+
+; --------------------------------------------------------------
 $2397  C1 03               Br_2397:       CMPB #$03             
-$2399  26 0E               Br_2399:       BNE Br_23A9           
+$2399  26 0E                              BNE Br_23A9           
 $239B  A6 E4                              LDA ,S                
 $239D  85 08                              BITA #$08             
-$239F  26 04               Br_239F:       BNE Br_23A5           
+$239F  26 04                              BNE Br_23A5           
 $23A1  86 F5                              LDA #$F5              
 $23A3  20 1E                              BRA Br_23C3           
 
@@ -2822,7 +2786,7 @@ $23A7  20 1A                              BRA Br_23C3
 ; --------------------------------------------------------------
 $23A9  C1 04               Br_23A9:       CMPB #$04             
 $23AB  26 04                              BNE Br_23B1           
-$23AD  86 FF               Br_23AD:       LDA #$FF              
+$23AD  86 FF                              LDA #$FF              
 $23AF  20 12                              BRA Br_23C3           
 
 ; --------------------------------------------------------------
@@ -2874,7 +2838,7 @@ $23F5  44                                 LSRA
 $23F6  44                                 LSRA                  
 $23F7  44                                 LSRA                  
 $23F8  85 04                              BITA #$04             
-$23FA  27 04               Br_23FA:       BEQ Br_2400           
+$23FA  27 04                              BEQ Br_2400           
 $23FC  5A                                 DECB                  
 $23FD  2A 01                              BPL Br_2400           
 $23FF  5F                                 CLRB                   ; B = 0
@@ -2885,7 +2849,7 @@ $2407  5D                                 TSTB
 $2408  27 46                              BEQ Br_2450           
 $240A  C1 01                              CMPB #$01             
 $240C  26 0E                              BNE Br_241C           
-$240E  A6 E4               Br_240E:       LDA ,S                
+$240E  A6 E4                              LDA ,S                
 $2410  85 80                              BITA #$80             
 $2412  26 04                              BNE Br_2418           
 $2414  86 B5                              LDA #$B5              
