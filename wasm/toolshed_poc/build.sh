@@ -13,7 +13,8 @@
 
 set -e
 
-TOOLSHED="${TOOLSHED:-$HOME/src/toolshed}"
+#TOOLSHED="${TOOLSHED:-$HOME/src/toolshed}"
+TOOLSHED="${TOOLSHED:-/mnt/d/git/toolshed}"
 INCLUDE="$TOOLSHED/include"
 LIBDECB="$TOOLSHED/libdecb"
 LIBNATIVE="$TOOLSHED/libnative"
