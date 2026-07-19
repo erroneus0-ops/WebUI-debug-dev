@@ -30,6 +30,9 @@ NATIVE_SRCS="
     $LIBNATIVE/libnativeseek.c
 "
 
+# libmisc provides UnixToCoCoError and other shared utilities
+MISC_SRCS=$(ls $LIBMISC/*.c 2>/dev/null | tr '\n' ' ')
+
 # The core dskini library source
 DECB_SRC="$LIBDECB/libdecbdskini.c"
 
@@ -37,6 +40,7 @@ emcc \
     dskini_wrapper.c \
     $DECB_SRC \
     $NATIVE_SRCS \
+    $MISC_SRCS \
     -I"$INCLUDE" \
     -o dskini.js \
     -s EXPORTED_FUNCTIONS='["_dskini"]' \
