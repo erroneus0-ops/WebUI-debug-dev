@@ -27,8 +27,7 @@ NATIVE_SRCS="
     $LIBNATIVE/libnativeopen.c
     $LIBNATIVE/libnativewrite.c
     $LIBNATIVE/libnativeseek.c
-    $LIBNATIVE/libnativeclose.c
-    $LIBNATIVE/libnativecreate.c
+    $LIBNATIVE/libnativess.c
 "
 
 # The core dskini library source
