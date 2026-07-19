@@ -31,7 +31,11 @@ NATIVE_SRCS="
 "
 
 # libmisc provides UnixToCoCoError and other shared utilities
-MISC_SRCS=$(ls $LIBMISC/*.c 2>/dev/null | tr '\n' ' ')
+MISC_SRCS="
+    $LIBMISC/libmiscutil.c
+    $LIBMISC/libmisccococonv.c
+    $LIBMISC/libmiscendian.c
+"
 
 # The core dskini library source
 DECB_SRC="$LIBDECB/libdecbdskini.c"
