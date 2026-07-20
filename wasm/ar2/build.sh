@@ -23,6 +23,8 @@ emcc \
     $AR2_SRCS \
     $LIBMISC_SRCS \
     -I"$INCLUDE" \
+    -I"$(pwd)" \
+    -include ar2_compat.h \
     -I"$AR2" \
     -Dmain=ar2_main \
     -DTOOLSHED_VERSION="\"$TS_VERSION\"" \
