@@ -26,6 +26,6 @@ static inline int strucmp(const char *s1, const char *s2) {
 
 static inline int setstat(int code, int pn, long val) { return 0; }
 static inline int getstat(int code, int pn, long *val) { if(val) *val=0; return 0; }
-static inline int mknod(const char *path, int mode) { return mkdir(path, mode); }
+/* mknod -- provided by Emscripten libc */
 
 #endif
