@@ -4,8 +4,9 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
-/* pflinit -- OS-9 path list init, no-op in WASM */
+/* pflinit -- OS-9 path list init, no-op */
 static inline void pflinit(void) { }
 
 /* strucmp -- case-insensitive string compare */
@@ -18,9 +19,13 @@ static inline int strucmp(const char *s1, const char *s2) {
     return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
 }
 
-/* set_fstat is declared in ar.h with FILDES* parameter.
-   The call site passes fileno(fp) which is an int.
-   We provide the implementation in ar2_stubs.c -- 
-   -Wno-int-conversion suppresses the type mismatch warning. */
+/* OS-9 system call stubs -- these are OS-9 kernel calls with no POSIX equivalent */
+#define SS_ATTR  0x0001
+#define SS_SIZE  0x0002
+#define GS_SIZE  0x0003
+
+static inline int setstat(int code, int pn, long val) { return 0; }
+static inline int getstat(int code, int pn, long *val) { if(val) *val=0; return 0; }
+static inline int mknod(const char *path, int mode) { return mkdir(path, mode); }
 
 #endif
