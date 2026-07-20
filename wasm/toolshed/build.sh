@@ -59,16 +59,18 @@ LIBMISC_SRCS="
     $LIBMISC/libmisccococonv.c
     $LIBMISC/libmiscendian.c
 "
-LIBCOCO="$TOOLSHED/libcoco"
-LIBCOCO_SRCS=$(find "$LIBCOCO" -name "*.c" | tr '\n' ' ')
-DECB_SRCS="$DECB/decbcopy.c $DECB/decbdir.c $DECB/decbdskini.c $DECB/decbkill.c"
+# libcoco excluded -- routing layer pulls in OS9/CECB deps we dont need
+# ts_copy implemented directly using _decb_* functions in toolshed_wrapper.c
+# decbcopy.c excluded -- uses libcoco routing layer
+# ts_copy implemented directly in toolshed_wrapper.c using _decb_* functions
+DECB_SRCS="$DECB/decbdir.c $DECB/decbdskini.c $DECB/decbkill.c"
 
 emcc \
     toolshed_wrapper.c \
     $LIBDECB_SRCS \
     $LIBNATIVE_SRCS \
     $LIBMISC_SRCS \
-    $LIBCOCO_SRCS \
+
     $DECB_SRCS \
     -I"$INCLUDE" \
     -o toolshed.js \

@@ -49,6 +49,7 @@ int ts_dskini(const char *diskpath, int tracks)
 
 /* ------------------------------------------------------------------ */
 /* copy -- copy a native file into a DECB disk image                   */
+/* Uses _decb_* functions directly to avoid libcoco dependency          */
 /* ------------------------------------------------------------------ */
 
 EMSCRIPTEN_KEEPALIVE
@@ -59,33 +60,63 @@ int ts_copy(const char *srcpath, const char *dstpathlist,
      * srcpath:     native path in virtual FS, e.g. "/in.bin"
      * dstpathlist: DECB pathlist, e.g. "/disk.dsk,HELLO.BIN:0"
      * file_type:   0=BASIC, 1=BASIC data, 2=ML program, 3=text
-     * data_type:   0=binary, 0xFF=ASCII
+     * data_type:   0=binary, 0xFF=ASCII (-1 = auto-detect from content)
      */
 
-    char *argv[] = {
-        "decb",
-        "-2",           /* file type ML program */
-        "-b",           /* binary data type */
-        (char *)srcpath,
-        (char *)dstpathlist,
-        NULL
-    };
+    FILE *src;
+    decb_path_id dst;
+    error_code ec;
+    unsigned char *buffer;
+    long file_size;
+    u_int write_size;
 
-    /* Build argv based on file_type and data_type */
-    char ft_arg[4] = {'-', '0' + (file_type >= 0 ? file_type : 2), '\0'};
-    char dt_arg[3] = {'-', data_type == 0xFF ? 'a' : 'b', '\0'};
+    /* Read source file into buffer */
+    src = fopen(srcpath, "rb");
+    if (!src) return -1;
 
-    char *argv2[6];
-    int argc = 0;
-    argv2[argc++] = "decb";
-    argv2[argc++] = ft_arg;
-    argv2[argc++] = dt_arg;
-    argv2[argc++] = (char *)srcpath;
-    argv2[argc++] = (char *)dstpathlist;
-    argv2[argc] = NULL;
+    fseek(src, 0, SEEK_END);
+    file_size = ftell(src);
+    fseek(src, 0, SEEK_SET);
 
-    extern int decbcopy(int argc, char **argv);
-    return decbcopy(argc, argv2);
+    if (file_size <= 0) { fclose(src); return -1; }
+
+    buffer = (unsigned char *)malloc(file_size);
+    if (!buffer) { fclose(src); return -1; }
+
+    if (fread(buffer, 1, file_size, src) != (size_t)file_size) {
+        free(buffer); fclose(src); return -1;
+    }
+    fclose(src);
+
+    /* Auto-detect file type from DECB binary header if not specified */
+    if (file_type < 0) file_type = 2;  /* default: ML program */
+    if (data_type < 0) data_type = 0;  /* default: binary */
+
+    /* Create file on DECB disk image */
+    ec = _decb_open(&dst, (char *)dstpathlist, FAM_WRITE);
+    if (ec != 0) {
+        /* File doesn't exist -- create it */
+        ec = _decb_open(&dst, (char *)dstpathlist,
+                        FAM_WRITE | FAM_CREATE);
+        if (ec != 0) { free(buffer); return (int)ec; }
+    }
+
+    /* Write data */
+    write_size = (u_int)file_size;
+    ec = _decb_write(dst, buffer, &write_size);
+    free(buffer);
+
+    if (ec == 0) {
+        /* Set file type and data type */
+        decb_file_stat fstat;
+        _decb_gs_fd(dst, &fstat);
+        fstat.file_type = (u_char)file_type;
+        fstat.data_type = (u_char)data_type;
+        _decb_ss_fd(dst, &fstat);
+    }
+
+    _decb_close(dst);
+    return (int)ec;
 }
 
 /* ------------------------------------------------------------------ */
