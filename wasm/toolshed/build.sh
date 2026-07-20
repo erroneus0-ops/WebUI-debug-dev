@@ -26,8 +26,11 @@ OS9="$TOOLSHED/os9"
 CECB="$TOOLSHED/cecb"
 INCLUDE="$TOOLSHED/include"
 
+# Extract version from toolshed build system -- same source as native tools
+TS_VERSION=$(grep "^VERSION" "$TOOLSHED/build/unix/rules.mak" | awk '{print $3}')
 echo "Building toolshed WASM (monolithic)..."
 echo "  toolshed: $TOOLSHED"
+echo "  version:  $TS_VERSION"
 
 # Excluded files -- Emscripten libc compatibility issues
 # Scan with: grep -rl "_fileno|ftruncate|digittoint" toolshed-NEW/lib*/
@@ -65,7 +68,7 @@ DECB_SRCS=$(find "$DECB" -name "*.c" ! -name "decb_main.c" ! -name "decbcopy.c" 
 OS9_SRCS=$(find "$OS9" -name "*.c" ! -name "os9_main.c" | tr '\n' ' ')
 CECB_SRCS=$(find "$CECB" -name "*.c" ! -name "cecb_main.c" | tr '\n' ' ')
 
-EXPORTED='["_ts_dskini","_ts_copy","_ts_read","_ts_dir","_ts_kill","_ts_free","_ts_rename","_ts_fstat","_ts_os9_dir","_ts_os9_copy","_ts_os9_del","_ts_os9_free","_ts_os9_id"]'
+EXPORTED='["_ts_version","_ts_dskini","_ts_copy","_ts_read","_ts_dir","_ts_kill","_ts_free","_ts_rename","_ts_fstat","_ts_os9_dir","_ts_os9_copy","_ts_os9_del","_ts_os9_free","_ts_os9_id"]'
 
 emcc \
     toolshed_wrapper.c \
@@ -82,6 +85,7 @@ emcc \
     $OS9_SRCS \
     $CECB_SRCS \
     -I"$INCLUDE" \
+    -DTOOLSHED_VERSION=\"$TS_VERSION\" \
     -o toolshed.js \
     -s EXPORTED_FUNCTIONS="$EXPORTED" \
     -s EXPORTED_RUNTIME_METHODS='["FS","ccall","cwrap"]' \

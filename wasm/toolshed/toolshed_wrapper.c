@@ -25,6 +25,20 @@
 #include "cocotypes.h"
 
 /* ================================================================== */
+/* Version                                                              */
+/* ================================================================== */
+
+#ifndef TOOLSHED_VERSION
+#define TOOLSHED_VERSION "unknown"
+#endif
+
+EMSCRIPTEN_KEEPALIVE
+const char *ts_version(void)
+{
+    return "Toolshed " TOOLSHED_VERSION;
+}
+
+/* ================================================================== */
 /* DECB Operations                                                      */
 /* ================================================================== */
 
