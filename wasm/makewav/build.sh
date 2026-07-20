@@ -24,7 +24,7 @@ emcc \
     -Wno-implicit-function-declaration \
     -DTOOLSHED_VERSION=\"$TS_VERSION\" \
     -o makewav.js \
-    -s EXPORTED_FUNCTIONS='["_makewav_version","_makewav_run"]' \
+    -s EXPORTED_FUNCTIONS='["_makewav_version","_makewav_run","_makewav_run_cas"]' \
     -s EXPORTED_RUNTIME_METHODS='["FS","ccall","cwrap"]' \
     -s MODULARIZE=1 \
     -s EXPORT_NAME='MakewavModule' \
