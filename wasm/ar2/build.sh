@@ -28,6 +28,7 @@ emcc \
     -Wno-int-conversion \
     -I"$AR2" \
     -Dmain=ar2_main \
+    -DCKLIB \
     -DTOOLSHED_VERSION=\"$TS_VERSION\" \
     -o ar2.js \
     -s EXPORTED_FUNCTIONS='["_ar2_version","_ar2_run"]' \
