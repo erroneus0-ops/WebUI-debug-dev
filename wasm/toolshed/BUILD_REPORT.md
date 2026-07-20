@@ -1,8 +1,8 @@
 # toolshed WASM Build Report
 
-**Built:** 2026-07-20 19:10 UTC
+**Built:** 2026-07-20 19:42 UTC
 **Toolshed:** toolshed-2.5.1
-**WASM size:** 29086 bytes
+**WASM size:** 70854 bytes
 
 ## Smoke Test Output
 ```
@@ -16,7 +16,7 @@
 4. dir...
    rc: 0 OK
    directory:
-    name,ext,type,ascii,first_granule,size
+    name,ext,type,ascii,first_granule,last_sector_bytes
     HELLO,BIN,2,0,34,13
 
 PASS -- toolshed WASM dskini + copy + dir all working
