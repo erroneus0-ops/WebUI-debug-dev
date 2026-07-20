@@ -25,8 +25,8 @@ int makewav_run(const char *srcpath, const char *dstpath) /* v2-with-c-flag */
 {
     char out_arg[256];
     snprintf(out_arg, sizeof(out_arg), "-o%s", dstpath);
-    char *argv[] = { "makewav", "-c", out_arg, (char *)srcpath, NULL };
-    return makewav_main(4, argv);
+    char *argv[] = { "makewav", "-c", "-r", out_arg, (char *)srcpath, NULL };
+    return makewav_main(5, argv);
 }
 
 /* Convert a DECB binary to CAS format */
@@ -35,8 +35,8 @@ int makewav_run_cas(const char *srcpath, const char *dstpath)
 {
     char out_arg[256];
     snprintf(out_arg, sizeof(out_arg), "-o%s", dstpath);
-    char *argv[] = { "makewav", "-c", "-k", out_arg, (char *)srcpath, NULL };
-    return makewav_main(5, argv);
+    char *argv[] = { "makewav", "-c", "-r", "-k", out_arg, (char *)srcpath, NULL };
+    return makewav_main(6, argv);
 }
 
 /* Convert raw binary to WAV */
