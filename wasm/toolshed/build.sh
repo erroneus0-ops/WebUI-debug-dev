@@ -51,11 +51,14 @@ LIBNATIVE_SRCS="
     $LIBNATIVE/libnativemakdir.c
 "
 
-LIBMISC_SRCS="
-    $LIBMISC/libmiscutil.c
-    $LIBMISC/libmisccococonv.c
-    $LIBMISC/libmiscendian.c
-"
+# Use all libmisc sources (includes libmiscqueue.c for qAddNode etc.)
+LIBMISC_SRCS=$(find "$LIBMISC" -name "*.c" | tr '\n' ' ')
+
+LIBSYS="$TOOLSHED/libsys"
+LIBSYS_SRCS=$(find "$LIBSYS" -name "*.c" | tr '\n' ' ')
+
+LIBTOOLSHED="$TOOLSHED/libtoolshed"
+LIBTOOLSHED_SRCS=$(find "$LIBTOOLSHED" -name "*.c" | tr '\n' ' ')
 
 # CLI source files -- rename main() to avoid conflicts
 DECB_SRCS=$(find "$DECB" -name "*.c" ! -name "decb_main.c" ! -name "decbcopy.c" | tr '\n' ' ')
@@ -72,6 +75,8 @@ emcc \
     $LIBCOCO_SRCS \
     $LIBNATIVE_SRCS \
     $LIBMISC_SRCS \
+    $LIBSYS_SRCS \
+    $LIBTOOLSHED_SRCS \
     $DECB_SRCS \
     $OS9_SRCS \
     $CECB_SRCS \
