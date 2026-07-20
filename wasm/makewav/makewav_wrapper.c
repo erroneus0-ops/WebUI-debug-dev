@@ -19,7 +19,7 @@ const char *makewav_version(void)
     return "makewav from Toolshed " TOOLSHED_VERSION;
 }
 
-/* Convert a DECB binary to WAV */
+/* Convert a DECB binary to WAV -- build 20260720_223511 */
 EMSCRIPTEN_KEEPALIVE
 int makewav_run(const char *srcpath, const char *dstpath)
 {
