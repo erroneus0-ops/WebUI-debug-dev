@@ -21,7 +21,7 @@ const char *makewav_version(void)
 
 /* Convert a DECB binary to WAV -- build 20260720_223511 */
 EMSCRIPTEN_KEEPALIVE
-int makewav_run(const char *srcpath, const char *dstpath)
+int makewav_run(const char *srcpath, const char *dstpath) /* v2-with-c-flag */
 {
     char out_arg[256];
     snprintf(out_arg, sizeof(out_arg), "-o%s", dstpath);
