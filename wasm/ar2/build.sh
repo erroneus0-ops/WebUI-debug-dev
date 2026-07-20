@@ -25,6 +25,7 @@ emcc \
     -I"$INCLUDE" \
     -I"$(pwd)" \
     -include ar2_compat.h \
+    -Wno-int-conversion \
     -I"$AR2" \
     -Dmain=ar2_main \
     -DTOOLSHED_VERSION=\"$TS_VERSION\" \

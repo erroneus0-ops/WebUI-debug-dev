@@ -1,4 +1,4 @@
-/* ar2_compat.h -- compatibility declarations for Emscripten WASM build */
+/* ar2_compat.h -- compatibility for Emscripten WASM build */
 #ifndef AR2_COMPAT_H
 #define AR2_COMPAT_H
 
@@ -18,7 +18,8 @@ static inline int strucmp(const char *s1, const char *s2) {
     return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
 }
 
-/* set_fstat type fix -- ar.c passes fileno(fp) as char* */
-#define set_fstat(pn, fs) set_fstat_stub((char*)(intptr_t)(pn), (fs))
+/* set_fstat -- stub, ignores arguments (called with fileno() which is int not char*) */
+#define FILDES void
+static inline void set_fstat(char *pn, FILDES *fs) { (void)pn; (void)fs; }
 
 #endif
