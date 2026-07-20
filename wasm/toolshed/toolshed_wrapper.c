@@ -92,14 +92,10 @@ int ts_copy(const char *srcpath, const char *dstpathlist,
     if (file_type < 0) file_type = 2;  /* default: ML program */
     if (data_type < 0) data_type = 0;  /* default: binary */
 
-    /* Create file on DECB disk image */
+    /* Create file on DECB disk image
+     * FAM_WRITE without FAM_NOCREATE = create if not exists */
     ec = _decb_open(&dst, (char *)dstpathlist, FAM_WRITE);
-    if (ec != 0) {
-        /* File doesn't exist -- create it */
-        ec = _decb_open(&dst, (char *)dstpathlist,
-                        FAM_WRITE | FAM_CREATE);
-        if (ec != 0) { free(buffer); return (int)ec; }
-    }
+    if (ec != 0) { free(buffer); return (int)ec; }
 
     /* Write data */
     write_size = (u_int)file_size;
