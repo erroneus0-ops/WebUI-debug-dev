@@ -35,8 +35,8 @@ int makewav_run_cas(const char *srcpath, const char *dstpath)
 {
     char out_arg[256];
     snprintf(out_arg, sizeof(out_arg), "-o%s", dstpath);
-    char *argv[] = { "makewav", "-c", "-r", "-k", out_arg, (char *)srcpath, NULL };
-    return makewav_main(6, argv);
+    char *argv[] = { "makewav", "-r", "-k", out_arg, (char *)srcpath, NULL };
+    return makewav_main(5, argv);
 }
 
 /* Convert raw binary to WAV */
