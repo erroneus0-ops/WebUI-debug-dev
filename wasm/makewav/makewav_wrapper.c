@@ -1,5 +1,11 @@
 /*
  * makewav_wrapper.c -- Emscripten WASM wrapper for makewav
+ *
+ * makewav usage: makewav [options] input-file
+ *   -c    input has DECB header
+ *   -r    raw binary (no S-record)
+ *   -k    output CAS instead of WAV
+ *   -o<f> output filename (default: file.wav)
  */
 #include <stdio.h>
 #include <string.h>
@@ -13,17 +19,32 @@ const char *makewav_version(void)
     return "makewav from Toolshed " TOOLSHED_VERSION;
 }
 
+/* Convert a DECB binary to WAV */
 EMSCRIPTEN_KEEPALIVE
 int makewav_run(const char *srcpath, const char *dstpath)
 {
-    char *argv[] = { "makewav", (char *)srcpath, (char *)dstpath, NULL };
-    return makewav_main(3, argv);
+    char out_arg[256];
+    snprintf(out_arg, sizeof(out_arg), "-o%s", dstpath);
+    char *argv[] = { "makewav", "-c", out_arg, (char *)srcpath, NULL };
+    return makewav_main(4, argv);
 }
 
+/* Convert a DECB binary to CAS format */
 EMSCRIPTEN_KEEPALIVE
 int makewav_run_cas(const char *srcpath, const char *dstpath)
 {
-    /* -k flag outputs CAS format instead of WAV */
-    char *argv[] = { "makewav", "-k", (char *)srcpath, (char *)dstpath, NULL };
+    char out_arg[256];
+    snprintf(out_arg, sizeof(out_arg), "-o%s", dstpath);
+    char *argv[] = { "makewav", "-c", "-k", out_arg, (char *)srcpath, NULL };
+    return makewav_main(5, argv);
+}
+
+/* Convert raw binary to WAV */
+EMSCRIPTEN_KEEPALIVE
+int makewav_run_raw(const char *srcpath, const char *dstpath)
+{
+    char out_arg[256];
+    snprintf(out_arg, sizeof(out_arg), "-o%s", dstpath);
+    char *argv[] = { "makewav", "-r", out_arg, (char *)srcpath, NULL };
     return makewav_main(4, argv);
 }
