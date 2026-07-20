@@ -22,7 +22,12 @@ echo "Building toolshed WASM..."
 echo "  toolshed: $TOOLSHED"
 
 # Collect source files
-# Exclude libdecbsrec.c (uses digittoint -- BSD extension not in Emscripten libc)
+# Excluded files -- Emscripten libc compatibility issues
+# When upgrading toolshed, if the build fails on a missing function,
+# identify which .c file causes it and add ! -name "that_file.c" here.
+# Only exclude files whose functionality we don't need (see README.md).
+# libdecbsrec.c: uses digittoint() -- BSD extension, not in Emscripten libc
+#                S-record format not needed for CoCo DECB use case
 LIBDECB_SRCS=$(find "$LIBDECB" -name "*.c" ! -name "libdecbsrec.c" | tr '\n' ' ')
 LIBNATIVE_SRCS="
     $LIBNATIVE/libnativeopen.c
