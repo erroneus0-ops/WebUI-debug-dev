@@ -22,7 +22,8 @@ echo "Building toolshed WASM..."
 echo "  toolshed: $TOOLSHED"
 
 # Collect source files
-LIBDECB_SRCS=$(find "$LIBDECB" -name "*.c" | tr '\n' ' ')
+# Exclude libdecbsrec.c (uses digittoint -- BSD extension not in Emscripten libc)
+LIBDECB_SRCS=$(find "$LIBDECB" -name "*.c" ! -name "libdecbsrec.c" | tr '\n' ' ')
 LIBNATIVE_SRCS="
     $LIBNATIVE/libnativeopen.c
     $LIBNATIVE/libnativewrite.c
