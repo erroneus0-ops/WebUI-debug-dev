@@ -43,11 +43,12 @@ LIBNATIVE_SRCS="
     $LIBNATIVE/libnativeseek.c
     $LIBNATIVE/libnativeread.c
     $LIBNATIVE/libnativereadln.c
-    $LIBNATIVE/libnativegs.c
     $LIBNATIVE/libnativedelete.c
     $LIBNATIVE/libnativerename.c
     $LIBNATIVE/libnativemakdir.c
 "
+# libnativegs.c excluded: uses path->fd->_fileno (Linux internal, not in Emscripten libc)
+# libnativess.c excluded: uses ftruncate with _fileno (same issue)
 LIBMISC_SRCS="
     $LIBMISC/libmiscutil.c
     $LIBMISC/libmisccococonv.c
