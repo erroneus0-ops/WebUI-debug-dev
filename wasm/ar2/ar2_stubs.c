@@ -1,26 +1,13 @@
 /*
- * ar2_stubs.c -- stub for ftruncate in ar2
- * ftruncate used only for delete operations.
- * Without it, deletes don't clean up properly but other ops work fine.
+ * ar2_stubs.c -- stubs for ar2 WASM build
+ * pflinit, strucmp defined in ar2_compat.h (included via -include flag)
+ * set_fstat_stub: the real implementation called via set_fstat macro
  */
 #include <sys/types.h>
+#include "ar2_compat.h"
+
+/* ftruncate stub -- delete cleanup impaired but other ops work */
 int ftruncate(int fd, off_t length) { return 0; }
 
-/* pflinit -- OS-9 path list initialization, stub for WASM */
-void pflinit(void) { }
-
-/* strucmp -- case-insensitive string compare, OS-9 specific */
-#include <string.h>
-#include <ctype.h>
-int strucmp(const char *s1, const char *s2) {
-    while (*s1 && *s2) {
-        int d = tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
-        if (d) return d;
-        s1++; s2++;
-    }
-    return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
-}
-
-/* set_fstat -- sets file status; in ar2 called with fileno(fp) as char*
-   This is a type mismatch in the original -- stub it safely */
-void set_fstat(char *pn, void *fs) { }
+/* set_fstat_stub -- called via set_fstat macro with cast int->char* */
+void set_fstat_stub(char *pn, void *fs) { }
