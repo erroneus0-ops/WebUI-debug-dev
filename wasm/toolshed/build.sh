@@ -8,7 +8,7 @@ set -e
 
 # Auto-detect toolshed directory
 if [ -z "$TOOLSHED" ]; then
-    TOOLSHED=$(ls -d $(cd ../.. && pwd)/toolshed-* 2>/dev/null | sort -V | tail -1)
+    TOOLSHED=$(find $(cd ../.. && pwd) -maxdepth 1 -type d -name "toolshed-*" | sort -V | tail -1)
     if [ -z "$TOOLSHED" ]; then
         echo "ERROR: no toolshed-* directory found in repo root"
         exit 1

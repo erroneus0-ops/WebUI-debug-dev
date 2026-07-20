@@ -13,7 +13,7 @@ set -e
 # Auto-detect lwtools directory -- finds the highest versioned lwtools-* folder
 # Set LWTOOLS env var to override
 if [ -z "$LWTOOLS" ]; then
-    LWTOOLS=$(ls -d $(cd ../.. && pwd)/lwtools-* 2>/dev/null | sort -V | tail -1)
+    LWTOOLS=$(find $(cd ../.. && pwd) -maxdepth 1 -type d -name "lwtools-*" | sort -V | tail -1)
     if [ -z "$LWTOOLS" ]; then
         echo "ERROR: no lwtools-* directory found in repo root"
         exit 1
