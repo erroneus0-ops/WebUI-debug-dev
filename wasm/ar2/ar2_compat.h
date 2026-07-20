@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <sys/stat.h>
 
 /* pflinit -- OS-9 path list init, no-op */
@@ -19,13 +20,18 @@ static inline int strucmp(const char *s1, const char *s2) {
     return tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
 }
 
-/* OS-9 system call stubs -- these are OS-9 kernel calls with no POSIX equivalent */
+/* OS-9 system call codes */
 #define SS_ATTR  0x0001
 #define SS_SIZE  0x0002
 #define GS_SIZE  0x0003
+#define SS_FD    0x0004
+#define GS_FD    0x0005
 
-static inline int setstat(int code, int pn, long val) { return 0; }
-static inline int getstat(int code, int pn, long *val) { if(val) *val=0; return 0; }
-/* mknod -- provided by Emscripten libc */
+/* OS-9 syscall stubs -- variadic to accept any number of args */
+static inline int setstat(int code, ...) { return 0; }
+static inline int getstat(int code, ...) { return 0; }
+
+/* mknod -- OS-9 takes 2 args, POSIX takes 3 -- macro adds missing dev_t */
+#define mknod(path, mode) mknod((path), (mode_t)(mode), (dev_t)0)
 
 #endif
