@@ -26,6 +26,7 @@ emcc \
     -I"$(pwd)" \
     -include ar2_compat.h \
     -Wno-int-conversion \
+    -Wno-incompatible-pointer-types \
     -I"$AR2" \
     -Dmain=ar2_main \
     -DCKLIB \
