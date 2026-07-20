@@ -10,7 +10,15 @@
 
 set -e
 
-TOOLSHED="${TOOLSHED:-$(cd ../.. && pwd)/toolshed-2.5.1}"
+# Auto-detect toolshed directory -- finds the highest versioned toolshed-* folder
+# Set TOOLSHED env var to override
+if [ -z "$TOOLSHED" ]; then
+    TOOLSHED=$(ls -d $(cd ../.. && pwd)/toolshed-* 2>/dev/null | sort -V | tail -1)
+    if [ -z "$TOOLSHED" ]; then
+        echo "ERROR: no toolshed-* directory found in repo root"
+        exit 1
+    fi
+fi
 LIBDECB="$TOOLSHED/libdecb"
 LIBNATIVE="$TOOLSHED/libnative"
 LIBMISC="$TOOLSHED/libmisc"
