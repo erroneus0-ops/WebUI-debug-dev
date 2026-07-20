@@ -52,7 +52,7 @@ LwasmModule().then(m => {
         if (bin[i] === 0x00) {  // data block marker
             const blockLen = (bin[i+1] << 8) | bin[i+2];
             const code = bin.slice(i+5, i+5+blockLen);
-            if (code.equals(EXPECTED_CODE)) {
+            if (Buffer.from(code).equals(EXPECTED_CODE)) {
                 console.log('Code bytes:', Buffer.from(code).toString('hex').toUpperCase());
                 console.log('PASS -- lwasm WASM produces correct output');
                 found = true;
