@@ -20,7 +20,7 @@ emcc \
     $LIBMISC_SRCS \
     -I"$INCLUDE" \
     -Dmain=lst2cmt_main \
-    -DTOOLSHED_VERSION="\"$TS_VERSION\"" \
+    -DTOOLSHED_VERSION=\"$TS_VERSION\" \
     -o lst2cmt.js \
     -s EXPORTED_FUNCTIONS='["_lst2cmt_version","_lst2cmt_convert"]' \
     -s EXPORTED_RUNTIME_METHODS='["FS","ccall","cwrap"]' \

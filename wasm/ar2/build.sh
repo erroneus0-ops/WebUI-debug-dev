@@ -27,7 +27,7 @@ emcc \
     -include ar2_compat.h \
     -I"$AR2" \
     -Dmain=ar2_main \
-    -DTOOLSHED_VERSION="\"$TS_VERSION\"" \
+    -DTOOLSHED_VERSION=\"$TS_VERSION\" \
     -o ar2.js \
     -s EXPORTED_FUNCTIONS='["_ar2_version","_ar2_run"]' \
     -s EXPORTED_RUNTIME_METHODS='["FS","ccall","cwrap"]' \
