@@ -92,9 +92,11 @@ int ts_copy(const char *srcpath, const char *dstpathlist,
     if (file_type < 0) file_type = 2;  /* default: ML program */
     if (data_type < 0) data_type = 0;  /* default: binary */
 
-    /* Create file on DECB disk image
-     * FAM_WRITE without FAM_NOCREATE = create if not exists */
-    ec = _decb_open(&dst, (char *)dstpathlist, FAM_WRITE);
+    /* Create new file on DECB disk image */
+    ec = _decb_create(&dst, (char *)dstpathlist,
+                      FAM_WRITE,
+                      file_type >= 0 ? file_type : 2,
+                      data_type >= 0 ? data_type : 0);
     if (ec != 0) { free(buffer); return (int)ec; }
 
     /* Write data */
