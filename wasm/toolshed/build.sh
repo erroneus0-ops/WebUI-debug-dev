@@ -34,8 +34,13 @@ echo "  toolshed: $TOOLSHED"
 # When upgrading toolshed, if the build fails on a missing function,
 # identify which .c file causes it and add ! -name "that_file.c" here.
 # Only exclude files whose functionality we don't need (see README.md).
-# libdecbsrec.c: uses digittoint() -- BSD extension, not in Emscripten libc
-#                S-record format not needed for CoCo DECB use case
+# Incompatible files identified by scanning for _fileno, ftruncate, digittoint:
+# libdecbsrec.c:  digittoint() -- BSD extension not in Emscripten libc
+#                 S-record format not needed for CoCo DECB use case
+# libnativegs.c:  path->fd->_fileno -- glibc internal, not in Emscripten libc
+#                 _native_gs_* functions not called by our wrapper
+# libnativess.c:  ftruncate with _fileno -- same issue
+#                 _native_ss_* functions not called by our wrapper
 LIBDECB_SRCS=$(find "$LIBDECB" -name "*.c" ! -name "libdecbsrec.c" | tr '\n' ' ')
 LIBNATIVE_SRCS="
     $LIBNATIVE/libnativeopen.c
