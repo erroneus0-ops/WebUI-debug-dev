@@ -13,11 +13,18 @@ echo "Building tocgen WASM..."
 echo "  toolshed: $TOOLSHED ($TS_VERSION)"
 
 LIBMISC_SRCS=$(find "$LIBMISC" -name "*.c" ! -name "os9diskfuncs.c" | tr '\n' ' ')
+LIBCOCO="$TOOLSHED/libcoco"
+LIBCOCO_SRCS=$(find "$LIBCOCO" -name "*.c" | tr '\n' ' ')
+LIBNATIVE="$TOOLSHED/libnative"
+LIBNATIVE_SRCS="$LIBNATIVE/libnativeopen.c $LIBNATIVE/libnativewrite.c $LIBNATIVE/libnativeseek.c $LIBNATIVE/libnativeread.c $LIBNATIVE/libnativereadln.c $LIBNATIVE/libnativedelete.c $LIBNATIVE/libnativerename.c $LIBNATIVE/libnativemakdir.c"
 
 emcc \
     tocgen_wrapper.c \
+    ../toolshed/native_stubs.c \
     "$TOOLSHED/tocgen/tocgen_main.c" \
     $LIBMISC_SRCS \
+    $LIBCOCO_SRCS \
+    $LIBNATIVE_SRCS \
     -I"$INCLUDE" \
     -Dmain=tocgen_main \
     -DTOOLSHED_VERSION="\"\"" \
