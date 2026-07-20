@@ -27,8 +27,8 @@
 #include <string.h>
 #include <emscripten.h>
 
-/* lwasm entry point -- main() is renamed to lwasm_main() via -Dmain=lwasm_main
-   No extern declaration needed -- it is defined in main.c after renaming */
+/* lwasm entry point -- forward declaration matches the renamed symbol from main.c */
+extern int lwasm_main(int argc, char **argv);
 
 #define SOURCE_PATH "/in.asm"
 #define OUTPUT_PATH "/out.bin"

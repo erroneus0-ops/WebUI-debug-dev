@@ -18,8 +18,8 @@ INCLUDE="$LWTOOLS/lwasm $LWTOOLS/lwlib $LWTOOLS/common"
 echo "Building lwasm WASM..."
 echo "  lwtools: $LWTOOLS"
 
-# Collect ALL lwasm C sources including main.c
-LWASM_SRCS=$(find "$LWASM_SRC" -name "*.c" | tr '\n' ' ')
+# Collect lwasm C sources EXCEPT main.c
+LWASM_SRCS=$(find "$LWASM_SRC" -name "*.c" ! -name "main.c" | tr '\n' ' ')
 LWLIB_SRCS=$(find "$LWLIB_SRC" -name "*.c" | tr '\n' ' ')
 
 # Build include flags
@@ -28,16 +28,16 @@ for d in $INCLUDE; do
     IFLAGS="$IFLAGS -I$d"
 done
 
-# Rename lwasm main() to lwasm_main() at compile time
-# This must be applied to main.c specifically
-MAIN_WRAP="-Dmain=lwasm_main"
+# Compile main.c separately with main renamed to lwasm_main
+# All other files compiled without the rename flag
+emcc -c "$LWASM_SRC/main.c" $IFLAGS -Dmain=lwasm_main -O2 -o /tmp/lwasm_main.o
 
 emcc \
     lwasm_wrapper.c \
     $LWASM_SRCS \
     $LWLIB_SRCS \
+    /tmp/lwasm_main.o \
     $IFLAGS \
-    $MAIN_WRAP \
     -o lwasm.js \
     -s EXPORTED_FUNCTIONS='["_lwasm_assemble"]' \
     -s EXPORTED_RUNTIME_METHODS='["FS","ccall","cwrap"]' \
