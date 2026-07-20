@@ -55,7 +55,8 @@ LIBNATIVE_SRCS="
 LIBMISC_SRCS=$(find "$LIBMISC" -name "*.c" | tr '\n' ' ')
 
 LIBSYS="$TOOLSHED/libsys"
-LIBSYS_SRCS=$(find "$LIBSYS" -name "*.c" | tr '\n' ' ')
+# os9diskfuncs.c excluded: duplicate read_lsn symbol already in librbfread.c
+LIBSYS_SRCS=$(find "$LIBSYS" -name "*.c" ! -name "os9diskfuncs.c" | tr '\n' ' ')
 
 LIBTOOLSHED="$TOOLSHED/libtoolshed"
 LIBTOOLSHED_SRCS=$(find "$LIBTOOLSHED" -name "*.c" | tr '\n' ' ')
