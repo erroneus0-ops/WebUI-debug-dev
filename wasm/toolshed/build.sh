@@ -59,7 +59,8 @@ LIBMISC_SRCS="
     $LIBMISC/libmisccococonv.c
     $LIBMISC/libmiscendian.c
 "
-LIBCOCOPATH_SRCS=$(find "$LIBCOCOPATH" -name "*.c" 2>/dev/null | tr '\n' ' ')
+LIBCOCO="$TOOLSHED/libcoco"
+LIBCOCO_SRCS=$(find "$LIBCOCO" -name "*.c" | tr '\n' ' ')
 DECB_SRCS="$DECB/decbcopy.c $DECB/decbdir.c $DECB/decbdskini.c $DECB/decbkill.c"
 
 emcc \
@@ -67,7 +68,7 @@ emcc \
     $LIBDECB_SRCS \
     $LIBNATIVE_SRCS \
     $LIBMISC_SRCS \
-    $LIBCOCOPATH_SRCS \
+    $LIBCOCO_SRCS \
     $DECB_SRCS \
     -I"$INCLUDE" \
     -o toolshed.js \
