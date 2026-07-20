@@ -45,6 +45,8 @@ emcc \
     -s EXPORT_NAME='LwasmModule' \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s FORCE_FILESYSTEM=1 \
+    -s EXIT_RUNTIME=0 \
+    -s INVOKE_RUN=0 \
     -O2
 
 echo "Done. Output: lwasm.js + lwasm.wasm"

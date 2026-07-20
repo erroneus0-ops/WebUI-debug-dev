@@ -20,7 +20,18 @@ const EXPECTED_CODE = Buffer.from([0x86, 0x42, 0xB7, 0x04, 0x00]);
 LwasmModule().then(m => {
     const assemble = m.cwrap('lwasm_assemble', 'number', ['string', 'string']);
 
-    const result = assemble(SOURCE, 'decb');
+    let result;
+    try {
+        result = assemble(SOURCE, 'decb');
+    } catch(e) {
+        // Emscripten throws ExitStatus when C code calls exit()
+        // This is normal -- lwasm calls exit(0) on success
+        if (e && e.name === 'ExitStatus') {
+            result = e.status;
+        } else {
+            throw e;
+        }
+    }
     console.log('Return code:', result);
 
     if (result !== 0) {
