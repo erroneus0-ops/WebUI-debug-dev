@@ -51,12 +51,11 @@ LIBNATIVE_SRCS="
     $LIBNATIVE/libnativemakdir.c
 "
 
-# Use all libmisc sources (includes libmiscqueue.c for qAddNode etc.)
-LIBMISC_SRCS=$(find "$LIBMISC" -name "*.c" | tr '\n' ' ')
+# os9diskfuncs.c excluded from libmisc: duplicate read_lsn with librbfread.c
+LIBMISC_SRCS=$(find "$LIBMISC" -name "*.c" ! -name "os9diskfuncs.c" | tr '\n' ' ')
 
 LIBSYS="$TOOLSHED/libsys"
-# os9diskfuncs.c excluded: duplicate read_lsn symbol already in librbfread.c
-LIBSYS_SRCS=$(find "$LIBSYS" -name "*.c" ! -name "os9diskfuncs.c" | tr '\n' ' ')
+LIBSYS_SRCS=$(find "$LIBSYS" -name "*.c" | tr '\n' ' ')
 
 LIBTOOLSHED="$TOOLSHED/libtoolshed"
 LIBTOOLSHED_SRCS=$(find "$LIBTOOLSHED" -name "*.c" | tr '\n' ' ')
