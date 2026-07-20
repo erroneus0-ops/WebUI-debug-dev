@@ -69,6 +69,7 @@ EXPORTED='["_ts_dskini","_ts_copy","_ts_read","_ts_dir","_ts_kill","_ts_free","_
 
 emcc \
     toolshed_wrapper.c \
+    native_stubs.c \
     $LIBDECB_SRCS \
     $LIBRBF_SRCS \
     $LIBCECB_SRCS \
