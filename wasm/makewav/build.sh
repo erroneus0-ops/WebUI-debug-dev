@@ -17,6 +17,7 @@ echo "  toolshed: $TOOLSHED ($TS_VERSION)"
 
 emcc \
     makewav_wrapper.c \
+    makewav_stubs.c \
     "$TOOLSHED/makewav/makewav.c" \
     -I"$INCLUDE" \
     -Dmain=makewav_main \
