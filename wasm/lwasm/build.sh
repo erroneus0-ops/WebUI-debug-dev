@@ -18,9 +18,8 @@ INCLUDE="$LWTOOLS/lwasm $LWTOOLS/lwlib $LWTOOLS/common"
 echo "Building lwasm WASM..."
 echo "  lwtools: $LWTOOLS"
 
-# Collect all lwasm C sources except main.c
-# (we provide our own entry point via lwasm_wrapper.c)
-LWASM_SRCS=$(find "$LWASM_SRC" -name "*.c" ! -name "main.c" | tr '\n' ' ')
+# Collect ALL lwasm C sources including main.c
+LWASM_SRCS=$(find "$LWASM_SRC" -name "*.c" | tr '\n' ' ')
 LWLIB_SRCS=$(find "$LWLIB_SRC" -name "*.c" | tr '\n' ' ')
 
 # Build include flags
@@ -29,7 +28,8 @@ for d in $INCLUDE; do
     IFLAGS="$IFLAGS -I$d"
 done
 
-# Rename lwasm's main() so we can call it from our wrapper
+# Rename lwasm main() to lwasm_main() at compile time
+# This must be applied to main.c specifically
 MAIN_WRAP="-Dmain=lwasm_main"
 
 emcc \
