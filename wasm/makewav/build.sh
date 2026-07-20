@@ -12,12 +12,13 @@ LIBMISC="$TOOLSHED/libmisc"
 echo "Building makewav WASM..."
 echo "  toolshed: $TOOLSHED ($TS_VERSION)"
 
-LIBMISC_SRCS=$(find "$LIBMISC" -name "*.c" ! -name "os9diskfuncs.c" | tr '\n' ' ')
+# makewav is self-contained -- defines its own swap_short/swap_int
+# libmisc excluded to avoid duplicate symbol errors
 
 emcc \
     makewav_wrapper.c \
     "$TOOLSHED/makewav/makewav.c" \
-    $LIBMISC_SRCS \
+
     -I"$INCLUDE" \
     -Dmain=makewav_main \
     -Wno-implicit-function-declaration \
