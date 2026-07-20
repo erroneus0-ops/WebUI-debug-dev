@@ -37,3 +37,4 @@ emcc \
 echo "source: toolshed-$TS_VERSION" > VERSION
 echo "built: $(date -u '+%d%b%Y')" >> VERSION
 echo "Done."
+# forced rebuild Mon Jul 20 22:32:06 UTC 2026
