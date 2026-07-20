@@ -2,16 +2,11 @@
 # build.sh -- compile toolshed decb operations to WASM using Emscripten
 #
 # Run from: wasm/toolshed/
-# toolshed source expected at: ../../toolshed-2.5.1/
-#
-# Output:
-#   toolshed.js    -- Emscripten JS loader
-#   toolshed.wasm  -- the WASM binary
+# Output: toolshed.js + toolshed.wasm
 
 set -e
 
-# Auto-detect toolshed directory -- finds the highest versioned toolshed-* folder
-# Set TOOLSHED env var to override
+# Auto-detect toolshed directory -- finds highest versioned toolshed-* folder
 if [ -z "$TOOLSHED" ]; then
     TOOLSHED=$(ls -d $(cd ../.. && pwd)/toolshed-* 2>/dev/null | sort -V | tail -1)
     if [ -z "$TOOLSHED" ]; then
@@ -19,29 +14,28 @@ if [ -z "$TOOLSHED" ]; then
         exit 1
     fi
 fi
+
 LIBDECB="$TOOLSHED/libdecb"
 LIBNATIVE="$TOOLSHED/libnative"
 LIBMISC="$TOOLSHED/libmisc"
-LIBCOCOPATH="$TOOLSHED/libcocopath"
 DECB="$TOOLSHED/decb"
 INCLUDE="$TOOLSHED/include"
 
 echo "Building toolshed WASM..."
 echo "  toolshed: $TOOLSHED"
 
-# Collect source files
 # Excluded files -- Emscripten libc compatibility issues
-# When upgrading toolshed, if the build fails on a missing function,
-# identify which .c file causes it and add ! -name "that_file.c" here.
-# Only exclude files whose functionality we don't need (see README.md).
-# Incompatible files identified by scanning for _fileno, ftruncate, digittoint:
+# When upgrading toolshed, scan with:
+#   grep -rl "_fileno|ftruncate|digittoint" toolshed-NEW/libnative/ toolshed-NEW/libdecb/
+#
 # libdecbsrec.c:  digittoint() -- BSD extension not in Emscripten libc
-#                 S-record format not needed for CoCo DECB use case
 # libnativegs.c:  path->fd->_fileno -- glibc internal, not in Emscripten libc
-#                 _native_gs_* functions not called by our wrapper
 # libnativess.c:  ftruncate with _fileno -- same issue
-#                 _native_ss_* functions not called by our wrapper
+# libcoco:        routing layer pulls in OS9/CECB deps we don't need
+# decbcopy.c:     uses libcoco; ts_copy implemented directly with _decb_* instead
+
 LIBDECB_SRCS=$(find "$LIBDECB" -name "*.c" ! -name "libdecbsrec.c" | tr '\n' ' ')
+
 LIBNATIVE_SRCS="
     $LIBNATIVE/libnativeopen.c
     $LIBNATIVE/libnativewrite.c
@@ -52,17 +46,13 @@ LIBNATIVE_SRCS="
     $LIBNATIVE/libnativerename.c
     $LIBNATIVE/libnativemakdir.c
 "
-# libnativegs.c excluded: uses path->fd->_fileno (Linux internal, not in Emscripten libc)
-# libnativess.c excluded: uses ftruncate with _fileno (same issue)
+
 LIBMISC_SRCS="
     $LIBMISC/libmiscutil.c
     $LIBMISC/libmisccococonv.c
     $LIBMISC/libmiscendian.c
 "
-# libcoco excluded -- routing layer pulls in OS9/CECB deps we dont need
-# ts_copy implemented directly using _decb_* functions in toolshed_wrapper.c
-# decbcopy.c excluded -- uses libcoco routing layer
-# ts_copy implemented directly in toolshed_wrapper.c using _decb_* functions
+
 DECB_SRCS="$DECB/decbdir.c $DECB/decbdskini.c $DECB/decbkill.c"
 
 emcc \
@@ -70,7 +60,6 @@ emcc \
     $LIBDECB_SRCS \
     $LIBNATIVE_SRCS \
     $LIBMISC_SRCS \
-
     $DECB_SRCS \
     -I"$INCLUDE" \
     -o toolshed.js \
