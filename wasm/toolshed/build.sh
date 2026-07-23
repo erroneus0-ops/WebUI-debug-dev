@@ -68,7 +68,7 @@ DECB_SRCS=$(find "$DECB" -name "*.c" ! -name "decb_main.c" ! -name "decbcopy.c" 
 OS9_SRCS=$(find "$OS9" -name "*.c" ! -name "os9_main.c" | tr '\n' ' ')
 CECB_SRCS=$(find "$CECB" -name "*.c" ! -name "cecb_main.c" | tr '\n' ' ')
 
-EXPORTED='["_ts_version","_ts_dskini","_ts_copy","_ts_read","_ts_dir","_ts_kill","_ts_free","_ts_rename","_ts_fstat","_ts_os9_dir","_ts_os9_copy","_ts_os9_del","_ts_os9_free","_ts_os9_id"]'
+EXPORTED='["_ts_version","_ts_dskini","_ts_copy","_ts_read","_ts_dir","_ts_kill","_ts_free","_ts_rename","_ts_fstat","_ts_os9_dir","_ts_os9_copy","_ts_os9_del","_ts_os9_free","_ts_os9_id","_ts_cecb_copy","_ts_cecb_dir","_ts_cecb_bulkerase"]'
 
 emcc \
     toolshed_wrapper.c \

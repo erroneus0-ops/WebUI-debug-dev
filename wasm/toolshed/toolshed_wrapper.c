@@ -268,3 +268,58 @@ int ts_os9_id(const char *imagepath, const char *outpath)
     char *argv[] = { "os9id", (char *)imagepath, NULL };
     return redirect_stdout(outpath, os9id, 2, argv);
 }
+
+/* ================================================================== */
+/* CECB (Cassette Extended Color BASIC) Operations                      */
+/* ================================================================== */
+
+extern int cecbdir(int argc, char **argv);
+extern int cecbcopy(int argc, char **argv);
+extern int cecbbulkerase(int argc, char **argv);
+extern int cecbfstat(int argc, char **argv);
+
+EMSCRIPTEN_KEEPALIVE
+int ts_cecb_copy(const char *srcpath, const char *dstpathlist,
+                 int file_type, const char *load_addr, const char *exec_addr)
+{
+    char type_flag[4], load_flag[32], exec_flag[32];
+    char *argv[16];
+    int argc = 0;
+
+    argv[argc++] = "copy";
+    snprintf(type_flag, sizeof(type_flag), "-%d", file_type);
+    argv[argc++] = type_flag;
+    if (load_addr && *load_addr) {
+        snprintf(load_flag, sizeof(load_flag), "-d%s", load_addr);
+        argv[argc++] = load_flag;
+    }
+    if (exec_addr && *exec_addr) {
+        snprintf(exec_flag, sizeof(exec_flag), "-e%s", exec_addr);
+        argv[argc++] = exec_flag;
+    }
+    argv[argc++] = (char *)srcpath;
+    argv[argc++] = (char *)dstpathlist;
+    argv[argc] = NULL;
+
+    return cecbcopy(argc, argv);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int ts_cecb_dir(const char *casfile, const char *outpath)
+{
+    FILE *old = stdout;
+    stdout = fopen(outpath, "w");
+    if (!stdout) { stdout = old; return -1; }
+    char *argv[] = { "dir", (char *)casfile, NULL };
+    int rc = cecbdir(2, argv);
+    fclose(stdout);
+    stdout = old;
+    return rc;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int ts_cecb_bulkerase(const char *casfile)
+{
+    char *argv[] = { "bulkerase", (char *)casfile, NULL };
+    return cecbbulkerase(2, argv);
+}
