@@ -1,8 +1,8 @@
 # toolshed WASM Build Report
 
-**Built:** 2026-07-23 19:43 UTC
+**Built:** 2026-07-23 19:46 UTC
 **Toolshed:** toolshed-2.5.1
-**WASM size:** 103032 bytes
+**WASM size:** 103068 bytes
 
 ## Smoke Test Output
 ```
