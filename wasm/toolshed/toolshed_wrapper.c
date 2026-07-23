@@ -307,13 +307,10 @@ int ts_cecb_copy(const char *srcpath, const char *dstpathlist,
 EMSCRIPTEN_KEEPALIVE
 int ts_cecb_dir(const char *casfile, const char *outpath)
 {
-    FILE *old = stdout;
-    stdout = fopen(outpath, "w");
-    if (!stdout) { stdout = old; return -1; }
+    if (!freopen(outpath, "w", stdout)) return -1;
     char *argv[] = { "dir", (char *)casfile, NULL };
     int rc = cecbdir(2, argv);
-    fclose(stdout);
-    stdout = old;
+    freopen("/dev/null", "w", stdout);
     return rc;
 }
 
