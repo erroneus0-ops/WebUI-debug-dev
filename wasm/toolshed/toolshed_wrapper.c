@@ -289,6 +289,7 @@ int ts_cecb_copy(const char *srcpath, const char *dstpathlist,
     argv[argc++] = "copy";
     snprintf(type_flag, sizeof(type_flag), "-%d", file_type);
     argv[argc++] = type_flag;
+    argv[argc++] = "-n";  /* no gap (gap=0x00) -- triggers DECB header stripping for ML */
     if (load_addr && *load_addr) {
         /* strtol with base 0 needs 0x prefix for hex */
         if (load_addr[0] != '0')
