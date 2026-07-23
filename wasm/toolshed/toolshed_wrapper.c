@@ -290,11 +290,18 @@ int ts_cecb_copy(const char *srcpath, const char *dstpathlist,
     snprintf(type_flag, sizeof(type_flag), "-%d", file_type);
     argv[argc++] = type_flag;
     if (load_addr && *load_addr) {
-        snprintf(load_flag, sizeof(load_flag), "-d%s", load_addr);
+        /* strtol with base 0 needs 0x prefix for hex */
+        if (load_addr[0] != '0')
+            snprintf(load_flag, sizeof(load_flag), "-d0x%s", load_addr);
+        else
+            snprintf(load_flag, sizeof(load_flag), "-d%s", load_addr);
         argv[argc++] = load_flag;
     }
     if (exec_addr && *exec_addr) {
-        snprintf(exec_flag, sizeof(exec_flag), "-e%s", exec_addr);
+        if (exec_addr[0] != '0')
+            snprintf(exec_flag, sizeof(exec_flag), "-e0x%s", exec_addr);
+        else
+            snprintf(exec_flag, sizeof(exec_flag), "-e%s", exec_addr);
         argv[argc++] = exec_flag;
     }
     argv[argc++] = (char *)srcpath;
