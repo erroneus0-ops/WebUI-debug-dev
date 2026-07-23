@@ -320,3 +320,4 @@ int ts_cecb_bulkerase(const char *casfile)
     char *argv[] = { "bulkerase", (char *)casfile, NULL };
     return cecbbulkerase(2, argv);
 }
+/* force rebuild Thu Jul 23 19:42:31 UTC 2026 */
