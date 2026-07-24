@@ -278,40 +278,43 @@ extern int cecbcopy(int argc, char **argv);
 extern int cecbbulkerase(int argc, char **argv);
 extern int cecbfstat(int argc, char **argv);
 
+/* General purpose cecb command runner -- same interface as native cecb.exe
+ * cmdstr: subcommand + args, e.g. "copy -2 -n -d0x3F00 -e0x3F00 src dst"
+ */
 EMSCRIPTEN_KEEPALIVE
-int ts_cecb_copy(const char *srcpath, const char *dstpathlist,
-                 int file_type, const char *load_addr, const char *exec_addr)
+int ts_cecb_run(const char *cmdstr)
 {
-    char type_flag[4], load_flag[32], exec_flag[32];
-    char *argv[16];
+    char *buf = strdup(cmdstr);
+    char *argv[64];
     int argc = 0;
-
-    argv[argc++] = "copy";
-    snprintf(type_flag, sizeof(type_flag), "-%d", file_type);
-    argv[argc++] = type_flag;
-    argv[argc++] = "-n";  /* no gap (gap=0x00) -- triggers DECB header stripping for ML */
-    if (load_addr && *load_addr) {
-        /* strtol with base 0 needs 0x prefix for hex */
-        if (load_addr[0] != '0')
-            snprintf(load_flag, sizeof(load_flag), "-d0x%s", load_addr);
-        else
-            snprintf(load_flag, sizeof(load_flag), "-d%s", load_addr);
-        argv[argc++] = load_flag;
+    argv[argc++] = "cecb";
+    char *tok = strtok(buf, " ");
+    while (tok && argc < 63) {
+        argv[argc++] = tok;
+        tok = strtok(NULL, " ");
     }
-    if (exec_addr && *exec_addr) {
-        if (exec_addr[0] != '0')
-            snprintf(exec_flag, sizeof(exec_flag), "-e0x%s", exec_addr);
-        else
-            snprintf(exec_flag, sizeof(exec_flag), "-e%s", exec_addr);
-        argv[argc++] = exec_flag;
-    }
-    argv[argc++] = (char *)srcpath;
-    argv[argc++] = (char *)dstpathlist;
     argv[argc] = NULL;
 
-    return cecbcopy(argc, argv);
+    /* Route to the right subcommand */
+    if (strcmp(argv[1], "copy") == 0)
+        { int rc = cecbcopy(argc - 1, &argv[1]); free(buf); return rc; }
+    if (strcmp(argv[1], "bulkerase") == 0)
+        { int rc = cecbbulkerase(argc - 1, &argv[1]); free(buf); return rc; }
+    if (strcmp(argv[1], "dir") == 0)
+        { int rc = cecbdir(argc - 1, &argv[1]); free(buf); return rc; }
+    free(buf);
+    return -1;
 }
 
+/* Convenience: bulkerase (create blank CAS/WAV) */
+EMSCRIPTEN_KEEPALIVE
+int ts_cecb_bulkerase(const char *casfile)
+{
+    char *argv[] = { "bulkerase", (char *)casfile, NULL };
+    return cecbbulkerase(2, argv);
+}
+
+/* Convenience: dir to output file */
 EMSCRIPTEN_KEEPALIVE
 int ts_cecb_dir(const char *casfile, const char *outpath)
 {
@@ -320,12 +323,5 @@ int ts_cecb_dir(const char *casfile, const char *outpath)
     int rc = cecbdir(2, argv);
     freopen("/dev/null", "w", stdout);
     return rc;
-}
-
-EMSCRIPTEN_KEEPALIVE
-int ts_cecb_bulkerase(const char *casfile)
-{
-    char *argv[] = { "bulkerase", (char *)casfile, NULL };
-    return cecbbulkerase(2, argv);
 }
 /* force rebuild Thu Jul 23 19:42:31 UTC 2026 */
