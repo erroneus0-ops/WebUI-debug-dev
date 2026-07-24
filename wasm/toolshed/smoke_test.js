@@ -53,11 +53,46 @@ ToolshedModule().then(m => {
 
     // Verify HELLO appears in directory
     if (dirCSV.includes('HELLO')) {
-        console.log('\nPASS -- toolshed WASM dskini + copy + dir all working');
+        console.log('   DECB PASS -- dskini + copy + dir all working');
     } else {
         console.error('\nFAIL -- HELLO not found in directory');
         process.exit(1);
     }
 
+    // 5. CECB: create a blank cassette image
+    console.log('5. cecb bulkerase...');
+    const cecbBulkerase = m.cwrap('ts_cecb_bulkerase', 'number', ['string']);
+    rc = cecbBulkerase('/test.cas');
+    console.log('   rc:', rc, rc === 0 ? 'OK' : 'FAIL');
+    if (rc !== 0) process.exit(1);
+
+    // 6. CECB: copy the same test binary in via ts_cecb_run
+    console.log('6. cecb copy (ts_cecb_run)...');
+    const cecbRun = m.cwrap('ts_cecb_run', 'number', ['string']);
+    rc = cecbRun('copy -2 -n -d0x3F00 -e0x3F00 /test.bin /test.cas,HELLO');
+    console.log('   rc:', rc, rc === 0 ? 'OK' : 'FAIL');
+    if (rc !== 0) process.exit(1);
+
+    // 7. CECB: list the directory and verify HELLO appears
+    console.log('7. cecb dir...');
+    const cecbDir = m.cwrap('ts_cecb_dir', 'number', ['string', 'string']);
+    rc = cecbDir('/test.cas', '/cecb_dir.txt');
+    console.log('   rc:', rc, rc === 0 ? 'OK' : 'FAIL');
+    if (rc !== 0) process.exit(1);
+
+    const cecbDirOut = m.FS.readFile('/cecb_dir.txt', {encoding: 'utf8'});
+    console.log('   directory:');
+    cecbDirOut.split('\n').forEach(line => {
+        if (line) console.log('   ', line);
+    });
+
+    if (cecbDirOut.includes('HELLO')) {
+        console.log('   CECB PASS -- bulkerase + copy (ts_cecb_run) + dir all working');
+    } else {
+        console.error('\nFAIL -- HELLO not found in CECB directory');
+        process.exit(1);
+    }
+
+    console.log('\nPASS -- toolshed WASM DECB and CECB paths both working');
     process.exit(0);
 });
