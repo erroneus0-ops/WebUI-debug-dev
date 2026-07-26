@@ -1,0 +1,97 @@
+name: Build XRoar WASM (custom, debug-enabled)
+
+# Trigger manually from GitHub Actions tab
+# or automatically when xroar source or this workflow changes
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'xroar/**'
+      - '.github/workflows/build_xroar_wasm.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Verify emcc
+        run: emcc --version
+
+      - name: Install autotools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool
+
+      - name: Generate configure script
+        run: |
+          cd xroar
+          ./autogen.sh
+
+      - name: Configure for WASM
+        run: |
+          cd xroar
+          emconfigure ./configure --enable-wasm
+
+      - name: Build XRoar WASM
+        run: |
+          cd xroar
+          emmake make
+
+      - name: Locate build output
+        run: |
+          echo "Looking for xroar.js / xroar.wasm under xroar/src ..."
+          find xroar/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
+
+      - name: Copy output as xroar-custom (does not touch the live xroar.js/wasm)
+        run: |
+          cp xroar/src/xroar.js   wasm/xroar-custom.js
+          cp xroar/src/xroar.wasm wasm/xroar-custom.wasm
+
+      - name: Verify output
+        run: |
+          ls -la wasm/xroar-custom.js wasm/xroar-custom.wasm
+          test -s wasm/xroar-custom.wasm && echo "xroar-custom.wasm OK"
+          test -s wasm/xroar-custom.js   && echo "xroar-custom.js OK"
+
+      - name: Check debug exports are present
+        run: |
+          echo "Checking for register/memory debug functions in the built JS glue..."
+          grep -o "wasm_get_pc\|wasm_get_cc\|wasm_get_a\|wasm_get_b\|wasm_get_x\|wasm_get_y\|wasm_get_s\|wasm_read_byte\|wasm_write_byte" wasm/xroar-custom.js | sort -u
+
+      - name: Write build report
+        if: always()
+        run: |
+          echo "# XRoar custom WASM Build Report" > wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "**Built:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "**Source:** xroar/ (local checkout, XRoar 1.11 base + debug/register accessor additions)" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "**WASM size:** $(wc -c < wasm/xroar-custom.wasm 2>/dev/null || echo 'build failed') bytes" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "## Debug exports found in built JS glue" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo '```' >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          grep -o "wasm_get_pc\|wasm_get_cc\|wasm_get_a\|wasm_get_b\|wasm_get_x\|wasm_get_y\|wasm_get_s\|wasm_read_byte\|wasm_write_byte" wasm/xroar-custom.js 2>/dev/null | sort -u >> wasm/XROAR_CUSTOM_BUILD_REPORT.md || echo "none found -- build likely failed" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo '```' >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "**Note:** this build is NOT wired into index_new.html or index.html." >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "It sits alongside the live xroar.js/xroar.wasm as xroar-custom.js/xroar-custom.wasm" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "until deliberately wired in for the future monitor/debugger page." >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+
+      - name: Commit WASM output
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add wasm/xroar-custom.js wasm/xroar-custom.wasm wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          git diff --staged --quiet || git commit -m "build: xroar-custom WASM (debug/register exports) [ci skip]"
+          git pull --rebase origin main
+          git push
