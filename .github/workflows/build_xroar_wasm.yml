@@ -91,7 +91,33 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+
+          echo "=== git status before add ==="
+          git status --short | head -30
+
           git add wasm/xroar-custom.js wasm/xroar-custom.wasm wasm/XROAR_CUSTOM_BUILD_REPORT.md
-          git diff --staged --quiet || git commit -m "build: xroar-custom WASM (debug/register exports) [ci skip]"
-          git pull --rebase origin main
-          git push
+
+          if git diff --staged --quiet; then
+            echo "Nothing staged -- output identical to what's already committed. Skipping commit/push."
+            exit 0
+          fi
+
+          git commit -m "build: xroar-custom WASM (debug/register exports) [ci skip]"
+
+          echo "=== attempting git pull --rebase --autostash origin main ==="
+          if ! git pull --rebase --autostash origin main; then
+            echo "PULL --REBASE FAILED. git status follows:"
+            git status
+            git rebase --abort 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "=== attempting git push ==="
+          if ! git push; then
+            echo "PUSH FAILED. git status and remote follow:"
+            git status
+            git remote -v
+            exit 1
+          fi
+
+          echo "Push succeeded."
