@@ -36,7 +36,7 @@ jobs:
       - name: Generate configure script
         run: |
           cd xroar
-          ./autogen.sh
+          bash autogen.sh
 
       - name: Configure for WASM
         run: |
