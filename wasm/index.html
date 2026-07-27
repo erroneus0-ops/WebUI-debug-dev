@@ -99,6 +99,25 @@ body {
  *   left=109  top=112  width=854  height=659
  *   canvas CSS: left=round(109*scale)  top=round(112*scale)
  *               width=round(854*scale) height=round(659*scale)
+ *
+ * LED light and power button (the only two interactive parts of the
+ * bezel artwork) are NOT part of cm8_bezel-light.svg's background-image
+ * -- a CSS background-image is invisible to JS/getElementById, so those
+ * two elements are instead hand-copied into a small separate inline
+ * <svg id="bezel-svg"> overlay (see the HTML below, inside
+ * #bezel-interactive), positioned on top of the background image.
+ *
+ * If the bezel image is ever replaced:
+ *   1. The new #bezel-svg viewBox must match the new image's own native
+ *      pixel dimensions (currently "0 0 1073 967", matching
+ *      cm8_bezel.svg/cm8_bezel-light.svg's actual size) -- this is what
+ *      keeps the two layers aligned to the same coordinate space.
+ *   2. The #led-light rects and #power-butt rect's x/y/width/height
+ *      values are hand-measured from where those features actually sit
+ *      in the bezel artwork. They will need to be re-measured against
+ *      the new image (e.g. open both in Inkscape, note the coordinates
+ *      of the equivalent light/button location) and updated to match --
+ *      they won't automatically track a new image's layout.
  */
 #monitor-region {
     position: relative;
@@ -244,7 +263,10 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
     <div id="crt-black" style="position:absolute;background:#000;display:block;z-index:0;"></div>
     <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()" style="z-index:1;"></canvas>
     <div id="bezel-overlay"></div>
-    <!-- Interactive SVG overlay: LED and power button -- must be above bezel-overlay -->
+    <!-- Interactive SVG overlay: LED and power button -- must be above bezel-overlay.
+         viewBox and rect coordinates below are hand-measured from cm8_bezel.svg's
+         own artwork (1073x967 native size) -- see the #monitor-region CSS comment
+         above for what has to change here if the bezel image is ever replaced. -->
     <div id="bezel-interactive" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:11;">
       <svg id="bezel-svg" viewBox="0 0 1073 967" style="width:100%;height:100%;"
            xmlns="http://www.w3.org/2000/svg">
