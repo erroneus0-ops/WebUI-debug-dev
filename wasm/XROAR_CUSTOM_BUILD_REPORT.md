@@ -1,6 +1,6 @@
 # XRoar custom WASM Build Report
 
-**Built:** 2026-07-27 00:17 UTC
+**Built:** 2026-07-27 13:56 UTC
 **Source:** xroar/ (local checkout, XRoar 1.11 base + debug/register accessor additions)
 **WASM size:** 1125617 bytes
 
