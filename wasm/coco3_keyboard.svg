@@ -61,4 +61,284 @@
      sodipodi:nodetypes="ccccccccccccccccccccccccccccc"
      inkscape:label="Bezel_Cutout"
      inkscape:highlight-color="#7dee66" />
+  <path
+     id="key-1"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 130.00,100.00 L 275.71,100.00 L 275.71,240.00 L 130.00,240.00 Z"
+     inkscape:label="key-1" />
+  <path
+     id="key-2"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 275.71,100.00 L 421.43,100.00 L 421.43,240.00 L 275.71,240.00 Z"
+     inkscape:label="key-2" />
+  <path
+     id="key-3"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 421.43,100.00 L 567.14,100.00 L 567.14,240.00 L 421.43,240.00 Z"
+     inkscape:label="key-3" />
+  <path
+     id="key-4"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 567.14,100.00 L 712.86,100.00 L 712.86,240.00 L 567.14,240.00 Z"
+     inkscape:label="key-4" />
+  <path
+     id="key-5"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 712.86,100.00 L 858.57,100.00 L 858.57,240.00 L 712.86,240.00 Z"
+     inkscape:label="key-5" />
+  <path
+     id="key-6"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 858.57,100.00 L 1004.29,100.00 L 1004.29,240.00 L 858.57,240.00 Z"
+     inkscape:label="key-6" />
+  <path
+     id="key-7"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1004.29,100.00 L 1150.00,100.00 L 1150.00,240.00 L 1004.29,240.00 Z"
+     inkscape:label="key-7" />
+  <path
+     id="key-8"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1150.00,100.00 L 1295.71,100.00 L 1295.71,240.00 L 1150.00,240.00 Z"
+     inkscape:label="key-8" />
+  <path
+     id="key-9"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1295.71,100.00 L 1441.43,100.00 L 1441.43,240.00 L 1295.71,240.00 Z"
+     inkscape:label="key-9" />
+  <path
+     id="key-0"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1441.43,100.00 L 1587.14,100.00 L 1587.14,240.00 L 1441.43,240.00 Z"
+     inkscape:label="key-0" />
+  <path
+     id="key-colon"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1587.14,100.00 L 1732.86,100.00 L 1732.86,240.00 L 1587.14,240.00 Z"
+     inkscape:label="key-colon" />
+  <path
+     id="key-minus"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1732.86,100.00 L 1878.57,100.00 L 1878.57,240.00 L 1732.86,240.00 Z"
+     inkscape:label="key-minus" />
+  <path
+     id="key-break"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1878.57,100.00 L 2170.00,100.00 L 2170.00,240.00 L 1878.57,240.00 Z"
+     inkscape:label="key-break" />
+  <path
+     id="key-q"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 130.00,240.00 L 286.92,240.00 L 286.92,380.00 L 130.00,380.00 Z"
+     inkscape:label="key-q" />
+  <path
+     id="key-w"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 286.92,240.00 L 443.85,240.00 L 443.85,380.00 L 286.92,380.00 Z"
+     inkscape:label="key-w" />
+  <path
+     id="key-e"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 443.85,240.00 L 600.77,240.00 L 600.77,380.00 L 443.85,380.00 Z"
+     inkscape:label="key-e" />
+  <path
+     id="key-r"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 600.77,240.00 L 757.69,240.00 L 757.69,380.00 L 600.77,380.00 Z"
+     inkscape:label="key-r" />
+  <path
+     id="key-t"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 757.69,240.00 L 914.62,240.00 L 914.62,380.00 L 757.69,380.00 Z"
+     inkscape:label="key-t" />
+  <path
+     id="key-y"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 914.62,240.00 L 1071.54,240.00 L 1071.54,380.00 L 914.62,380.00 Z"
+     inkscape:label="key-y" />
+  <path
+     id="key-u"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1071.54,240.00 L 1228.46,240.00 L 1228.46,380.00 L 1071.54,380.00 Z"
+     inkscape:label="key-u" />
+  <path
+     id="key-i"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1228.46,240.00 L 1385.38,240.00 L 1385.38,380.00 L 1228.46,380.00 Z"
+     inkscape:label="key-i" />
+  <path
+     id="key-o"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1385.38,240.00 L 1542.31,240.00 L 1542.31,380.00 L 1385.38,380.00 Z"
+     inkscape:label="key-o" />
+  <path
+     id="key-p"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1542.31,240.00 L 1699.23,240.00 L 1699.23,380.00 L 1542.31,380.00 Z"
+     inkscape:label="key-p" />
+  <path
+     id="key-at"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1699.23,240.00 L 1856.15,240.00 L 1856.15,380.00 L 1699.23,380.00 Z"
+     inkscape:label="key-at" />
+  <path
+     id="key-clear"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1856.15,240.00 L 2170.00,240.00 L 2170.00,380.00 L 1856.15,380.00 Z"
+     inkscape:label="key-clear" />
+  <path
+     id="key-a"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 130.00,380.00 L 300.00,380.00 L 300.00,520.00 L 130.00,520.00 Z"
+     inkscape:label="key-a" />
+  <path
+     id="key-s"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 300.00,380.00 L 470.00,380.00 L 470.00,520.00 L 300.00,520.00 Z"
+     inkscape:label="key-s" />
+  <path
+     id="key-d"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 470.00,380.00 L 640.00,380.00 L 640.00,520.00 L 470.00,520.00 Z"
+     inkscape:label="key-d" />
+  <path
+     id="key-f"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 640.00,380.00 L 810.00,380.00 L 810.00,520.00 L 640.00,520.00 Z"
+     inkscape:label="key-f" />
+  <path
+     id="key-g"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 810.00,380.00 L 980.00,380.00 L 980.00,520.00 L 810.00,520.00 Z"
+     inkscape:label="key-g" />
+  <path
+     id="key-h"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 980.00,380.00 L 1150.00,380.00 L 1150.00,520.00 L 980.00,520.00 Z"
+     inkscape:label="key-h" />
+  <path
+     id="key-j"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1150.00,380.00 L 1320.00,380.00 L 1320.00,520.00 L 1150.00,520.00 Z"
+     inkscape:label="key-j" />
+  <path
+     id="key-k"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1320.00,380.00 L 1490.00,380.00 L 1490.00,520.00 L 1320.00,520.00 Z"
+     inkscape:label="key-k" />
+  <path
+     id="key-l"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1490.00,380.00 L 1660.00,380.00 L 1660.00,520.00 L 1490.00,520.00 Z"
+     inkscape:label="key-l" />
+  <path
+     id="key-semicolon"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1660.00,380.00 L 1830.00,380.00 L 1830.00,520.00 L 1660.00,520.00 Z"
+     inkscape:label="key-semicolon" />
+  <path
+     id="key-enter"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1830.00,380.00 L 2170.00,380.00 L 2170.00,520.00 L 1830.00,520.00 Z"
+     inkscape:label="key-enter" />
+  <path
+     id="key-shift-l"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 130.00,520.00 L 365.38,520.00 L 365.38,660.00 L 130.00,660.00 Z"
+     inkscape:label="key-shift-l" />
+  <path
+     id="key-z"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 365.38,520.00 L 522.31,520.00 L 522.31,660.00 L 365.38,660.00 Z"
+     inkscape:label="key-z" />
+  <path
+     id="key-x"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 522.31,520.00 L 679.23,520.00 L 679.23,660.00 L 522.31,660.00 Z"
+     inkscape:label="key-x" />
+  <path
+     id="key-c"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 679.23,520.00 L 836.15,520.00 L 836.15,660.00 L 679.23,660.00 Z"
+     inkscape:label="key-c" />
+  <path
+     id="key-v"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 836.15,520.00 L 993.08,520.00 L 993.08,660.00 L 836.15,660.00 Z"
+     inkscape:label="key-v" />
+  <path
+     id="key-b"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 993.08,520.00 L 1150.00,520.00 L 1150.00,660.00 L 993.08,660.00 Z"
+     inkscape:label="key-b" />
+  <path
+     id="key-n"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1150.00,520.00 L 1306.92,520.00 L 1306.92,660.00 L 1150.00,660.00 Z"
+     inkscape:label="key-n" />
+  <path
+     id="key-m"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1306.92,520.00 L 1463.85,520.00 L 1463.85,660.00 L 1306.92,660.00 Z"
+     inkscape:label="key-m" />
+  <path
+     id="key-comma"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1463.85,520.00 L 1620.77,520.00 L 1620.77,660.00 L 1463.85,660.00 Z"
+     inkscape:label="key-comma" />
+  <path
+     id="key-period"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1620.77,520.00 L 1777.69,520.00 L 1777.69,660.00 L 1620.77,660.00 Z"
+     inkscape:label="key-period" />
+  <path
+     id="key-slash"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1777.69,520.00 L 1934.62,520.00 L 1934.62,660.00 L 1777.69,660.00 Z"
+     inkscape:label="key-slash" />
+  <path
+     id="key-shift-r"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1934.62,520.00 L 2170.00,520.00 L 2170.00,660.00 L 1934.62,660.00 Z"
+     inkscape:label="key-shift-r" />
+  <path
+     id="key-ctrl"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 130.00,660.00 L 324.29,660.00 L 324.29,800.00 L 130.00,800.00 Z"
+     inkscape:label="key-ctrl" />
+  <path
+     id="key-alt"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 324.29,660.00 L 518.57,660.00 L 518.57,800.00 L 324.29,800.00 Z"
+     inkscape:label="key-alt" />
+  <path
+     id="key-f1"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 518.57,660.00 L 680.48,660.00 L 680.48,800.00 L 518.57,800.00 Z"
+     inkscape:label="key-f1" />
+  <path
+     id="key-f2"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 680.48,660.00 L 842.38,660.00 L 842.38,800.00 L 680.48,800.00 Z"
+     inkscape:label="key-f2" />
+  <path
+     id="key-left"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1651.90,660.00 L 1781.43,660.00 L 1781.43,800.00 L 1651.90,800.00 Z"
+     inkscape:label="key-left" />
+  <path
+     id="key-right"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1781.43,660.00 L 1910.95,660.00 L 1910.95,800.00 L 1781.43,800.00 Z"
+     inkscape:label="key-right" />
+  <path
+     id="key-up"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 1910.95,660.00 L 2040.48,660.00 L 2040.48,800.00 L 1910.95,800.00 Z"
+     inkscape:label="key-up" />
+  <path
+     id="key-down"
+     style="display:inline;fill:none;stroke:#00ff00;stroke-width:0.7;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="M 2040.48,660.00 L 2170.00,660.00 L 2170.00,800.00 L 2040.48,800.00 Z"
+     inkscape:label="key-down" />
 </svg>
