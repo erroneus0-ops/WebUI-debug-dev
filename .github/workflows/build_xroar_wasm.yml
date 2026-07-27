@@ -41,7 +41,7 @@ jobs:
       - name: Configure for WASM
         run: |
           cd xroar
-          emconfigure ./configure --enable-wasm
+          emconfigure ./configure --enable-wasm CFLAGS="-O2"
 
       - name: Build XRoar WASM
         run: |
