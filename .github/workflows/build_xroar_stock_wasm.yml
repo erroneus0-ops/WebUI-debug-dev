@@ -33,10 +33,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y autoconf automake libtool
 
-      - name: Generate configure script
+      - name: Generate configure script (if needed)
         run: |
           cd xroar-1.12.1
-          bash autogen.sh
+          if [ -f configure ]; then
+            echo "configure already present in this release tarball -- skipping autogen.sh"
+          elif [ -f autogen.sh ]; then
+            bash autogen.sh
+          else
+            echo "Neither configure nor autogen.sh found!"
+            exit 1
+          fi
 
       - name: Configure for WASM
         run: |
