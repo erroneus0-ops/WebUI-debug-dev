@@ -59,6 +59,18 @@ jobs:
           chmod +x configure config.guess config.sub install-sh missing compile ar-lib depcomp 2>/dev/null || true
           emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
+      - name: Build standalone version reporter (tiny, separate from xroar itself)
+        run: |
+          emcc wasm/xroar_version_report.c -I xroar-1.12.1 -o wasm/xroar-version.js \
+            -s EXPORTED_FUNCTIONS='["_xroar_version_report_get_version","_malloc"]' \
+            -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString"]' \
+            -s MODULARIZE=1 -s EXPORT_NAME="XRoarVersionReportModule" \
+            -s ENVIRONMENT=web \
+            -O2
+          ls -la wasm/xroar-version.js wasm/xroar-version.wasm
+          echo "=== version string this reports ==="
+          grep -o 'PACKAGE_TEXT[^,]*' xroar-1.12.1/config.h || true
+
       - name: Build XRoar WASM
         id: build
         run: |
@@ -114,6 +126,12 @@ jobs:
           echo "index.html, index_new.html, and index_custom.html. Pure upstream --" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "no custom modifications. The debug/register-accessor build stays" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "separate as wasm/xroar-custom.js / xroar-custom.wasm." >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "Also built: wasm/xroar-version.js / xroar-version.wasm -- a tiny," >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "separate, MODULARIZE-d companion program (not part of xroar's own" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "source) that reports the version string from the same config.h" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "this build generated. Exists so the page can query the version at" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "runtime without touching xroar.wasm itself at all." >> wasm/XROAR_STOCK_BUILD_REPORT.md
 
       - name: Commit WASM output
         run: |
@@ -123,7 +141,7 @@ jobs:
           echo "=== git status before add ==="
           git status --short | head -30
 
-          git add wasm/xroar.js wasm/xroar.wasm wasm/XROAR_STOCK_BUILD_REPORT.md
+          git add wasm/xroar.js wasm/xroar.wasm wasm/xroar-version.js wasm/xroar-version.wasm wasm/XROAR_STOCK_BUILD_REPORT.md
 
           if git diff --staged --quiet; then
             echo "Nothing staged -- output identical to what's already committed. Skipping commit/push."
