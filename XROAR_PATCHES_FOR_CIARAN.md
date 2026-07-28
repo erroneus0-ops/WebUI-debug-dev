@@ -16,6 +16,17 @@ maintainers uninvited, the honest framing is also the respectful one.
 
 ## Diff baseline
 
+**Update 2026-07-28:** Ciaran released 1.12 then 1.12.1 in quick succession
+(2026-07-27, per his own Discord post and confirmed directly against the
+live site). Our working tree (`xroar/`) and everything below is still
+pinned to 1.11 -- each remaining item needs re-checking against
+`xroar-1.12.1/` (now also in the repo) before anything is submitted,
+the same way item 1 below just got re-checked and turned out to already
+be fixed. Given the scale of the 1.12 changes (register handling
+reworked from a fixed table to "defined per-machine"), don't assume any
+of the remaining items still apply cleanly -- check each one the same
+careful way, file by file, before trusting old notes.
+
 Comparing our working tree (`xroar/`, based on XRoar 1.11) against a
 pristine copy of the same release (`xroar-1.11/`, fetched directly from
 `https://www.6809.org.uk/xroar/dl/xroar-1.11.tar.gz`). Excluded from
@@ -29,41 +40,29 @@ change. Also excluded: stray local artifacts (`a.wasm`, `config.h.in~`,
 `.gitignore` additions) that shouldn't be committed at all, let alone
 submitted anywhere.
 
-## 1. gdb.c -- off-by-one in send_packet_hexstring (READY)
+## 1. gdb.c -- off-by-one in send_packet_hexstring (RESOLVED UPSTREAM -- DO NOT SUBMIT)
 
-**Status:** understood, fixed, verified against the real diff. Low-drama
-framing drafted below, ready to use whenever we're ready to send.
+**Status:** Ciaran independently fixed this exact bug in 1.12/1.12.1, before
+we ever had a chance to submit it. Confirmed 2026-07-28 by diffing our
+patched gdb.c against the fresh xroar-1.12.1 source: his fix is
+`xmalloc((count * 2) + 1)` + `snprintf(hsp, 3, "%02x", (uint8_t)string[i])`
+-- essentially identical to what we wrote independently. Good
+confirmation the original finding was real and correct; nothing left to
+submit here. This sits inside what looks like a much larger internal
+rework in 1.12 (register handling changed from a fixed table to
+"defined per-machine", matching the "target description sent to GDB"
+changelog note) -- almost certainly unrelated to us, just two people
+finding the same small bug during unrelated close reading of the same
+function.
 
-**What it is:** `send_packet_hexstring()` allocates a buffer sized exactly
-for the hex-encoded output (`count * 2` bytes), but the final `sprintf`
-call in the encoding loop also writes a null terminator, which lands one
-byte past the end of that allocation, every time the function is called.
-Fixed by allocating `(count * 2) + 1` and switching each write to a
-bounded `snprintf(hsp, 3, ...)`, plus an explicit `(uint8_t)` cast on the
-byte being formatted (defensive -- doesn't fix an active problem given
-this function's current two callers, both of which only ever pass
-printable ASCII, but protects against a future caller passing raw binary
-data, which the function's name invites).
-
-**Severity, honestly:** real bug, always triggered, but low real-world
-impact in the *current* codebase specifically -- confirmed by tracing
-both call sites (`qRcmd`'s two invocations, sending a fixed help string
-and a `sprintf`-built status reply). The function that actually encodes
-arbitrary emulated memory for the wire, `send_memory()`, is a separate,
-already-correct implementation and was never affected.
-
-**Suggested framing for Ciaran (low-key, first-person, doesn't put him on
-the defensive about his own code):**
-
-> Oh, one small thing I noticed while I was in `gdb.c` -- the hex-string
-> packet sender allocates a buffer sized exactly for the hex digits, but
-> the last `sprintf` call also drops a null terminator, which lands one
-> byte past the end of the allocation. Doesn't seem to be causing any
-> trouble currently (nothing reads that stray byte), but I could see it
-> turning into a "why is this crashing on some other build/allocator and
-> not this one" kind of headache down the line, so I bumped the
-> allocation by one and put a hard cap on each write while I was in there.
-> Figured it was worth flagging.
+**What it was, for the record:** `send_packet_hexstring()` allocated a
+buffer sized exactly for the hex-encoded output (`count * 2` bytes), but
+the final `sprintf` call in the encoding loop also writes a null
+terminator, landing one byte past the end of that allocation, every
+time the function is called. Real, always-triggered, but low impact in
+practice given the function's only two callers at the time (both
+printable-ASCII only). Now moot -- fixed upstream, in our tree, and
+this note stays only as a record of what was found and confirmed.
 
 ## 2. portalib/sds.c / sds.h -- defensive NULL-checks (NEEDS WRITE-UP)
 
