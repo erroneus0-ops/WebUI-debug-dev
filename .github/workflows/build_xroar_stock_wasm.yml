@@ -54,7 +54,14 @@ jobs:
       - name: Build XRoar WASM
         run: |
           cd xroar-1.12.1
-          emmake make
+          emmake make 2>&1 | tee /tmp/build.log
+          BUILD_STATUS=${PIPESTATUS[0]}
+          if [ "$BUILD_STATUS" != "0" ]; then
+            echo "=== BUILD FAILED, last 150 lines of output: ==="
+            tail -150 /tmp/build.log
+            exit 1
+          fi
+        shell: bash
 
       - name: Locate build output
         run: |
