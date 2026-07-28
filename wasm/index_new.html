@@ -1224,16 +1224,12 @@ var Module = {
 		console.error('version reporter failed to load:', err);
 	});
 </script>
-  <!-- Mobile virtual keyboard: fitting/trial-and-error stage only.
+  <!-- Mobile virtual keyboard: fitting stage. Always visible on mobile, no
+       toggle -- matches how a real CoCo3's keyboard is always physically
+       present, and there's no competing use for this screen space (the
+       toolbox/controls panel floats from the top, not the bottom).
        Fixed to bottom, full viewport width, scales via the SVG's own
-       viewBox (2137.8203 x 768.38879) to preserve aspect ratio.
-       Toggle mechanism (button vs hamburger submenu vs long-press) not
-       decided yet -- this button is just for testing visibility/fit. -->
-  <button id="mobile-kbd-toggle-test"
-          style="display:none; position:fixed; bottom:8px; right:8px; z-index:50;
-                 padding:6px 10px; font-size:12px;"
-          onclick="toggleMobileKeyboardTest()">kbd</button>
-
+       viewBox (2137.8203 x 768.38879) to preserve aspect ratio. -->
   <div id="mobile-kbd-wrapper"
        style="display:none; position:fixed; left:0; right:0; bottom:0; z-index:49;
               background:#000;">
@@ -1242,19 +1238,13 @@ var Module = {
   </div>
 
   <script>
-    // Only offer the test toggle on mobile -- window._isMobile is set earlier in the page
+    // Show on mobile only -- window._isMobile is set earlier in the page
     window.addEventListener('load', function() {
       if (window._isMobile) {
-        var btn = document.getElementById('mobile-kbd-toggle-test');
-        if (btn) btn.style.display = 'block';
+        var el = document.getElementById('mobile-kbd-wrapper');
+        if (el) el.style.display = 'block';
       }
     });
-
-    function toggleMobileKeyboardTest() {
-      var el = document.getElementById('mobile-kbd-wrapper');
-      if (!el) return;
-      el.style.display = (el.style.display === 'none') ? 'block' : 'none';
-    }
   </script>
 
 </body>
