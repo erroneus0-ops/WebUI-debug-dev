@@ -55,14 +55,16 @@ jobs:
         id: build
         run: |
           cd xroar-1.12.1
+          set +e
           emmake make 2>&1 | tee /tmp/build.log
           BUILD_STATUS=${PIPESTATUS[0]}
+          set -e
           echo "build_status=$BUILD_STATUS" >> "$GITHUB_OUTPUT"
-          exit 0
+          exit "$BUILD_STATUS"
         shell: bash
 
       - name: Save build log on failure
-        if: steps.build.outputs.build_status != '0'
+        if: failure() && steps.build.outcome == 'failure'
         run: |
           mkdir -p wasm
           echo "# Build failure log (tail -300)" > wasm/XROAR_STOCK_BUILD_ERROR.log
@@ -74,7 +76,6 @@ jobs:
           git pull --rebase --autostash origin main || true
           git push || true
           echo "Build failed -- log saved to wasm/XROAR_STOCK_BUILD_ERROR.log and pushed"
-          exit 1
 
       - name: Locate build output
         run: |
