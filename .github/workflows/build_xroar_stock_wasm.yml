@@ -48,6 +48,7 @@ jobs:
       - name: Configure for WASM
         run: |
           cd xroar-1.12.1
+          chmod +x configure config.guess config.sub install-sh missing compile ar-lib depcomp 2>/dev/null || true
           emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
       - name: Build XRoar WASM
