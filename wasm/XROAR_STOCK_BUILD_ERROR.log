@@ -1,0 +1,8 @@
+# Build failure log (tail -300)
+emmake: "make" in "/home/runner/work/SuperComm-disassembled/SuperComm-disassembled/xroar-1.12.1"
+CDPATH="${ZSH_VERSION+.}:" && cd . && /bin/bash '/home/runner/work/SuperComm-disassembled/SuperComm-disassembled/xroar-1.12.1/missing' aclocal-1.17 -I m4
+/home/runner/work/SuperComm-disassembled/SuperComm-disassembled/xroar-1.12.1/missing: line 85: aclocal-1.17: command not found
+WARNING: 'aclocal-1.17' is missing on your system.
+         You should only need it if you modified 'acinclude.m4' or
+         'configure.ac' or m4 files included by 'configure.ac'.
+make: *** [Makefile:428: aclocal.m4] Error 127
