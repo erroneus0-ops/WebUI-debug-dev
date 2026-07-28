@@ -1207,5 +1207,23 @@ var Module = {
 <!-- XRoar WebAssembly -->
 <script src="xroar.js"></script>
 
+<!-- Standalone version reporter: separate tiny program, not part of xroar.js itself.
+     See wasm/xroar_version_report.c -- reports the version xroar.wasm was built from
+     without touching xroar.wasm at all. -->
+<script src="xroar-version.js"></script>
+<script>
+	XRoarVersionReportModule().then(function(VRModule) {
+		var getVersion = VRModule.cwrap('xroar_version_report_get_version', 'string', []);
+		var text = '[version] ' + getVersion();
+		if (typeof log_message === 'function') {
+			log_message(text);
+		} else {
+			console.log(text);
+		}
+	}).catch(function(err) {
+		console.error('version reporter failed to load:', err);
+	});
+</script>
+
 </body>
 </html>
