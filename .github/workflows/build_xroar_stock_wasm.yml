@@ -38,6 +38,14 @@ jobs:
           cd xroar-1.12.1
           if [ -f configure ]; then
             echo "configure already present in this release tarball -- skipping autogen.sh"
+            echo "Fixing timestamps so autotools doesn't think pre-generated files are stale"
+            echo "(git checkout gives every file the same timestamp, which breaks autotools'"
+            echo "timestamp-based staleness detection -- the files are fine, just need"
+            echo "correct relative ordering: sources older than the generated files)"
+            find . \( -name "*.m4" -o -name "configure.ac" -o -name "Makefile.am" -o -name "acinclude.m4" \) -exec touch -t 202001010000 {} +
+            sleep 1
+            touch aclocal.m4 configure config.h.in
+            find . -name "Makefile.in" -exec touch {} +
           elif [ -f autogen.sh ]; then
             bash autogen.sh
           else
