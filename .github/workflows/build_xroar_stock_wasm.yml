@@ -52,16 +52,29 @@ jobs:
           emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
       - name: Build XRoar WASM
+        id: build
         run: |
           cd xroar-1.12.1
           emmake make 2>&1 | tee /tmp/build.log
           BUILD_STATUS=${PIPESTATUS[0]}
-          if [ "$BUILD_STATUS" != "0" ]; then
-            echo "=== BUILD FAILED, last 150 lines of output: ==="
-            tail -150 /tmp/build.log
-            exit 1
-          fi
+          echo "build_status=$BUILD_STATUS" >> "$GITHUB_OUTPUT"
+          exit 0
         shell: bash
+
+      - name: Save build log on failure
+        if: steps.build.outputs.build_status != '0'
+        run: |
+          mkdir -p wasm
+          echo "# Build failure log (tail -300)" > wasm/XROAR_STOCK_BUILD_ERROR.log
+          tail -300 /tmp/build.log >> wasm/XROAR_STOCK_BUILD_ERROR.log
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add wasm/XROAR_STOCK_BUILD_ERROR.log
+          git commit -m "ci: save xroar stock build failure log [ci skip]" || true
+          git pull --rebase --autostash origin main || true
+          git push || true
+          echo "Build failed -- log saved to wasm/XROAR_STOCK_BUILD_ERROR.log and pushed"
+          exit 1
 
       - name: Locate build output
         run: |
