@@ -1,0 +1,114 @@
+name: Build XRoar WASM (stock, pure upstream)
+
+# Trigger manually from GitHub Actions tab
+# or automatically when the pristine xroar-1.12.1 source or this workflow changes
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'xroar-1.12.1/**'
+      - '.github/workflows/build_xroar_stock_wasm.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Verify emcc
+        run: emcc --version
+
+      - name: Install autotools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool
+
+      - name: Generate configure script
+        run: |
+          cd xroar-1.12.1
+          bash autogen.sh
+
+      - name: Configure for WASM
+        run: |
+          cd xroar-1.12.1
+          emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
+
+      - name: Build XRoar WASM
+        run: |
+          cd xroar-1.12.1
+          emmake make
+
+      - name: Locate build output
+        run: |
+          find xroar-1.12.1/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
+
+      - name: Replace live xroar.js/xroar.wasm
+        run: |
+          cp xroar-1.12.1/src/xroar.js   wasm/xroar.js
+          cp xroar-1.12.1/src/xroar.wasm wasm/xroar.wasm
+
+      - name: Verify output
+        run: |
+          ls -la wasm/xroar.js wasm/xroar.wasm
+          test -s wasm/xroar.wasm && echo "xroar.wasm OK"
+          test -s wasm/xroar.js   && echo "xroar.js OK"
+
+      - name: Write build report
+        if: always()
+        run: |
+          echo "# XRoar stock WASM Build Report" > wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "**Built:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "**Source:** xroar-1.12.1/ (pure upstream, unmodified -- https://www.6809.org.uk/xroar/dl/xroar-1.12.1.tar.gz)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "**Build flags:** CFLAGS/LDFLAGS = -O3 -flto (per Ciaran's own XRoar Online build recommendation)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "**WASM size:** $(wc -c < wasm/xroar.wasm 2>/dev/null || echo 'build failed') bytes" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "This replaces the live wasm/xroar.js and wasm/xroar.wasm used by" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "index.html, index_new.html, and index_custom.html. Pure upstream --" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "no custom modifications. The debug/register-accessor build stays" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "separate as wasm/xroar-custom.js / xroar-custom.wasm." >> wasm/XROAR_STOCK_BUILD_REPORT.md
+
+      - name: Commit WASM output
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          echo "=== git status before add ==="
+          git status --short | head -30
+
+          git add wasm/xroar.js wasm/xroar.wasm wasm/XROAR_STOCK_BUILD_REPORT.md
+
+          if git diff --staged --quiet; then
+            echo "Nothing staged -- output identical to what's already committed. Skipping commit/push."
+            exit 0
+          fi
+
+          git commit -m "build: xroar stock WASM from pure 1.12.1 upstream [ci skip]"
+
+          echo "=== attempting git pull --rebase --autostash origin main ==="
+          if ! git pull --rebase --autostash origin main; then
+            echo "PULL --REBASE FAILED. git status follows:"
+            git status
+            git rebase --abort 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "=== attempting git push ==="
+          if ! git push; then
+            echo "PUSH FAILED. git status and remote follow:"
+            git status
+            git remote -v
+            exit 1
+          fi
+
+          echo "Push succeeded."
