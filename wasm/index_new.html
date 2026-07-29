@@ -1465,17 +1465,15 @@ var Module = {
 				if (e.target.id && e.target.id.indexOf('key-') === 0) return; // a key claims this
 				if (!wrapperEl) return;
 				var rect = wrapperEl.getBoundingClientRect();
-				// screenX/screenY -- consistent across the inner object document
-				// and the outer page, both physical-monitor-relative.
 				dragState = {
 					startX: e.screenX,
 					startY: e.screenY,
 					wrapperStartLeft: rect.left,
 					wrapperStartTop: rect.top
 				};
-				// Switch from bottom-anchored to explicit top, so the final
-				// committed position (at drag end) has a single consistent
-				// reference point with no jump.
+				console.log('[drag] START screenX=' + e.screenX + ' screenY=' + e.screenY +
+					' clientX=' + e.clientX + ' clientY=' + e.clientY +
+					' wrapperRect(left=' + rect.left + ',top=' + rect.top + ',width=' + rect.width + ')');
 				wrapperEl.style.bottom = '';
 				wrapperEl.style.top = rect.top + 'px';
 				e.preventDefault();
@@ -1484,26 +1482,19 @@ var Module = {
 				if (!dragState || !wrapperEl) return;
 				var dx = e.screenX - dragState.startX;
 				var dy = e.screenY - dragState.startY;
-				// transform (not left/top) during the drag itself: left/top
-				// changes force a full layout + repaint of the whole object,
-				// including its large embedded bitmap, on every single mouse
-				// movement -- expensive enough to visibly lag/undershoot
-				// rapid dragging. transform is handled by the compositor
-				// (GPU), no layout recalculation needed. Confirmed via direct
-				// testing that the underlying coordinate math was already
-				// correct (clientX/screenX/pageX all reported perfectly) --
-				// this was a rendering-performance problem, not a math one.
 				wrapperEl.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+				var actualRect = wrapperEl.getBoundingClientRect();
+				console.log('[drag] MOVE screenX=' + e.screenX + ' screenY=' + e.screenY +
+					' clientX=' + e.clientX + ' clientY=' + e.clientY +
+					' computed(dx=' + dx + ',dy=' + dy + ')' +
+					' actualRenderedLeft=' + actualRect.left + ' actualRenderedTop=' + actualRect.top +
+					' expectedLeft=' + (dragState.wrapperStartLeft + dx) + ' expectedTop=' + (dragState.wrapperStartTop + dy));
 			});
 			function endDrag(e) {
 				if (!dragState) return;
-				// Commit the transform offset into real left/top once, at the
-				// end of the drag, then clear the transform -- keeps left/top
-				// as the source of truth between drags (e.g. for
-				// applyMonitorLayout()'s width sync), transform only used
-				// during active dragging itself.
 				var dx = e.screenX - dragState.startX;
 				var dy = e.screenY - dragState.startY;
+				console.log('[drag] END screenX=' + e.screenX + ' screenY=' + e.screenY + ' final dx=' + dx + ' dy=' + dy);
 				if (wrapperEl) {
 					wrapperEl.style.left = (dragState.wrapperStartLeft + dx) + 'px';
 					wrapperEl.style.top  = (dragState.wrapperStartTop  + dy) + 'px';
