@@ -798,6 +798,23 @@ function applyMonitorLayout() {
         var singleTapTimer = null;
 
         burger.addEventListener('click', function(e) {
+            // TEMPORARY (desktop testing only): hamburger doesn't otherwise
+            // do much on desktop, so repurpose it to toggle the mobile
+            // keyboard for testing when the phone can't reach this machine.
+            // Remove this branch once real mobile testing is possible again.
+            if (!_isMobile) {
+                var kbd = document.getElementById('mobile-kbd-wrapper');
+                if (kbd) {
+                    var showing = kbd.style.display !== 'none' && kbd.style.display !== '';
+                    kbd.style.display = showing ? 'none' : 'block';
+                    if (!showing && !kbd.dataset.wired) {
+                        kbd.dataset.wired = '1';
+                        wireVirtualKeyboard();
+                    }
+                }
+                return;
+            }
+
             var now = Date.now();
             if (now - lastTap < 300) {
                 // Double-tap detected -- cancel pending single tap, reset position
