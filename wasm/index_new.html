@@ -552,11 +552,15 @@ function applyMonitorLayout() {
     canvas.style.width  = csw + 'px';
     canvas.style.height = csh + 'px';
 
-    // Keep the virtual keyboard sized to match the canvas's actual width,
-    // not the full viewport -- it was taking up ~2/3 of the screen before.
+    // Keep the virtual keyboard sized and aligned to match the canvas --
+    // width matches canvas width, left edge matches canvas's left edge
+    // (using the canvas's real viewport position, since the keyboard wrapper
+    // is position:fixed -- relative to the viewport, not to monitor-region).
     var kbdWrapper = document.getElementById('mobile-kbd-wrapper');
     if (kbdWrapper) {
         kbdWrapper.style.width = csw + 'px';
+        var canvasRect = canvas.getBoundingClientRect();
+        kbdWrapper.style.left = canvasRect.left + 'px';
     }
 
     var crtBlack = document.getElementById('crt-black');
@@ -1260,8 +1264,7 @@ var Module = {
        scales via the SVG's own viewBox (2137.8203 x 768.38879) to
        preserve aspect ratio. Centered horizontally. -->
   <div id="mobile-kbd-wrapper"
-       style="display:none; position:fixed; left:50%; transform:translateX(-50%);
-              bottom:0; z-index:49; background:#000;">
+       style="display:none; position:fixed; bottom:0; z-index:49; background:#000;">
     <object id="mobile-kbd-object" data="coco3_keyboard.svg" type="image/svg+xml"
          aria-label="CoCo3 virtual keyboard"
          style="display:block; width:100%; height:auto;"></object>
