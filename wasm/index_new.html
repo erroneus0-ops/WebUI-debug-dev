@@ -701,13 +701,7 @@ function applyMonitorLayout() {
     // Draggable overlay for mobile controls -- drag handle only
     (function() {
         var ctrl = document.getElementById('controls-region');
-        // TEMPORARY: removed the !_isMobile gate so this also runs on desktop,
-        // letting the already-proven-working toolbox drag be tested directly
-        // against the same dual-monitor setup/mouse movement as the keyboard
-        // drag, to see whether the same undershoot/limitation shows up here
-        // too. Revert to `if (!ctrl || !_isMobile) return;` once this
-        // comparison test is done.
-        if (!ctrl) return;
+        if (!ctrl || !_isMobile) return;
 
         // Wrap controls-region in a container, put handle outside scroll area
         var wrapper = document.createElement('div');
@@ -721,12 +715,7 @@ function applyMonitorLayout() {
             'max-width: 95vw',
             'max-height: 70vh',
             'z-index: 100',
-            // TEMPORARY: visible by default on desktop, since the hamburger's
-            // desktop click handler currently only toggles the test keyboard
-            // and never reaches toggleControls() -- nothing could show this
-            // otherwise right now. Revert to unconditional 'display: none'
-            // once this comparison test is done.
-            'display: ' + (_isMobile ? 'none' : 'flex'),
+            'display: none',
             'flex-direction: column',
             'box-shadow: 0 4px 16px rgba(0,0,0,0.5)',
         ].join(';');
@@ -1281,17 +1270,22 @@ var Module = {
        preserve aspect ratio. Centered horizontally. -->
   <div id="mobile-kbd-wrapper"
        style="display:none; position:fixed; bottom:0; z-index:49; background:#000;">
-    <!-- TEMPORARY TEST #3: intermediate plain div between the dragged
-         wrapper and the <object> itself, testing whether decoupling the
-         position-changing element from the replaced element (<object>,
-         which behaves like <iframe> in CSS terms and can have its own
-         quirks responding to ancestor position/transform changes) helps.
-         Still using dummy2 (no embedded image) from test #2. -->
-    <div id="mobile-kbd-object-wrapper" style="width:100%;">
-      <object id="mobile-kbd-object" data="coco3_keyboard_dummy2.svg" type="image/svg+xml"
-           aria-label="CoCo3 virtual keyboard"
-           style="display:block; width:100%; height:auto;"></object>
+    <!-- Dedicated grab handle, entirely in the outer document -- same
+         style/pattern as the toolbox's "Controls" handle. Dragging only
+         ever touches this handle and the outer document from here on;
+         no more listening inside the <object>'s nested document at all,
+         which is what caused the whole cross-document event mess. -->
+    <div id="mobile-kbd-handle" style="
+           background:#404040; color:#ccc; font:bold 11px sans-serif;
+           padding:4px 8px; cursor:grab; user-select:none;
+           -webkit-user-select:none; display:flex; align-items:center;
+           justify-content:space-between; border-bottom:1px solid #222;
+           touch-action:none;">
+      <span>Keyboard</span><span style="letter-spacing:2px;opacity:0.5">&#8801;</span>
     </div>
+    <object id="mobile-kbd-object" data="coco3_keyboard.svg" type="image/svg+xml"
+         aria-label="CoCo3 virtual keyboard"
+         style="display:block; width:100%; height:auto;"></object>
   </div>
 
   <script>
@@ -1304,6 +1298,10 @@ var Module = {
           applyMonitorLayout(); // sync keyboard width to canvas now that the element exists
         }
       }
+      // Wired unconditionally -- doesn't depend on device type or the SVG
+      // being loaded, only on the handle/wrapper elements existing, which
+      // they always do (just hidden via display:none until shown).
+      wireKeyboardHandleDrag();
     });
 
 	// ── Virtual keyboard scancode mapping ──────────────────────────────────
@@ -1501,51 +1499,29 @@ var Module = {
 				}
 			});
 			console.log('virtual keyboard: wiring complete, ' + keys.length + ' keys handled');
+			// (dragging is now handled by wireKeyboardHandleDrag(), a separate
+			// function that doesn't depend on the SVG being loaded at all --
+			// see below.)
+		}
 
-			// ── Drag the keyboard's own bezel/case to reposition it anywhere ──
-			// Delegated at the SVG root: if a touch/click's target is a key-*
-			// cell, the key's own handler already claims it -- do nothing here.
-			// Otherwise (background/case artwork), start a drag of the whole
-			// wrapper div. Once dragged, marks the wrapper as manually
-			// positioned so applyMonitorLayout() stops auto-aligning it.
-			//
-			// Uses the same proven mouse/touch pattern as the working toolbox
-			// drag handle (search "Draggable overlay for mobile controls"),
-			// NOT unified Pointer Events -- switched after confirming on a
-			// real phone that Pointer Events here let the browser's native
-			// swipe/scroll gesture fire anyway, making the keyboard vanish on
-			// any directional movement. Two real, specific differences this
-			// fixes: (1) touch-action:none, which pointermove alone didn't
-			// give us -- the browser's native touch gesture handling can
-			// still compete with custom JS without it; (2) explicit
-			// {passive:false} on the touchmove listener -- many mobile
-			// browsers default touch listeners to passive for scroll
-			// performance, and a passive listener's preventDefault() call is
-			// silently ignored, so our code could ask to prevent the default
-			// gesture and be quietly overruled regardless.
+		// ── Drag the keyboard via its dedicated handle -- entirely in the
+		// outer document, exactly matching the toolbox's proven pattern.
+		// No more listening inside the <object>'s nested document for drag
+		// purposes at all, which is what caused the whole cross-document
+		// event mess (undershoot, mouseup swallowed while over the object,
+		// rapid restart bugs). The handle is a plain div in the outer page,
+		// so there's no key-vs-bezel detection needed either -- this handle
+		// IS the only thing that starts a drag.
+		function wireKeyboardHandleDrag() {
 			var wrapperEl = document.getElementById('mobile-kbd-wrapper');
-			wrapperEl.style.touchAction = 'none';
+			var handle = document.getElementById('mobile-kbd-handle');
+			if (!wrapperEl || !handle) return;
+
 			var dragging = false;
 			var startX, startY, origLeft, origTop;
-			var _lastDragLog = 0;
-			function dragLog(text) {
-				// Throttled to ~150ms so a fast drag gesture doesn't flood the
-				// on-screen log panel with more lines than a screen recording
-				// could actually show readably. Goes to log_message() (the
-				// "..." panel), not console, since devtools isn't available
-				// on the phone during this test.
-				var now = Date.now();
-				if (now - _lastDragLog < 150) return;
-				_lastDragLog = now;
-				if (typeof log_message === 'function') log_message(text);
-			}
 
-			var _maxMoveDistance = 0; // tracks whether this gesture was a real drag or just a tap
-
-			function kbdDragStart(x, y) {
-				if (!wrapperEl) return;
+			function dragStart(x, y) {
 				dragging = true;
-				_maxMoveDistance = 0;
 				var rect = wrapperEl.getBoundingClientRect();
 				startX = x;
 				startY = y;
@@ -1553,122 +1529,39 @@ var Module = {
 				origTop = rect.top;
 				wrapperEl.style.bottom = '';
 				wrapperEl.style.top = rect.top + 'px';
-				if (typeof log_message === 'function') {
-					log_message('[drag] START x=' + x + ' y=' + y + ' origLeft=' + origLeft.toFixed(0) + ' origTop=' + origTop.toFixed(0));
-				}
+				handle.style.cursor = 'grabbing';
 			}
-			function kbdDragMove(e, x, y) {
-				if (!dragging || !wrapperEl) return;
+			function dragMove(e, x, y) {
+				if (!dragging) return;
 				e.preventDefault();
 				var dx = x - startX;
 				var dy = y - startY;
-				_maxMoveDistance = Math.max(_maxMoveDistance, Math.sqrt(dx*dx + dy*dy));
 				wrapperEl.style.left = (origLeft + dx) + 'px';
 				wrapperEl.style.top  = (origTop  + dy) + 'px';
-				var actualRect = wrapperEl.getBoundingClientRect();
-				dragLog('[drag] MOVE x=' + x + ' y=' + y + ' dx=' + dx + ' dy=' + dy +
-					' actualLeft=' + actualRect.left.toFixed(0) + ' actualTop=' + actualRect.top.toFixed(0) +
-					' expectedLeft=' + (origLeft+dx).toFixed(0) + ' expectedTop=' + (origTop+dy).toFixed(0));
+				wrapperEl.dataset.manuallyPositioned = '1';
 			}
-			function kbdDragEnd() {
-				if (!dragging) return;
+			function dragEnd() {
 				dragging = false;
-				// Only lock the position (stop applyMonitorLayout() from
-				// auto-aligning it) if this was a REAL drag, not just a tap
-				// that happened to land on the bezel with zero movement --
-				// otherwise a single accidental tap would permanently disable
-				// the automatic canvas-following behavior.
-				var wasRealDrag = _maxMoveDistance > 8;
-				if (wrapperEl && wasRealDrag) wrapperEl.dataset.manuallyPositioned = '1';
-				if (typeof log_message === 'function') {
-					log_message('[drag] END maxMoveDistance=' + _maxMoveDistance.toFixed(1) + ' wasRealDrag=' + wasRealDrag);
-				}
+				handle.style.cursor = 'grab';
 			}
 
-			// Initial mousedown/touchstart stay on the INNER document (doc),
-			// since that's the only place we can check "did this start on a
-			// key or the bezel". But ongoing move/end tracking moves to the
-			// OUTER document instead -- matching the toolbox's already-proven
-			// pattern exactly. This is the one structural difference that
-			// hadn't been tested yet: the toolbox's drag handle is a plain
-			// div in the outer page, and its mousemove/mouseup listeners are
-			// on the outer document throughout the whole gesture, never
-			// touching any nested document's coordinate system at all. The
-			// keyboard's drag previously tracked the ENTIRE gesture (start
-			// AND ongoing movement) through the inner SVG document -- if
-			// that's the real cause, moving just the ongoing tracking to the
-			// outer document should fix it, since it's the only remaining
-			// difference between the two after everything else was tested
-			// and ruled out (screenX/clientX, viewBox scale, embedded image
-			// size, DOM nesting depth, dual-monitor DPI).
-			doc.documentElement.addEventListener('mousedown', function(e) {
-				if (dragging) return; // already dragging -- ignore, don't restart (matches touchstart's guard)
-				if (e.target.id && e.target.id.indexOf('key-') === 0) return;
-				kbdDragStart(e.clientX, e.clientY);
-			});
-			// Attach mousemove/mouseup to BOTH the inner and outer documents.
-			// Real bug found from a detailed narration: mousedown correctly
-			// reaches the inner document's listener, but mouseup fired while
-			// the cursor is still over the <object>'s visual area appears to
-			// never propagate out to the outer document at all -- so
-			// dragging never got reset to false, and the keyboard kept
-			// chasing the cursor indefinitely once it happened to drift
-			// outside the object's bounds (where outer-document mousemove
-			// finally started firing). Listening on both means whichever one
-			// the browser actually delivers to, we catch it -- kbdDragMove/
-			// kbdDragEnd both already guard on `dragging`, so no risk of
-			// double-processing from having both attached.
-			function mouseMoveHandler(e) { kbdDragMove(e, e.clientX, e.clientY); }
-			document.addEventListener('mousemove', mouseMoveHandler);
-			doc.documentElement.addEventListener('mousemove', mouseMoveHandler);
-			document.addEventListener('mouseup', kbdDragEnd);
-			doc.documentElement.addEventListener('mouseup', kbdDragEnd);
+			handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
+			document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); });
+			document.addEventListener('mouseup', dragEnd);
 
-			// Track ONE specific touch by its identifier throughout the whole
-			// gesture, rather than blindly grabbing e.touches[0] on every
-			// event (fixed earlier after a screen-recording + OCR analysis
-			// showed the drag restarting rapidly mid-gesture).
-			var _dragTouchId = null;
-
-			doc.documentElement.addEventListener('touchstart', function(e) {
-				if (dragging) {
-					if (typeof log_message === 'function') {
-						log_message('[drag] touchstart IGNORED (already dragging, touches.length=' + e.touches.length + ')');
-					}
-					return;
-				}
-				if (e.target.id && e.target.id.indexOf('key-') === 0) return;
-				var t = e.changedTouches[0];
-				_dragTouchId = t.identifier;
-				kbdDragStart(t.clientX, t.clientY);
+			handle.addEventListener('touchstart', function(e) {
+				var t = e.touches[0];
+				dragStart(t.clientX, t.clientY);
 			}, {passive: true});
-			function touchMoveHandler(e) {
+			document.addEventListener('touchmove', function(e) {
 				if (!dragging) return;
-				var t = null;
-				for (var i = 0; i < e.touches.length; i++) {
-					if (e.touches[i].identifier === _dragTouchId) { t = e.touches[i]; break; }
-				}
-				if (!t) return; // our tracked touch isn't in this event at all
-				kbdDragMove(e, t.clientX, t.clientY);
-			}
-			document.addEventListener('touchmove', touchMoveHandler, {passive: false});
-			doc.documentElement.addEventListener('touchmove', touchMoveHandler, {passive: false});
-			function touchEndOrCancel(e, label) {
-				var ended = false;
-				for (var i = 0; i < e.changedTouches.length; i++) {
-					if (e.changedTouches[i].identifier === _dragTouchId) { ended = true; break; }
-				}
-				if (typeof log_message === 'function') {
-					log_message('[drag] ' + label + ' (ourTouchEnded=' + ended + ' remainingTouches=' + e.touches.length + ')');
-				}
-				if (!ended) return; // a DIFFERENT touch ended, not ours -- ignore
-				_dragTouchId = null;
-				kbdDragEnd();
-			}
-			document.addEventListener('touchend', function(e) { touchEndOrCancel(e, 'touchend'); });
-			doc.documentElement.addEventListener('touchend', function(e) { touchEndOrCancel(e, 'touchend'); });
-			document.addEventListener('touchcancel', function(e) { touchEndOrCancel(e, 'touchcancel'); });
-			doc.documentElement.addEventListener('touchcancel', function(e) { touchEndOrCancel(e, 'touchcancel'); });
+				var t = e.touches[0];
+				dragMove(e, t.clientX, t.clientY);
+			}, {passive: false});
+			document.addEventListener('touchend', dragEnd);
+			document.addEventListener('touchcancel', dragEnd);
+
+			console.log('virtual keyboard: handle drag wired');
 		}
 
 		if (obj.contentDocument) {
