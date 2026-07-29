@@ -1245,6 +1245,111 @@ var Module = {
         if (el) el.style.display = 'block';
       }
     });
+
+	// ── Virtual keyboard scancode mapping ──────────────────────────────────
+	// key-* SVG element id -> hk_scan_* host scancode (see xroar/src/hkbd.h).
+	// wasm_scan_press/release expect a HOST keyboard scancode (USB HID style);
+	// XRoar's own internal translation (dkbd.c) converts that into the right
+	// CoCo keyboard matrix position, including layout-specific quirks.
+	//
+	// CONFIRMED against xroar/src/hkbd.h and dkbd.c directly:
+	//   - letters/numbers: direct hk_scan_<char> values, sequential in the enum
+	//   - key-break -> hk_scan_Escape (0x29): dkbd.c explicitly maps host
+	//     "escape" to DSCAN_BREAK, the CoCo's actual BREAK key
+	//   - key-clear -> hk_scan_Clear (0x9c): a dedicated host scancode already
+	//     exists for this, matching CoCo's CLEAR key directly
+	//
+	// NOT YET VERIFIED, best-guess placeholders -- test against the real
+	// screen and correct as needed:
+	//   - key-colon, key-at: no dedicated host scancode exists for these on a
+	//     standard PC keyboard (they're shifted symbols there: colon=shift+;,
+	//     at=shift+2), but the CoCo3 has them as its own unshifted keys.
+	//     Placeholder below sends the unshifted base key; may need a shift
+	//     chord instead once tested.
+	var KEY_SCANCODES = {
+		'key-a': 0x04, 'key-b': 0x05, 'key-c': 0x06, 'key-d': 0x07,
+		'key-e': 0x08, 'key-f': 0x09, 'key-g': 0x0a, 'key-h': 0x0b,
+		'key-i': 0x0c, 'key-j': 0x0d, 'key-k': 0x0e, 'key-l': 0x0f,
+		'key-m': 0x10, 'key-n': 0x11, 'key-o': 0x12, 'key-p': 0x13,
+		'key-q': 0x14, 'key-r': 0x15, 'key-s': 0x16, 'key-t': 0x17,
+		'key-u': 0x18, 'key-v': 0x19, 'key-w': 0x1a, 'key-x': 0x1b,
+		'key-y': 0x1c, 'key-z': 0x1d,
+		'key-1': 0x1e, 'key-2': 0x1f, 'key-3': 0x20, 'key-4': 0x21,
+		'key-5': 0x22, 'key-6': 0x23, 'key-7': 0x24, 'key-8': 0x25,
+		'key-9': 0x26, 'key-0': 0x27,
+		'key-enter':     0x28, // hk_scan_Return
+		'key-space':     0x2c, // hk_scan_space
+		'key-minus':     0x2d, // hk_scan_minus
+		'key-semicolon': 0x33, // hk_scan_semicolon
+		'key-comma':     0x36, // hk_scan_comma
+		'key-period':    0x37, // hk_scan_period
+		'key-slash':     0x38, // hk_scan_slash
+		'key-break':     0x29, // hk_scan_Escape -- CONFIRMED via dkbd.c
+		'key-clear':     0x9c, // hk_scan_Clear  -- dedicated host scancode
+		'key-up':        0x52, // hk_scan_Up
+		'key-down':      0x51, // hk_scan_Down
+		'key-left':      0x50, // hk_scan_Left
+		'key-right':     0x4f, // hk_scan_Right
+		'key-shift-l':   0xe1, // hk_scan_Shift_L
+		'key-shift-r':   0xe5, // hk_scan_Shift_R
+		'key-ctrl':      0xe0, // hk_scan_Control_L
+		'key-alt':       0xe2, // hk_scan_Alt_L
+		'key-f1':        0x3a, // hk_scan_F1
+		'key-f2':        0x3b, // hk_scan_F2
+		// NEEDS TESTING -- see note above
+		'key-colon':     0x33, // placeholder: same as semicolon, unshifted
+		'key-at':        0x1f, // placeholder: same as '2', unshifted
+	};
+
+	// ── Touch/mouse wiring: press-and-hold, independent per pointer ────────
+	// Tracks each active touch/mouse pointer separately so chording (e.g.
+	// holding CTRL while tapping another key) works correctly -- releasing
+	// one finger doesn't release keys held by other fingers.
+	var _activeKeyPointers = {}; // pointerId -> key element id currently held
+
+	function wireVirtualKeyboard() {
+		var obj = document.querySelector('#mobile-kbd-wrapper object');
+		if (!obj) { console.warn('virtual keyboard: object element not found'); return; }
+
+		function attach(doc) {
+			if (!doc) { console.warn('virtual keyboard: could not access SVG document'); return; }
+			var keys = doc.querySelectorAll('[id^="key-"]');
+			keys.forEach(function(el) {
+				var code = KEY_SCANCODES[el.id];
+				if (code === undefined) {
+					console.warn('virtual keyboard: no scancode mapped for', el.id);
+					return;
+				}
+				el.style.cursor = 'pointer';
+				el.addEventListener('pointerdown', function(e) {
+					e.preventDefault();
+					_activeKeyPointers[e.pointerId] = el.id;
+					el.style.opacity = '0.5'; // simple press feedback
+					Module.ccall('wasm_scan_press', null, ['number'], [code]);
+				});
+				function release(e) {
+					if (_activeKeyPointers[e.pointerId] !== el.id) return;
+					delete _activeKeyPointers[e.pointerId];
+					el.style.opacity = '1';
+					Module.ccall('wasm_scan_release', null, ['number'], [code]);
+				}
+				el.addEventListener('pointerup', release);
+				el.addEventListener('pointercancel', release);
+			});
+			console.log('virtual keyboard: wired ' + keys.length + ' keys');
+		}
+
+		if (obj.contentDocument) {
+			attach(obj.contentDocument);
+		} else {
+			obj.addEventListener('load', function() { attach(obj.contentDocument); });
+		}
+	}
+
+	window.addEventListener('load', function() {
+		if (window._isMobile) wireVirtualKeyboard();
+	});
+
   </script>
 
 </body>
