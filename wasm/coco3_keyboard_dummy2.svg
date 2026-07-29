@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="svg1"
+     width="2137.8203" height="768.38879" viewBox="0 0 2137.8203 768.38879">
+  <!-- DUMMY TEST FILE #2: same root size/viewBox as the real file, but
+       NO embedded image at all, just the one test rectangle. Isolates
+       whether the large embedded shader image specifically is the
+       remaining variable in the drag bug, now that dummy #1 (rect plus
+       real shader) already ruled out the real file's 57 key complexity. -->
+  <rect id="key-a" x="200" y="200" width="139.53" height="139.17"
+        rx="9.2" ry="9.2"
+        style="fill:#f0d5a6;stroke:#333;stroke-width:2" />
+</svg>

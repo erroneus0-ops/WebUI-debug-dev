@@ -1270,12 +1270,11 @@ var Module = {
        preserve aspect ratio. Centered horizontally. -->
   <div id="mobile-kbd-wrapper"
        style="display:none; position:fixed; bottom:0; z-index:49; background:#000;">
-    <!-- TEMPORARY TEST: pointed at coco3_keyboard_dummy.svg instead of the
-         real coco3_keyboard.svg, to isolate whether the drag/proportional
-         bug is caused by the real file's complexity or something in the
-         surrounding page setup. REVERT to coco3_keyboard.svg once this
-         test is done. -->
-    <object id="mobile-kbd-object" data="coco3_keyboard_dummy.svg" type="image/svg+xml"
+    <!-- TEMPORARY TEST #2: dummy2 has NO embedded image at all, isolating
+         whether the large embedded shader specifically matters, now that
+         dummy #1 already ruled out the real file's key/label complexity.
+         REVERT to coco3_keyboard.svg once this test is done. -->
+    <object id="mobile-kbd-object" data="coco3_keyboard_dummy2.svg" type="image/svg+xml"
          aria-label="CoCo3 virtual keyboard"
          style="display:block; width:100%; height:auto;"></object>
   </div>
