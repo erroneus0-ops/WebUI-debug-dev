@@ -1508,6 +1508,18 @@ var Module = {
 			wrapperEl.style.touchAction = 'none';
 			var dragging = false;
 			var startX, startY, origLeft, origTop;
+			var _lastDragLog = 0;
+			function dragLog(text) {
+				// Throttled to ~150ms so a fast drag gesture doesn't flood the
+				// on-screen log panel with more lines than a screen recording
+				// could actually show readably. Goes to log_message() (the
+				// "..." panel), not console, since devtools isn't available
+				// on the phone during this test.
+				var now = Date.now();
+				if (now - _lastDragLog < 150) return;
+				_lastDragLog = now;
+				if (typeof log_message === 'function') log_message(text);
+			}
 
 			function kbdDragStart(x, y) {
 				if (!wrapperEl) return;
@@ -1519,6 +1531,9 @@ var Module = {
 				origTop = rect.top;
 				wrapperEl.style.bottom = '';
 				wrapperEl.style.top = rect.top + 'px';
+				if (typeof log_message === 'function') {
+					log_message('[drag] START x=' + x + ' y=' + y + ' origLeft=' + origLeft.toFixed(0) + ' origTop=' + origTop.toFixed(0));
+				}
 			}
 			function kbdDragMove(e, x, y) {
 				if (!dragging || !wrapperEl) return;
@@ -1527,11 +1542,16 @@ var Module = {
 				var dy = y - startY;
 				wrapperEl.style.left = (origLeft + dx) + 'px';
 				wrapperEl.style.top  = (origTop  + dy) + 'px';
+				var actualRect = wrapperEl.getBoundingClientRect();
+				dragLog('[drag] MOVE x=' + x + ' y=' + y + ' dx=' + dx + ' dy=' + dy +
+					' actualLeft=' + actualRect.left.toFixed(0) + ' actualTop=' + actualRect.top.toFixed(0) +
+					' expectedLeft=' + (origLeft+dx).toFixed(0) + ' expectedTop=' + (origTop+dy).toFixed(0));
 			}
 			function kbdDragEnd() {
 				if (!dragging) return;
 				dragging = false;
 				if (wrapperEl) wrapperEl.dataset.manuallyPositioned = '1';
+				if (typeof log_message === 'function') log_message('[drag] END');
 			}
 
 			doc.documentElement.addEventListener('mousedown', function(e) {
