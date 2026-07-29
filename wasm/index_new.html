@@ -1529,9 +1529,12 @@ var Module = {
 				if (typeof log_message === 'function') log_message(text);
 			}
 
+			var _maxMoveDistance = 0; // tracks whether this gesture was a real drag or just a tap
+
 			function kbdDragStart(x, y) {
 				if (!wrapperEl) return;
 				dragging = true;
+				_maxMoveDistance = 0;
 				var rect = wrapperEl.getBoundingClientRect();
 				startX = x;
 				startY = y;
@@ -1548,6 +1551,7 @@ var Module = {
 				e.preventDefault();
 				var dx = x - startX;
 				var dy = y - startY;
+				_maxMoveDistance = Math.max(_maxMoveDistance, Math.sqrt(dx*dx + dy*dy));
 				wrapperEl.style.left = (origLeft + dx) + 'px';
 				wrapperEl.style.top  = (origTop  + dy) + 'px';
 				var actualRect = wrapperEl.getBoundingClientRect();
@@ -1558,8 +1562,16 @@ var Module = {
 			function kbdDragEnd() {
 				if (!dragging) return;
 				dragging = false;
-				if (wrapperEl) wrapperEl.dataset.manuallyPositioned = '1';
-				if (typeof log_message === 'function') log_message('[drag] END');
+				// Only lock the position (stop applyMonitorLayout() from
+				// auto-aligning it) if this was a REAL drag, not just a tap
+				// that happened to land on the bezel with zero movement --
+				// otherwise a single accidental tap would permanently disable
+				// the automatic canvas-following behavior.
+				var wasRealDrag = _maxMoveDistance > 8;
+				if (wrapperEl && wasRealDrag) wrapperEl.dataset.manuallyPositioned = '1';
+				if (typeof log_message === 'function') {
+					log_message('[drag] END maxMoveDistance=' + _maxMoveDistance.toFixed(1) + ' wasRealDrag=' + wasRealDrag);
+				}
 			}
 
 			doc.documentElement.addEventListener('mousedown', function(e) {
