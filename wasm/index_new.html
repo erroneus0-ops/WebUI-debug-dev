@@ -1356,7 +1356,7 @@ var Module = {
 	var _activeKeyPointers = {}; // pointerId -> key element id currently held
 
 	function wireVirtualKeyboard() {
-		console.log('virtual keyboard: wiring starting...');
+		console.log('virtual keyboard: wiring starting... (page: ' + window.location.href + ')');
 		var obj = document.querySelector('#mobile-kbd-wrapper object');
 		if (!obj) { console.error('virtual keyboard: <object> element not found in DOM'); return; }
 		console.log('virtual keyboard: <object> element found, checking contentDocument...');
@@ -1378,8 +1378,15 @@ var Module = {
 			}
 		}
 
-		function attach(doc, attemptsLeft) {
+		function attach(attemptsLeft) {
 			if (attemptsLeft === undefined) attemptsLeft = 15;
+			// Re-fetch contentDocument fresh every attempt, rather than reusing
+			// a reference captured once at the start -- if the browser initially
+			// hands back an empty placeholder document and later swaps in a
+			// genuinely different document object once real content loads,
+			// reusing a stale captured reference would retry forever against
+			// the wrong (permanently empty) document.
+			var doc = obj.contentDocument;
 			if (!doc) { console.error('virtual keyboard: contentDocument is null -- cannot access SVG internals'); return; }
 			// NOTE: doc.querySelectorAll('[id^="key-"]') was confirmed unreliable
 			// here -- in a standalone XML document (which this genuinely is,
@@ -1393,14 +1400,11 @@ var Module = {
 				if (allEls[ai].id && allEls[ai].id.indexOf('key-') === 0) keys.push(allEls[ai]);
 			}
 			if (keys.length === 0 && attemptsLeft > 0) {
-				// contentDocument can be non-null before the actual SVG content
-				// (especially a large embedded-image file) has finished loading in.
-				// Retry a few times before concluding something's actually wrong.
-				console.log('virtual keyboard: 0 keys found yet, retrying (' + attemptsLeft + ' attempts left)...');
-				setTimeout(function() { attach(doc, attemptsLeft - 1); }, 200);
+				console.log('virtual keyboard: 0 keys found yet (doc has ' + allEls.length + ' total elements), retrying (' + attemptsLeft + ' attempts left)...');
+				setTimeout(function() { attach(attemptsLeft - 1); }, 200);
 				return;
 			}
-			console.log('virtual keyboard: found ' + keys.length + ' key elements inside the SVG');
+			console.log('virtual keyboard: found ' + keys.length + ' key elements inside the SVG (doc had ' + allEls.length + ' total elements)');
 			if (keys.length === 0) {
 				console.error('virtual keyboard: zero keys found after retrying -- selector or SVG structure problem, nothing will work');
 				return;
@@ -1491,12 +1495,12 @@ var Module = {
 
 		if (obj.contentDocument) {
 			console.log('virtual keyboard: contentDocument already available');
-			attach(obj.contentDocument);
+			attach();
 		} else {
 			console.log('virtual keyboard: contentDocument not ready yet, waiting for object load event');
 			obj.addEventListener('load', function() {
 				console.log('virtual keyboard: object load event fired');
-				attach(obj.contentDocument);
+				attach();
 			});
 		}
 	}
