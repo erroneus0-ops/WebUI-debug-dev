@@ -1465,17 +1465,26 @@ var Module = {
 				if (e.target.id && e.target.id.indexOf('key-') === 0) return; // a key claims this
 				if (!wrapperEl) return;
 				var rect = wrapperEl.getBoundingClientRect();
-				// screenX/screenY (not clientX/clientY) -- the inner SVG document
-				// (loaded via <object>, with its own large viewBox rendered at a
-				// much smaller on-screen size) has a different client-coordinate
-				// space than the outer page. screenX/screenY are always relative
-				// to the physical monitor, so they stay consistent regardless of
-				// which nested document the event actually fired in.
+				// Compensate for the SVG's own viewBox scale: pointer movement
+				// inside this nested document (loaded via <object>) appears to be
+				// reported in the SVG's native viewBox units, not real screen
+				// pixels -- since the viewBox (2137.82 wide) renders at a much
+				// smaller on-screen CSS width, a real 100px mouse movement was
+				// only registering as ~35-40 units, causing drag to undershoot
+				// to roughly half speed. Computed dynamically (not hardcoded)
+				// since the actual rendered size changes with the Size slider.
+				var viewBoxWidth = doc.documentElement.viewBox.baseVal.width;
+				var scaleCompensation = viewBoxWidth / rect.width;
+				// screenX/screenY (not clientX/clientY) -- still needed on top of
+				// the scale compensation, since clientX/Y differs between the
+				// inner object document and the outer page entirely, while
+				// screenX/Y is at least consistently physical-monitor-relative.
 				dragState = {
 					startX: e.screenX,
 					startY: e.screenY,
 					wrapperStartLeft: rect.left,
-					wrapperStartTop: rect.top
+					wrapperStartTop: rect.top,
+					scaleCompensation: scaleCompensation
 				};
 				// Switch from bottom-anchored to explicit top, so dragging has
 				// a single consistent reference point with no jump.
@@ -1485,8 +1494,8 @@ var Module = {
 			});
 			doc.documentElement.addEventListener('pointermove', function(e) {
 				if (!dragState || !wrapperEl) return;
-				var dx = e.screenX - dragState.startX;
-				var dy = e.screenY - dragState.startY;
+				var dx = (e.screenX - dragState.startX) * dragState.scaleCompensation;
+				var dy = (e.screenY - dragState.startY) * dragState.scaleCompensation;
 				wrapperEl.style.left = (dragState.wrapperStartLeft + dx) + 'px';
 				wrapperEl.style.top  = (dragState.wrapperStartTop  + dy) + 'px';
 			});
