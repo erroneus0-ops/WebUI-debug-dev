@@ -1585,25 +1585,35 @@ var Module = {
 				}
 			}
 
+			// Initial mousedown/touchstart stay on the INNER document (doc),
+			// since that's the only place we can check "did this start on a
+			// key or the bezel". But ongoing move/end tracking moves to the
+			// OUTER document instead -- matching the toolbox's already-proven
+			// pattern exactly. This is the one structural difference that
+			// hadn't been tested yet: the toolbox's drag handle is a plain
+			// div in the outer page, and its mousemove/mouseup listeners are
+			// on the outer document throughout the whole gesture, never
+			// touching any nested document's coordinate system at all. The
+			// keyboard's drag previously tracked the ENTIRE gesture (start
+			// AND ongoing movement) through the inner SVG document -- if
+			// that's the real cause, moving just the ongoing tracking to the
+			// outer document should fix it, since it's the only remaining
+			// difference between the two after everything else was tested
+			// and ruled out (screenX/clientX, viewBox scale, embedded image
+			// size, DOM nesting depth, dual-monitor DPI).
 			doc.documentElement.addEventListener('mousedown', function(e) {
 				if (e.target.id && e.target.id.indexOf('key-') === 0) return;
 				kbdDragStart(e.clientX, e.clientY);
 			});
-			doc.documentElement.addEventListener('mousemove', function(e) {
+			document.addEventListener('mousemove', function(e) {
 				kbdDragMove(e, e.clientX, e.clientY);
 			});
-			doc.documentElement.addEventListener('mouseup', kbdDragEnd);
+			document.addEventListener('mouseup', kbdDragEnd);
 
 			// Track ONE specific touch by its identifier throughout the whole
 			// gesture, rather than blindly grabbing e.touches[0] on every
-			// event. Real bug found via a screen-recording + OCR analysis:
-			// the drag was restarting rapidly mid-gesture (many
-			// START-then-immediately-END pairs, always from the same fixed
-			// origLeft/origTop) instead of tracking one sustained motion --
-			// consistent with a NEW touchstart firing and resetting
-			// everything while a drag was already active. Ignoring
-			// touchstart entirely while dragging is already true prevents
-			// exactly that, regardless of why the extra touchstart fired.
+			// event (fixed earlier after a screen-recording + OCR analysis
+			// showed the drag restarting rapidly mid-gesture).
 			var _dragTouchId = null;
 
 			doc.documentElement.addEventListener('touchstart', function(e) {
@@ -1618,7 +1628,7 @@ var Module = {
 				_dragTouchId = t.identifier;
 				kbdDragStart(t.clientX, t.clientY);
 			}, {passive: true});
-			doc.documentElement.addEventListener('touchmove', function(e) {
+			document.addEventListener('touchmove', function(e) {
 				if (!dragging) return;
 				var t = null;
 				for (var i = 0; i < e.touches.length; i++) {
@@ -1639,8 +1649,8 @@ var Module = {
 				_dragTouchId = null;
 				kbdDragEnd();
 			}
-			doc.documentElement.addEventListener('touchend', function(e) { touchEndOrCancel(e, 'touchend'); });
-			doc.documentElement.addEventListener('touchcancel', function(e) { touchEndOrCancel(e, 'touchcancel'); });
+			document.addEventListener('touchend', function(e) { touchEndOrCancel(e, 'touchend'); });
+			document.addEventListener('touchcancel', function(e) { touchEndOrCancel(e, 'touchcancel'); });
 		}
 
 		if (obj.contentDocument) {
