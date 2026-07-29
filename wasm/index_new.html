@@ -1602,13 +1602,27 @@ var Module = {
 			// and ruled out (screenX/clientX, viewBox scale, embedded image
 			// size, DOM nesting depth, dual-monitor DPI).
 			doc.documentElement.addEventListener('mousedown', function(e) {
+				if (dragging) return; // already dragging -- ignore, don't restart (matches touchstart's guard)
 				if (e.target.id && e.target.id.indexOf('key-') === 0) return;
 				kbdDragStart(e.clientX, e.clientY);
 			});
-			document.addEventListener('mousemove', function(e) {
-				kbdDragMove(e, e.clientX, e.clientY);
-			});
+			// Attach mousemove/mouseup to BOTH the inner and outer documents.
+			// Real bug found from a detailed narration: mousedown correctly
+			// reaches the inner document's listener, but mouseup fired while
+			// the cursor is still over the <object>'s visual area appears to
+			// never propagate out to the outer document at all -- so
+			// dragging never got reset to false, and the keyboard kept
+			// chasing the cursor indefinitely once it happened to drift
+			// outside the object's bounds (where outer-document mousemove
+			// finally started firing). Listening on both means whichever one
+			// the browser actually delivers to, we catch it -- kbdDragMove/
+			// kbdDragEnd both already guard on `dragging`, so no risk of
+			// double-processing from having both attached.
+			function mouseMoveHandler(e) { kbdDragMove(e, e.clientX, e.clientY); }
+			document.addEventListener('mousemove', mouseMoveHandler);
+			doc.documentElement.addEventListener('mousemove', mouseMoveHandler);
 			document.addEventListener('mouseup', kbdDragEnd);
+			doc.documentElement.addEventListener('mouseup', kbdDragEnd);
 
 			// Track ONE specific touch by its identifier throughout the whole
 			// gesture, rather than blindly grabbing e.touches[0] on every
@@ -1628,7 +1642,7 @@ var Module = {
 				_dragTouchId = t.identifier;
 				kbdDragStart(t.clientX, t.clientY);
 			}, {passive: true});
-			document.addEventListener('touchmove', function(e) {
+			function touchMoveHandler(e) {
 				if (!dragging) return;
 				var t = null;
 				for (var i = 0; i < e.touches.length; i++) {
@@ -1636,7 +1650,9 @@ var Module = {
 				}
 				if (!t) return; // our tracked touch isn't in this event at all
 				kbdDragMove(e, t.clientX, t.clientY);
-			}, {passive: false});
+			}
+			document.addEventListener('touchmove', touchMoveHandler, {passive: false});
+			doc.documentElement.addEventListener('touchmove', touchMoveHandler, {passive: false});
 			function touchEndOrCancel(e, label) {
 				var ended = false;
 				for (var i = 0; i < e.changedTouches.length; i++) {
@@ -1650,7 +1666,9 @@ var Module = {
 				kbdDragEnd();
 			}
 			document.addEventListener('touchend', function(e) { touchEndOrCancel(e, 'touchend'); });
+			doc.documentElement.addEventListener('touchend', function(e) { touchEndOrCancel(e, 'touchend'); });
 			document.addEventListener('touchcancel', function(e) { touchEndOrCancel(e, 'touchcancel'); });
+			doc.documentElement.addEventListener('touchcancel', function(e) { touchEndOrCancel(e, 'touchcancel'); });
 		}
 
 		if (obj.contentDocument) {
