@@ -701,7 +701,13 @@ function applyMonitorLayout() {
     // Draggable overlay for mobile controls -- drag handle only
     (function() {
         var ctrl = document.getElementById('controls-region');
-        if (!ctrl || !_isMobile) return;
+        // TEMPORARY: removed the !_isMobile gate so this also runs on desktop,
+        // letting the already-proven-working toolbox drag be tested directly
+        // against the same dual-monitor setup/mouse movement as the keyboard
+        // drag, to see whether the same undershoot/limitation shows up here
+        // too. Revert to `if (!ctrl || !_isMobile) return;` once this
+        // comparison test is done.
+        if (!ctrl) return;
 
         // Wrap controls-region in a container, put handle outside scroll area
         var wrapper = document.createElement('div');
