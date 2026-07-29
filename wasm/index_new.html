@@ -1381,7 +1381,17 @@ var Module = {
 		function attach(doc, attemptsLeft) {
 			if (attemptsLeft === undefined) attemptsLeft = 15;
 			if (!doc) { console.error('virtual keyboard: contentDocument is null -- cannot access SVG internals'); return; }
-			var keys = doc.querySelectorAll('[id^="key-"]');
+			// NOTE: doc.querySelectorAll('[id^="key-"]') was confirmed unreliable
+			// here -- in a standalone XML document (which this genuinely is,
+			// loaded via <object type="image/svg+xml">, not inline HTML), the
+			// CSS attribute selector matched zero elements even though every
+			// element's real .id property was correct. Iterating and checking
+			// .id directly works reliably, confirmed against the live page.
+			var allEls = doc.querySelectorAll('*');
+			var keys = [];
+			for (var ai = 0; ai < allEls.length; ai++) {
+				if (allEls[ai].id && allEls[ai].id.indexOf('key-') === 0) keys.push(allEls[ai]);
+			}
 			if (keys.length === 0 && attemptsLeft > 0) {
 				// contentDocument can be non-null before the actual SVG content
 				// (especially a large embedded-image file) has finished loading in.
