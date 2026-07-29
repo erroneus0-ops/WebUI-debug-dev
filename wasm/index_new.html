@@ -1301,48 +1301,103 @@ var Module = {
 		'key-at':        0x1f, // placeholder: same as '2', unshifted
 	};
 
-	// ── Touch/mouse wiring: press-and-hold, independent per pointer ────────
-	// Tracks each active touch/mouse pointer separately so chording (e.g.
-	// holding CTRL while tapping another key) works correctly -- releasing
-	// one finger doesn't release keys held by other fingers.
+	// Modifier keys are sticky: tap once to arm (stays dark until tapped
+	// again), rather than hold-to-engage like every other key. A touchscreen
+	// has no natural way to "hold with your pinky while typing with other
+	// fingers" the way a real keyboard does.
+	var STICKY_KEYS = ['key-shift-l', 'key-shift-r', 'key-ctrl', 'key-alt'];
+	var _stickyState = {}; // key id -> true if currently armed
+
+	// ── Touch/mouse wiring: press-and-hold for normal keys, tap-to-toggle
+	//    for sticky modifiers. Tracks each active pointer independently so
+	//    chording (holding CTRL with one finger, tapping another key with a
+	//    second finger) works correctly.
 	var _activeKeyPointers = {}; // pointerId -> key element id currently held
 
 	function wireVirtualKeyboard() {
+		console.log('virtual keyboard: wiring starting...');
 		var obj = document.querySelector('#mobile-kbd-wrapper object');
-		if (!obj) { console.warn('virtual keyboard: object element not found'); return; }
+		if (!obj) { console.error('virtual keyboard: <object> element not found in DOM'); return; }
+		console.log('virtual keyboard: <object> element found, checking contentDocument...');
+
+		function scanPress(code, label) {
+			try {
+				Module.ccall('wasm_scan_press', null, ['number'], [code]);
+				console.log('virtual keyboard: scan_press ' + label + ' (0x' + code.toString(16) + ') OK');
+			} catch (err) {
+				console.error('virtual keyboard: scan_press ' + label + ' (0x' + code.toString(16) + ') FAILED:', err);
+			}
+		}
+		function scanRelease(code, label) {
+			try {
+				Module.ccall('wasm_scan_release', null, ['number'], [code]);
+				console.log('virtual keyboard: scan_release ' + label + ' (0x' + code.toString(16) + ') OK');
+			} catch (err) {
+				console.error('virtual keyboard: scan_release ' + label + ' (0x' + code.toString(16) + ') FAILED:', err);
+			}
+		}
 
 		function attach(doc) {
-			if (!doc) { console.warn('virtual keyboard: could not access SVG document'); return; }
+			if (!doc) { console.error('virtual keyboard: contentDocument is null -- cannot access SVG internals'); return; }
 			var keys = doc.querySelectorAll('[id^="key-"]');
+			console.log('virtual keyboard: found ' + keys.length + ' key elements inside the SVG');
+			if (keys.length === 0) {
+				console.error('virtual keyboard: zero keys found -- selector or SVG structure problem, nothing will work');
+				return;
+			}
 			keys.forEach(function(el) {
 				var code = KEY_SCANCODES[el.id];
 				if (code === undefined) {
-					console.warn('virtual keyboard: no scancode mapped for', el.id);
+					console.warn('virtual keyboard: no scancode mapped for', el.id, '-- this key will do nothing');
 					return;
 				}
 				el.style.cursor = 'pointer';
-				el.addEventListener('pointerdown', function(e) {
-					e.preventDefault();
-					_activeKeyPointers[e.pointerId] = el.id;
-					el.style.opacity = '0.5'; // simple press feedback
-					Module.ccall('wasm_scan_press', null, ['number'], [code]);
-				});
-				function release(e) {
-					if (_activeKeyPointers[e.pointerId] !== el.id) return;
-					delete _activeKeyPointers[e.pointerId];
-					el.style.opacity = '1';
-					Module.ccall('wasm_scan_release', null, ['number'], [code]);
+				var origFill = el.style.fill || el.getAttribute('style');
+
+				if (STICKY_KEYS.indexOf(el.id) !== -1) {
+					// Sticky modifier: tap to arm, tap again to release.
+					_stickyState[el.id] = false;
+					el.addEventListener('pointerdown', function(e) {
+						e.preventDefault();
+						var nowArmed = !_stickyState[el.id];
+						_stickyState[el.id] = nowArmed;
+						el.style.fill = nowArmed ? '#333333' : '';
+						if (nowArmed) {
+							scanPress(code, el.id);
+						} else {
+							scanRelease(code, el.id);
+						}
+					});
+				} else {
+					// Normal key: dark while physically held.
+					el.addEventListener('pointerdown', function(e) {
+						e.preventDefault();
+						_activeKeyPointers[e.pointerId] = el.id;
+						el.style.fill = '#333333';
+						scanPress(code, el.id);
+					});
+					function release(e) {
+						if (_activeKeyPointers[e.pointerId] !== el.id) return;
+						delete _activeKeyPointers[e.pointerId];
+						el.style.fill = '';
+						scanRelease(code, el.id);
+					}
+					el.addEventListener('pointerup', release);
+					el.addEventListener('pointercancel', release);
 				}
-				el.addEventListener('pointerup', release);
-				el.addEventListener('pointercancel', release);
 			});
-			console.log('virtual keyboard: wired ' + keys.length + ' keys');
+			console.log('virtual keyboard: wiring complete, ' + keys.length + ' keys handled');
 		}
 
 		if (obj.contentDocument) {
+			console.log('virtual keyboard: contentDocument already available');
 			attach(obj.contentDocument);
 		} else {
-			obj.addEventListener('load', function() { attach(obj.contentDocument); });
+			console.log('virtual keyboard: contentDocument not ready yet, waiting for object load event');
+			obj.addEventListener('load', function() {
+				console.log('virtual keyboard: object load event fired');
+				attach(obj.contentDocument);
+			});
 		}
 	}
 
