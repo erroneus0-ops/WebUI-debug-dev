@@ -1416,12 +1416,12 @@ var Module = {
 					return;
 				}
 				el.style.cursor = 'pointer';
-				var origFill = el.style.fill || el.getAttribute('style');
+				el.style.touchAction = 'none';
 
 				if (STICKY_KEYS.indexOf(el.id) !== -1) {
 					// Sticky modifier: tap to arm, tap again to release.
 					_stickyState[el.id] = false;
-					el.addEventListener('pointerdown', function(e) {
+					function toggleSticky(e) {
 						e.preventDefault();
 						var nowArmed = !_stickyState[el.id];
 						_stickyState[el.id] = nowArmed;
@@ -1431,80 +1431,121 @@ var Module = {
 						} else {
 							scanRelease(code, el.id);
 						}
-					});
+					}
+					el.addEventListener('mousedown', toggleSticky);
+					el.addEventListener('touchstart', toggleSticky, {passive: false});
 				} else {
-					// Normal key: dark while physically held.
-					el.addEventListener('pointerdown', function(e) {
-						e.preventDefault();
-						_activeKeyPointers[e.pointerId] = el.id;
+					// Normal key: dark while physically held. Tracks each
+					// simultaneous touch by its identifier (touch events'
+					// equivalent of pointerId) so multi-finger chording
+					// works -- releasing one finger doesn't release keys
+					// held by another. Mouse uses a fixed 'mouse' key since
+					// there's only ever one mouse.
+					function pressKey(id) {
+						_activeKeyPointers[id] = el.id;
 						el.style.fill = '#333333';
 						scanPress(code, el.id);
-					});
-					function release(e) {
-						if (_activeKeyPointers[e.pointerId] !== el.id) return;
-						delete _activeKeyPointers[e.pointerId];
+					}
+					function releaseKey(id) {
+						if (_activeKeyPointers[id] !== el.id) return;
+						delete _activeKeyPointers[id];
 						el.style.fill = '';
 						scanRelease(code, el.id);
 					}
-					el.addEventListener('pointerup', release);
-					el.addEventListener('pointercancel', release);
+					el.addEventListener('mousedown', function(e) { e.preventDefault(); pressKey('mouse'); });
+					el.addEventListener('mouseup', function(e) { releaseKey('mouse'); });
+					el.addEventListener('mouseleave', function(e) { releaseKey('mouse'); });
+					el.addEventListener('touchstart', function(e) {
+						e.preventDefault();
+						for (var i = 0; i < e.changedTouches.length; i++) {
+							pressKey(e.changedTouches[i].identifier);
+						}
+					}, {passive: false});
+					el.addEventListener('touchend', function(e) {
+						for (var i = 0; i < e.changedTouches.length; i++) {
+							releaseKey(e.changedTouches[i].identifier);
+						}
+					});
+					el.addEventListener('touchcancel', function(e) {
+						for (var i = 0; i < e.changedTouches.length; i++) {
+							releaseKey(e.changedTouches[i].identifier);
+						}
+					});
 				}
 			});
 			console.log('virtual keyboard: wiring complete, ' + keys.length + ' keys handled');
 
 			// ── Drag the keyboard's own bezel/case to reposition it anywhere ──
-			// Delegated at the SVG root: if a pointerdown's target is a key-*
+			// Delegated at the SVG root: if a touch/click's target is a key-*
 			// cell, the key's own handler already claims it -- do nothing here.
 			// Otherwise (background/case artwork), start a drag of the whole
 			// wrapper div. Once dragged, marks the wrapper as manually
 			// positioned so applyMonitorLayout() stops auto-aligning it.
+			//
+			// Uses the same proven mouse/touch pattern as the working toolbox
+			// drag handle (search "Draggable overlay for mobile controls"),
+			// NOT unified Pointer Events -- switched after confirming on a
+			// real phone that Pointer Events here let the browser's native
+			// swipe/scroll gesture fire anyway, making the keyboard vanish on
+			// any directional movement. Two real, specific differences this
+			// fixes: (1) touch-action:none, which pointermove alone didn't
+			// give us -- the browser's native touch gesture handling can
+			// still compete with custom JS without it; (2) explicit
+			// {passive:false} on the touchmove listener -- many mobile
+			// browsers default touch listeners to passive for scroll
+			// performance, and a passive listener's preventDefault() call is
+			// silently ignored, so our code could ask to prevent the default
+			// gesture and be quietly overruled regardless.
 			var wrapperEl = document.getElementById('mobile-kbd-wrapper');
-			var dragState = null; // {startX, startY, wrapperStartLeft, wrapperStartTop}
+			wrapperEl.style.touchAction = 'none';
+			var dragging = false;
+			var startX, startY, origLeft, origTop;
 
-			doc.documentElement.addEventListener('pointerdown', function(e) {
-				if (e.target.id && e.target.id.indexOf('key-') === 0) return; // a key claims this
+			function kbdDragStart(x, y) {
 				if (!wrapperEl) return;
+				dragging = true;
 				var rect = wrapperEl.getBoundingClientRect();
-				dragState = {
-					startX: e.screenX,
-					startY: e.screenY,
-					wrapperStartLeft: rect.left,
-					wrapperStartTop: rect.top
-				};
-				console.log('[drag] START screenX=' + e.screenX + ' screenY=' + e.screenY +
-					' clientX=' + e.clientX + ' clientY=' + e.clientY +
-					' wrapperRect(left=' + rect.left + ',top=' + rect.top + ',width=' + rect.width + ')');
+				startX = x;
+				startY = y;
+				origLeft = rect.left;
+				origTop = rect.top;
 				wrapperEl.style.bottom = '';
 				wrapperEl.style.top = rect.top + 'px';
-				e.preventDefault();
-			});
-			doc.documentElement.addEventListener('pointermove', function(e) {
-				if (!dragState || !wrapperEl) return;
-				var dx = e.screenX - dragState.startX;
-				var dy = e.screenY - dragState.startY;
-				wrapperEl.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
-				var actualRect = wrapperEl.getBoundingClientRect();
-				console.log('[drag] MOVE screenX=' + e.screenX + ' screenY=' + e.screenY +
-					' clientX=' + e.clientX + ' clientY=' + e.clientY +
-					' computed(dx=' + dx + ',dy=' + dy + ')' +
-					' actualRenderedLeft=' + actualRect.left + ' actualRenderedTop=' + actualRect.top +
-					' expectedLeft=' + (dragState.wrapperStartLeft + dx) + ' expectedTop=' + (dragState.wrapperStartTop + dy));
-			});
-			function endDrag(e) {
-				if (!dragState) return;
-				var dx = e.screenX - dragState.startX;
-				var dy = e.screenY - dragState.startY;
-				console.log('[drag] END screenX=' + e.screenX + ' screenY=' + e.screenY + ' final dx=' + dx + ' dy=' + dy);
-				if (wrapperEl) {
-					wrapperEl.style.left = (dragState.wrapperStartLeft + dx) + 'px';
-					wrapperEl.style.top  = (dragState.wrapperStartTop  + dy) + 'px';
-					wrapperEl.style.transform = '';
-					wrapperEl.dataset.manuallyPositioned = '1';
-				}
-				dragState = null;
 			}
-			doc.documentElement.addEventListener('pointerup', endDrag);
-			doc.documentElement.addEventListener('pointercancel', endDrag);
+			function kbdDragMove(e, x, y) {
+				if (!dragging || !wrapperEl) return;
+				e.preventDefault();
+				var dx = x - startX;
+				var dy = y - startY;
+				wrapperEl.style.left = (origLeft + dx) + 'px';
+				wrapperEl.style.top  = (origTop  + dy) + 'px';
+			}
+			function kbdDragEnd() {
+				if (!dragging) return;
+				dragging = false;
+				if (wrapperEl) wrapperEl.dataset.manuallyPositioned = '1';
+			}
+
+			doc.documentElement.addEventListener('mousedown', function(e) {
+				if (e.target.id && e.target.id.indexOf('key-') === 0) return;
+				kbdDragStart(e.clientX, e.clientY);
+			});
+			doc.documentElement.addEventListener('mousemove', function(e) {
+				kbdDragMove(e, e.clientX, e.clientY);
+			});
+			doc.documentElement.addEventListener('mouseup', kbdDragEnd);
+
+			doc.documentElement.addEventListener('touchstart', function(e) {
+				if (e.target.id && e.target.id.indexOf('key-') === 0) return;
+				var t = e.touches[0];
+				kbdDragStart(t.clientX, t.clientY);
+			}, {passive: true});
+			doc.documentElement.addEventListener('touchmove', function(e) {
+				if (!dragging) return;
+				var t = e.touches[0];
+				kbdDragMove(e, t.clientX, t.clientY);
+			}, {passive: false});
+			doc.documentElement.addEventListener('touchend', kbdDragEnd);
 		}
 
 		if (obj.contentDocument) {
