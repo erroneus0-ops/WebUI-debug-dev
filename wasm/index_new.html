@@ -1465,9 +1465,15 @@ var Module = {
 				if (e.target.id && e.target.id.indexOf('key-') === 0) return; // a key claims this
 				if (!wrapperEl) return;
 				var rect = wrapperEl.getBoundingClientRect();
+				// screenX/screenY (not clientX/clientY) -- the inner SVG document
+				// (loaded via <object>, with its own large viewBox rendered at a
+				// much smaller on-screen size) has a different client-coordinate
+				// space than the outer page. screenX/screenY are always relative
+				// to the physical monitor, so they stay consistent regardless of
+				// which nested document the event actually fired in.
 				dragState = {
-					startX: e.clientX,
-					startY: e.clientY,
+					startX: e.screenX,
+					startY: e.screenY,
 					wrapperStartLeft: rect.left,
 					wrapperStartTop: rect.top
 				};
@@ -1479,8 +1485,8 @@ var Module = {
 			});
 			doc.documentElement.addEventListener('pointermove', function(e) {
 				if (!dragState || !wrapperEl) return;
-				var dx = e.clientX - dragState.startX;
-				var dy = e.clientY - dragState.startY;
+				var dx = e.screenX - dragState.startX;
+				var dy = e.screenY - dragState.startY;
 				wrapperEl.style.left = (dragState.wrapperStartLeft + dx) + 'px';
 				wrapperEl.style.top  = (dragState.wrapperStartTop  + dy) + 'px';
 			});
