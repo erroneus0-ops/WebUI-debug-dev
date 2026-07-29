@@ -556,11 +556,16 @@ function applyMonitorLayout() {
     // width matches canvas width, left edge matches canvas's left edge
     // (using the canvas's real viewport position, since the keyboard wrapper
     // is position:fixed -- relative to the viewport, not to monitor-region).
+    // Skipped if the user has manually dragged the keyboard elsewhere --
+    // don't fight their choice every time the monitor gets resized.
     var kbdWrapper = document.getElementById('mobile-kbd-wrapper');
-    if (kbdWrapper) {
+    if (kbdWrapper && !kbdWrapper.dataset.manuallyPositioned) {
         kbdWrapper.style.width = csw + 'px';
         var canvasRect = canvas.getBoundingClientRect();
         kbdWrapper.style.left = canvasRect.left + 'px';
+    } else if (kbdWrapper) {
+        // Still keep width in sync even when manually positioned, just not position
+        kbdWrapper.style.width = csw + 'px';
     }
 
     var crtBlack = document.getElementById('crt-black');
@@ -1432,6 +1437,46 @@ var Module = {
 				}
 			});
 			console.log('virtual keyboard: wiring complete, ' + keys.length + ' keys handled');
+
+			// ── Drag the keyboard's own bezel/case to reposition it anywhere ──
+			// Delegated at the SVG root: if a pointerdown's target is a key-*
+			// cell, the key's own handler already claims it -- do nothing here.
+			// Otherwise (background/case artwork), start a drag of the whole
+			// wrapper div. Once dragged, marks the wrapper as manually
+			// positioned so applyMonitorLayout() stops auto-aligning it.
+			var wrapperEl = document.getElementById('mobile-kbd-wrapper');
+			var dragState = null; // {startX, startY, wrapperStartLeft, wrapperStartTop}
+
+			doc.documentElement.addEventListener('pointerdown', function(e) {
+				if (e.target.id && e.target.id.indexOf('key-') === 0) return; // a key claims this
+				if (!wrapperEl) return;
+				var rect = wrapperEl.getBoundingClientRect();
+				dragState = {
+					startX: e.clientX,
+					startY: e.clientY,
+					wrapperStartLeft: rect.left,
+					wrapperStartTop: rect.top
+				};
+				// Switch from bottom-anchored to explicit top, so dragging has
+				// a single consistent reference point with no jump.
+				wrapperEl.style.bottom = '';
+				wrapperEl.style.top = rect.top + 'px';
+				e.preventDefault();
+			});
+			doc.documentElement.addEventListener('pointermove', function(e) {
+				if (!dragState || !wrapperEl) return;
+				var dx = e.clientX - dragState.startX;
+				var dy = e.clientY - dragState.startY;
+				wrapperEl.style.left = (dragState.wrapperStartLeft + dx) + 'px';
+				wrapperEl.style.top  = (dragState.wrapperStartTop  + dy) + 'px';
+			});
+			function endDrag(e) {
+				if (!dragState) return;
+				dragState = null;
+				if (wrapperEl) wrapperEl.dataset.manuallyPositioned = '1';
+			}
+			doc.documentElement.addEventListener('pointerup', endDrag);
+			doc.documentElement.addEventListener('pointercancel', endDrag);
 		}
 
 		if (obj.contentDocument) {
