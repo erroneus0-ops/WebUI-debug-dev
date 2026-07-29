@@ -1270,13 +1270,17 @@ var Module = {
        preserve aspect ratio. Centered horizontally. -->
   <div id="mobile-kbd-wrapper"
        style="display:none; position:fixed; bottom:0; z-index:49; background:#000;">
-    <!-- TEMPORARY TEST #2: dummy2 has NO embedded image at all, isolating
-         whether the large embedded shader specifically matters, now that
-         dummy #1 already ruled out the real file's key/label complexity.
-         REVERT to coco3_keyboard.svg once this test is done. -->
-    <object id="mobile-kbd-object" data="coco3_keyboard_dummy2.svg" type="image/svg+xml"
-         aria-label="CoCo3 virtual keyboard"
-         style="display:block; width:100%; height:auto;"></object>
+    <!-- TEMPORARY TEST #3: intermediate plain div between the dragged
+         wrapper and the <object> itself, testing whether decoupling the
+         position-changing element from the replaced element (<object>,
+         which behaves like <iframe> in CSS terms and can have its own
+         quirks responding to ancestor position/transform changes) helps.
+         Still using dummy2 (no embedded image) from test #2. -->
+    <div id="mobile-kbd-object-wrapper" style="width:100%;">
+      <object id="mobile-kbd-object" data="coco3_keyboard_dummy2.svg" type="image/svg+xml"
+           aria-label="CoCo3 virtual keyboard"
+           style="display:block; width:100%; height:auto;"></object>
+    </div>
   </div>
 
   <script>
