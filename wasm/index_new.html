@@ -1571,17 +1571,53 @@ var Module = {
 			});
 			doc.documentElement.addEventListener('mouseup', kbdDragEnd);
 
+			// Track ONE specific touch by its identifier throughout the whole
+			// gesture, rather than blindly grabbing e.touches[0] on every
+			// event. Real bug found via a screen-recording + OCR analysis:
+			// the drag was restarting rapidly mid-gesture (many
+			// START-then-immediately-END pairs, always from the same fixed
+			// origLeft/origTop) instead of tracking one sustained motion --
+			// consistent with a NEW touchstart firing and resetting
+			// everything while a drag was already active. Ignoring
+			// touchstart entirely while dragging is already true prevents
+			// exactly that, regardless of why the extra touchstart fired.
+			var _dragTouchId = null;
+
 			doc.documentElement.addEventListener('touchstart', function(e) {
+				if (dragging) {
+					if (typeof log_message === 'function') {
+						log_message('[drag] touchstart IGNORED (already dragging, touches.length=' + e.touches.length + ')');
+					}
+					return;
+				}
 				if (e.target.id && e.target.id.indexOf('key-') === 0) return;
-				var t = e.touches[0];
+				var t = e.changedTouches[0];
+				_dragTouchId = t.identifier;
 				kbdDragStart(t.clientX, t.clientY);
 			}, {passive: true});
 			doc.documentElement.addEventListener('touchmove', function(e) {
 				if (!dragging) return;
-				var t = e.touches[0];
+				var t = null;
+				for (var i = 0; i < e.touches.length; i++) {
+					if (e.touches[i].identifier === _dragTouchId) { t = e.touches[i]; break; }
+				}
+				if (!t) return; // our tracked touch isn't in this event at all
 				kbdDragMove(e, t.clientX, t.clientY);
 			}, {passive: false});
-			doc.documentElement.addEventListener('touchend', kbdDragEnd);
+			function touchEndOrCancel(e, label) {
+				var ended = false;
+				for (var i = 0; i < e.changedTouches.length; i++) {
+					if (e.changedTouches[i].identifier === _dragTouchId) { ended = true; break; }
+				}
+				if (typeof log_message === 'function') {
+					log_message('[drag] ' + label + ' (ourTouchEnded=' + ended + ' remainingTouches=' + e.touches.length + ')');
+				}
+				if (!ended) return; // a DIFFERENT touch ended, not ours -- ignore
+				_dragTouchId = null;
+				kbdDragEnd();
+			}
+			doc.documentElement.addEventListener('touchend', function(e) { touchEndOrCancel(e, 'touchend'); });
+			doc.documentElement.addEventListener('touchcancel', function(e) { touchEndOrCancel(e, 'touchcancel'); });
 		}
 
 		if (obj.contentDocument) {
