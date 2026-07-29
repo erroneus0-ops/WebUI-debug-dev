@@ -1465,44 +1465,52 @@ var Module = {
 				if (e.target.id && e.target.id.indexOf('key-') === 0) return; // a key claims this
 				if (!wrapperEl) return;
 				var rect = wrapperEl.getBoundingClientRect();
-				// Compensate for the SVG's own viewBox scale: pointer movement
-				// inside this nested document (loaded via <object>) appears to be
-				// reported in the SVG's native viewBox units, not real screen
-				// pixels -- since the viewBox (2137.82 wide) renders at a much
-				// smaller on-screen CSS width, a real 100px mouse movement was
-				// only registering as ~35-40 units, causing drag to undershoot
-				// to roughly half speed. Computed dynamically (not hardcoded)
-				// since the actual rendered size changes with the Size slider.
-				var viewBoxWidth = doc.documentElement.viewBox.baseVal.width;
-				var scaleCompensation = viewBoxWidth / rect.width;
-				// screenX/screenY (not clientX/clientY) -- still needed on top of
-				// the scale compensation, since clientX/Y differs between the
-				// inner object document and the outer page entirely, while
-				// screenX/Y is at least consistently physical-monitor-relative.
+				// screenX/screenY -- consistent across the inner object document
+				// and the outer page, both physical-monitor-relative.
 				dragState = {
 					startX: e.screenX,
 					startY: e.screenY,
 					wrapperStartLeft: rect.left,
-					wrapperStartTop: rect.top,
-					scaleCompensation: scaleCompensation
+					wrapperStartTop: rect.top
 				};
-				// Switch from bottom-anchored to explicit top, so dragging has
-				// a single consistent reference point with no jump.
+				// Switch from bottom-anchored to explicit top, so the final
+				// committed position (at drag end) has a single consistent
+				// reference point with no jump.
 				wrapperEl.style.bottom = '';
 				wrapperEl.style.top = rect.top + 'px';
 				e.preventDefault();
 			});
 			doc.documentElement.addEventListener('pointermove', function(e) {
 				if (!dragState || !wrapperEl) return;
-				var dx = (e.screenX - dragState.startX) * dragState.scaleCompensation;
-				var dy = (e.screenY - dragState.startY) * dragState.scaleCompensation;
-				wrapperEl.style.left = (dragState.wrapperStartLeft + dx) + 'px';
-				wrapperEl.style.top  = (dragState.wrapperStartTop  + dy) + 'px';
+				var dx = e.screenX - dragState.startX;
+				var dy = e.screenY - dragState.startY;
+				// transform (not left/top) during the drag itself: left/top
+				// changes force a full layout + repaint of the whole object,
+				// including its large embedded bitmap, on every single mouse
+				// movement -- expensive enough to visibly lag/undershoot
+				// rapid dragging. transform is handled by the compositor
+				// (GPU), no layout recalculation needed. Confirmed via direct
+				// testing that the underlying coordinate math was already
+				// correct (clientX/screenX/pageX all reported perfectly) --
+				// this was a rendering-performance problem, not a math one.
+				wrapperEl.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
 			});
 			function endDrag(e) {
 				if (!dragState) return;
+				// Commit the transform offset into real left/top once, at the
+				// end of the drag, then clear the transform -- keeps left/top
+				// as the source of truth between drags (e.g. for
+				// applyMonitorLayout()'s width sync), transform only used
+				// during active dragging itself.
+				var dx = e.screenX - dragState.startX;
+				var dy = e.screenY - dragState.startY;
+				if (wrapperEl) {
+					wrapperEl.style.left = (dragState.wrapperStartLeft + dx) + 'px';
+					wrapperEl.style.top  = (dragState.wrapperStartTop  + dy) + 'px';
+					wrapperEl.style.transform = '';
+					wrapperEl.dataset.manuallyPositioned = '1';
+				}
 				dragState = null;
-				if (wrapperEl) wrapperEl.dataset.manuallyPositioned = '1';
 			}
 			doc.documentElement.addEventListener('pointerup', endDrag);
 			doc.documentElement.addEventListener('pointercancel', endDrag);
