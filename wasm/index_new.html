@@ -721,7 +721,12 @@ function applyMonitorLayout() {
             'max-width: 95vw',
             'max-height: 70vh',
             'z-index: 100',
-            'display: none',
+            // TEMPORARY: visible by default on desktop, since the hamburger's
+            // desktop click handler currently only toggles the test keyboard
+            // and never reaches toggleControls() -- nothing could show this
+            // otherwise right now. Revert to unconditional 'display: none'
+            // once this comparison test is done.
+            'display: ' + (_isMobile ? 'none' : 'flex'),
             'flex-direction: column',
             'box-shadow: 0 4px 16px rgba(0,0,0,0.5)',
         ].join(';');
