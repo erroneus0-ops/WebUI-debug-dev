@@ -1393,7 +1393,7 @@ var Module = {
 		'key-9': 0x26, 'key-0': 0x27,
 		'key-enter':     0x28, // hk_scan_Return
 		'key-space':     0x2c, // hk_scan_space
-		'key-minus':     0x2d, // hk_scan_minus
+		'key-minus':     0x2e, // hk_scan_equal -- CONFIRMED via hkbd.c's direct raw-mode table
 		'key-semicolon': 0x33, // hk_scan_semicolon
 		'key-comma':     0x36, // hk_scan_comma
 		'key-period':    0x37, // hk_scan_period
@@ -1406,13 +1406,18 @@ var Module = {
 		'key-right':     0x4f, // hk_scan_Right
 		'key-shift-l':   0xe1, // hk_scan_Shift_L
 		'key-shift-r':   0xe5, // hk_scan_Shift_R
-		'key-ctrl':      0xe0, // hk_scan_Control_L
+		'key-ctrl':      0xe0, // hk_scan_Control_L -- NOT in the raw-mode direct table under its
+		                       // own name (only Caps_Lock/Super_L/Super_R map to DSCAN_CTRL there),
+		                       // worth rechecking given the earlier crash report with this key.
 		'key-alt':       0xe2, // hk_scan_Alt_L
 		'key-f1':        0x3a, // hk_scan_F1
 		'key-f2':        0x3b, // hk_scan_F2
-		// NEEDS TESTING -- see note above
-		'key-colon':     0x33, // placeholder: same as semicolon, unshifted
-		'key-at':        0x1f, // placeholder: same as '2', unshifted
+		// Both confirmed via hkbd.c's actual raw-mode (code_dkey_default) table,
+		// not guessed -- these are genuinely positional (host key position ->
+		// CoCo key position), not symbolic, since -no-kbd-translate skips all
+		// symbol-based recombination entirely.
+		'key-colon':     0x2d, // hk_scan_minus -- CONFIRMED
+		'key-at':        0x2f, // hk_scan_bracketleft -- CONFIRMED
 	};
 
 	// Modifier keys are sticky: tap once to arm (stays dark until tapped
