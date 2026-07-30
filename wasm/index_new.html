@@ -561,20 +561,27 @@ function applyMonitorLayout() {
     canvas.style.width  = csw + 'px';
     canvas.style.height = csh + 'px';
 
-    // Keep the virtual keyboard sized and aligned to match the canvas --
-    // width matches canvas width, left edge matches canvas's left edge
-    // (using the canvas's real viewport position, since the keyboard wrapper
-    // is position:fixed -- relative to the viewport, not to monitor-region).
-    // Skipped if the user has manually dragged the keyboard elsewhere --
-    // don't fight their choice every time the monitor gets resized.
+    // Keep the virtual keyboard sized to match the screen. On mobile,
+    // that means the FULL screen width (effectiveWidth) -- the canvas
+    // itself sits inset within the bezel graphic with margin on each
+    // side (cl above), so matching csw (canvas width) alone left the
+    // keyboard narrower than the actual screen. On desktop, keep
+    // matching the canvas exactly (width + left edge), as before.
+    // Skipped position-wise if the user has manually dragged the
+    // keyboard elsewhere -- don't fight their choice every time the
+    // monitor gets resized.
     var kbdWrapper = document.getElementById('mobile-kbd-wrapper');
-    if (kbdWrapper && !kbdWrapper.dataset.manuallyPositioned) {
-        kbdWrapper.style.width = csw + 'px';
-        var canvasRect = canvas.getBoundingClientRect();
-        kbdWrapper.style.left = canvasRect.left + 'px';
-    } else if (kbdWrapper) {
-        // Still keep width in sync even when manually positioned, just not position
-        kbdWrapper.style.width = csw + 'px';
+    if (kbdWrapper) {
+        var kbdWidth = _isMobile ? effectiveWidth : csw;
+        kbdWrapper.style.width = kbdWidth + 'px';
+        if (!kbdWrapper.dataset.manuallyPositioned) {
+            if (_isMobile) {
+                kbdWrapper.style.left = '0px';
+            } else {
+                var canvasRect = canvas.getBoundingClientRect();
+                kbdWrapper.style.left = canvasRect.left + 'px';
+            }
+        }
     }
 
     var crtBlack = document.getElementById('crt-black');
@@ -643,6 +650,13 @@ window.addEventListener('resize', function() {
     }
     var _isMobile = isMobileDevice();
     window._isMobile = _isMobile;
+
+    // Size slider doesn't apply on mobile -- width is now tied directly
+    // to the actual screen width, not a user-adjustable scale.
+    if (_isMobile) {
+        var sizeControl = document.getElementById('size-control');
+        if (sizeControl) sizeControl.style.display = 'none';
+    }
 
     // Power button -- CRT power off/on animation and LED toggle
     var _powered = true;
