@@ -1504,15 +1504,20 @@ var Module = {
 				}
 				el.style.cursor = 'pointer';
 				el.style.touchAction = 'none';
-				// Capture the REAL original fill color once, before ever
-				// overriding it -- setting el.style.fill destructively
-				// overwrites whatever was in the inline style string, it
-				// doesn't get "remembered" anywhere. Clearing back to ''
-				// later doesn't restore the original color, it just falls
-				// back to SVG's default (black), which looks almost
-				// identical to the pressed-dark-gray -- that's why keys
-				// looked like they never returned to their original color.
-				var origFill = window.getComputedStyle(el).fill;
+				// Press feedback uses a dedicated transparent overlay sibling
+				// (press-overlay-<id>, added directly to the SVG) instead of
+				// touching this key's own fill color. Simple two-state
+				// toggle -- fully transparent (off) or semi-transparent
+				// black (pressed) -- the "off" state is always the same
+				// fixed value, never varying per key, so there's nothing to
+				// capture or restore at all. Sidesteps the earlier bug where
+				// clearing an overridden fill color didn't actually restore
+				// the original (it fell back to SVG's default black, which
+				// looked nearly identical to the pressed state).
+				var overlay = doc.getElementById('press-overlay-' + el.id);
+				function setPressed(isPressed) {
+					if (overlay) overlay.style.fillOpacity = isPressed ? '0.35' : '0';
+				}
 
 				if (STICKY_KEYS.indexOf(el.id) !== -1) {
 					// Sticky modifier: tap to arm, tap again to release.
@@ -1521,7 +1526,7 @@ var Module = {
 						e.preventDefault();
 						var nowArmed = !_stickyState[el.id];
 						_stickyState[el.id] = nowArmed;
-						el.style.fill = nowArmed ? '#333333' : origFill;
+						setPressed(nowArmed);
 						if (nowArmed) {
 							scanPress(code, el.id);
 						} else {
@@ -1539,13 +1544,13 @@ var Module = {
 					// there's only ever one mouse.
 					function pressKey(id) {
 						_activeKeyPointers[id] = el.id;
-						el.style.fill = '#333333';
+						setPressed(true);
 						scanPress(code, el.id);
 					}
 					function releaseKey(id) {
 						if (_activeKeyPointers[id] !== el.id) return;
 						delete _activeKeyPointers[id];
-						el.style.fill = origFill;
+						setPressed(false);
 						scanRelease(code, el.id);
 					}
 					el.addEventListener('mousedown', function(e) { e.preventDefault(); pressKey('mouse'); });
