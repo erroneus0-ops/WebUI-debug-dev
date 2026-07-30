@@ -701,7 +701,7 @@ function applyMonitorLayout() {
     // Draggable overlay for mobile controls -- drag handle only
     (function() {
         var ctrl = document.getElementById('controls-region');
-        if (!ctrl || !_isMobile) return;
+        if (!ctrl) return;
 
         // Wrap controls-region in a container, put handle outside scroll area
         var wrapper = document.createElement('div');
@@ -715,7 +715,7 @@ function applyMonitorLayout() {
             'max-width: 95vw',
             'max-height: 70vh',
             'z-index: 100',
-            'display: none',
+            'display: ' + (_isMobile ? 'none' : 'flex'),
             'flex-direction: column',
             'box-shadow: 0 4px 16px rgba(0,0,0,0.5)',
         ].join(';');
