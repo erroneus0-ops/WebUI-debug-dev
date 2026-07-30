@@ -706,10 +706,23 @@ function applyMonitorLayout() {
         // Wrap controls-region in a container, put handle outside scroll area
         var wrapper = document.createElement('div');
         wrapper.id = 'controls-overlay-wrapper';
+        // On desktop, start positioned to the right of the monitor rather
+        // than overlapping it at left:0 -- body has 1rem (16px) left
+        // padding, monitor-region sits right after that, so the monitor's
+        // right edge is roughly 16 + monitorWidth px in. Add a small gap.
+        // Clamped against the actual viewport width so a large monitor
+        // size (e.g. 1600 for 4K) can't push it off-screen entirely --
+        // keeps at least 100px of the toolbox visible from the left.
+        // Still just a starting position -- it's draggable from there.
+        // Mobile keeps left:0 (full-width slide-down overlay, no monitor
+        // to avoid sitting next to on a small screen).
+        var idealLeft = 16 + monitorWidth + 24;
+        var maxLeft = window.innerWidth - 100;
+        var startLeft = _isMobile ? '0' : Math.min(idealLeft, Math.max(maxLeft, 0)) + 'px';
         wrapper.style.cssText = [
             'position: fixed',
             'top: 2.5rem',
-            'left: 0',
+            'left: ' + startLeft,
             'right: auto',
             'width: ' + monitorWidth + 'px',
             'max-width: 95vw',
