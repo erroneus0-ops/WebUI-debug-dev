@@ -783,6 +783,13 @@ function applyMonitorLayout() {
             origLeft = rect.left;
             origTop = rect.top;
             handle.style.cursor = 'grabbing';
+            // Bring to front and STAY there -- shared counter with the
+            // keyboard's own drag, so whichever panel you most recently
+            // touched ends up on top permanently, not just while actively
+            // dragging. window._topDraggableZ starts at 100 (this panel's
+            // own resting z-index) and only ever increases.
+            window._topDraggableZ = (window._topDraggableZ || 100) + 1;
+            wrapper.style.zIndex = window._topDraggableZ;
         }
 
         function dragMove(e, x, y) {
@@ -1416,14 +1423,16 @@ var Module = {
 			wrapperEl.style.bottom = '';
 			wrapperEl.style.top = rect.top + 'px';
 			handle.style.cursor = 'grabbing';
-			// Bring to front while actively dragging -- normal resting
-			// z-index (49) is lower than the toolbox's (100), so dragging
-			// the keyboard over the toolbox made it disappear behind it.
-			// Bumping above both while dragging, then restoring afterward,
-			// means whichever one you're actively moving comes to the
-			// front temporarily without permanently changing which one
-			// rests on top the rest of the time.
-			wrapperEl.style.zIndex = '200';
+			// Bring to front and STAY there -- shared counter with the
+			// toolbox's own drag (window._topDraggableZ), so whichever
+			// panel you most recently touched ends up on top permanently,
+			// not just while actively dragging. Earlier version reset back
+			// to a fixed z-index on release, which meant dropping the
+			// keyboard onto the toolbox's spot just snapped it back behind
+			// the toolbox the moment you let go -- not what "drop it there"
+			// should mean.
+			window._topDraggableZ = (window._topDraggableZ || 100) + 1;
+			wrapperEl.style.zIndex = window._topDraggableZ;
 		}
 		function dragMove(e, x, y) {
 			if (!dragging) return;
@@ -1437,7 +1446,9 @@ var Module = {
 		function dragEnd() {
 			dragging = false;
 			handle.style.cursor = 'grab';
-			wrapperEl.style.zIndex = '49'; // restore normal resting stacking order
+			// No z-index reset here anymore -- stays wherever dragStart put
+			// it in the shared stacking order, so the panel stays on top
+			// after being dropped, until the other one is touched.
 		}
 
 		// Capture phase (true as the 3rd arg), not the default bubble
