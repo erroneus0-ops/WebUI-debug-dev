@@ -1459,9 +1459,12 @@ var Module = {
 		function scanPress(code, label) {
 			try {
 				Module.ccall('wasm_scan_press', null, ['number'], [code]);
-				var msg = 'virtual keyboard: scan_press ' + label + ' (0x' + code.toString(16) + ') OK';
-				console.log(msg);
-				if (typeof log_message === 'function') log_message(msg);
+				// Success logging commented out -- was firing on every
+				// single keypress, too noisy now that this is confirmed
+				// working. Uncomment if debugging key wiring again.
+				// var msg = 'virtual keyboard: scan_press ' + label + ' (0x' + code.toString(16) + ') OK';
+				// console.log(msg);
+				// if (typeof log_message === 'function') log_message(msg);
 			} catch (err) {
 				var errMsg = 'virtual keyboard: scan_press ' + label + ' (0x' + code.toString(16) + ') FAILED: ' + err;
 				console.error(errMsg);
@@ -1471,9 +1474,10 @@ var Module = {
 		function scanRelease(code, label) {
 			try {
 				Module.ccall('wasm_scan_release', null, ['number'], [code]);
-				var msg = 'virtual keyboard: scan_release ' + label + ' (0x' + code.toString(16) + ') OK';
-				console.log(msg);
-				if (typeof log_message === 'function') log_message(msg);
+				// Success logging commented out -- see scanPress above.
+				// var msg = 'virtual keyboard: scan_release ' + label + ' (0x' + code.toString(16) + ') OK';
+				// console.log(msg);
+				// if (typeof log_message === 'function') log_message(msg);
 			} catch (err) {
 				var errMsg = 'virtual keyboard: scan_release ' + label + ' (0x' + code.toString(16) + ') FAILED: ' + err;
 				console.error(errMsg);
