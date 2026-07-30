@@ -1504,6 +1504,15 @@ var Module = {
 				}
 				el.style.cursor = 'pointer';
 				el.style.touchAction = 'none';
+				// Capture the REAL original fill color once, before ever
+				// overriding it -- setting el.style.fill destructively
+				// overwrites whatever was in the inline style string, it
+				// doesn't get "remembered" anywhere. Clearing back to ''
+				// later doesn't restore the original color, it just falls
+				// back to SVG's default (black), which looks almost
+				// identical to the pressed-dark-gray -- that's why keys
+				// looked like they never returned to their original color.
+				var origFill = window.getComputedStyle(el).fill;
 
 				if (STICKY_KEYS.indexOf(el.id) !== -1) {
 					// Sticky modifier: tap to arm, tap again to release.
@@ -1512,7 +1521,7 @@ var Module = {
 						e.preventDefault();
 						var nowArmed = !_stickyState[el.id];
 						_stickyState[el.id] = nowArmed;
-						el.style.fill = nowArmed ? '#333333' : '';
+						el.style.fill = nowArmed ? '#333333' : origFill;
 						if (nowArmed) {
 							scanPress(code, el.id);
 						} else {
@@ -1536,7 +1545,7 @@ var Module = {
 					function releaseKey(id) {
 						if (_activeKeyPointers[id] !== el.id) return;
 						delete _activeKeyPointers[id];
-						el.style.fill = '';
+						el.style.fill = origFill;
 						scanRelease(code, el.id);
 					}
 					el.addEventListener('mousedown', function(e) { e.preventDefault(); pressKey('mouse'); });
