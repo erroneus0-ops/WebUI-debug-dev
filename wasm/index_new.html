@@ -954,8 +954,17 @@ var Module = {
 		print: function(text) { console.log(text); log_message(text); },
 		printErr: function(text) { console.error(text); log_message(text); },
 
-        <!--arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],-->
-        arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-no-kbd-translate', '-machine', 'coco2bus', '-cart', 'rsdos', '-debug-file', '1' ],
+        // Desktop has a real physical keyboard and needs normal, sensible
+        // translation (-kbd-translate + -kbd-lang US) -- a real @ key
+        // should produce @, not whatever raw mode's positional mapping
+        // happens to give it. Mobile only ever gets input through our own
+        // virtual keyboard, which needs -no-kbd-translate specifically --
+        // raw mode's direct scancode-to-CoCo-key mapping is what our
+        // KEY_SCANCODES table above is built against. Same shared file,
+        // different startup args depending on which experience is active.
+        arguments: window._isMobile
+            ? [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-no-kbd-translate', '-machine', 'coco2bus', '-cart', 'rsdos', '-debug-file', '1' ]
+            : [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],
 	};
 
 	var drive_filename = [ null, null, null, null ];
