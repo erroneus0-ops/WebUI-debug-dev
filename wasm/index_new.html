@@ -1377,7 +1377,10 @@ var Module = {
 	// has no natural way to "hold with your pinky while typing with other
 	// fingers" the way a real keyboard does.
 	var STICKY_KEYS = ['key-shift-l', 'key-shift-r', 'key-ctrl', 'key-alt'];
-	var _stickyState = {}; // key id -> true if currently armed
+	// Grouped by canonical name rather than element id, so key-shift-l and
+	// key-shift-r share one real state (see the wiring code below for why).
+	// Each group: { armed, code, overlays: [...] }
+	var _stickyGroups = {};
 
 	// ── Touch/mouse wiring: press-and-hold for normal keys, tap-to-toggle
 	//    for sticky modifiers. Tracks each active pointer independently so
@@ -1478,6 +1481,26 @@ var Module = {
 			}
 		}
 
+		function releaseAllStickyGroups() {
+			// One-shot behavior: called after any regular key completes its
+			// press+release, so an armed modifier only ever applies to the
+			// single next keystroke, then lets go automatically -- matching
+			// how real mobile keyboards handle shift. Deliberately defined
+			// here (inside wireVirtualKeyboard), not at top level, so it can
+			// actually reach scanRelease -- a top-level definition would be
+			// unreachable from this function's own closure, same class of
+			// scoping bug as an earlier fix this session.
+			for (var name in _stickyGroups) {
+				var group = _stickyGroups[name];
+				if (!group.armed) continue;
+				group.armed = false;
+				group.overlays.forEach(function(ov) {
+					if (ov) ov.style.fillOpacity = '0';
+				});
+				scanRelease(group.code, name);
+			}
+		}
+
 		function attach(attemptsLeft) {
 			if (attemptsLeft === undefined) attemptsLeft = 15;
 			// Re-fetch contentDocument fresh every attempt, rather than reusing
@@ -1533,17 +1556,34 @@ var Module = {
 				}
 
 				if (STICKY_KEYS.indexOf(el.id) !== -1) {
-					// Sticky modifier: tap to arm, tap again to release.
-					_stickyState[el.id] = false;
+					// Sticky modifier: tap to arm, auto-releases as soon as
+					// the next regular key completes (one-shot, matching how
+					// real mobile keyboards handle shift -- tap shift, tap
+					// one letter, shift releases itself automatically).
+					// key-shift-l and key-shift-r share ONE state under the
+					// hood (confirmed both drive the identical DSCAN_SHIFT
+					// position in XRoar's own keyboard matrix -- there's
+					// only one real "shift" state, not two independent
+					// ones), so tapping either arms both visually and only
+					// one scan_press is ever sent.
+					var groupName = (el.id === 'key-shift-l' || el.id === 'key-shift-r') ? 'shift' : el.id;
+					if (!_stickyGroups[groupName]) {
+						_stickyGroups[groupName] = { armed: false, code: code, overlays: [] };
+					}
+					_stickyGroups[groupName].overlays.push(overlay);
+
 					function toggleSticky(e) {
 						e.preventDefault();
-						var nowArmed = !_stickyState[el.id];
-						_stickyState[el.id] = nowArmed;
-						setPressed(nowArmed);
+						var group = _stickyGroups[groupName];
+						var nowArmed = !group.armed;
+						group.armed = nowArmed;
+						group.overlays.forEach(function(ov) {
+							if (ov) ov.style.fillOpacity = nowArmed ? '0.35' : '0';
+						});
 						if (nowArmed) {
-							scanPress(code, el.id);
+							scanPress(group.code, groupName);
 						} else {
-							scanRelease(code, el.id);
+							scanRelease(group.code, groupName);
 						}
 					}
 					el.addEventListener('mousedown', toggleSticky);
@@ -1565,6 +1605,7 @@ var Module = {
 						delete _activeKeyPointers[id];
 						setPressed(false);
 						scanRelease(code, el.id);
+						releaseAllStickyGroups(); // one-shot: any armed modifier lets go now
 					}
 					el.addEventListener('mousedown', function(e) { e.preventDefault(); pressKey('mouse'); });
 					el.addEventListener('mouseup', function(e) { releaseKey('mouse'); });
