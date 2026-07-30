@@ -57,7 +57,21 @@ def fix_pointer_events(svg_path, dry_run=False):
               "naming convention changed? Nothing done.")
         return False
 
-    last_key_pos = last_key_match.end()
+    # IMPORTANT: use the end of the FULL TAG containing this id, not just
+    # the end of the id="key-X" string itself. A real bug this caught: if
+    # id appears BEFORE style within that key's own tag (rather than
+    # after, which was the assumption originally), using the id string's
+    # own end position lands INSIDE that tag -- meaning the key's own
+    # style attribute would get caught in the "everything after" sweep
+    # and wrongly given pointer-events:none, making that one key
+    # unclickable. Search forward from the id match to that tag's actual
+    # closing '>' instead, which is correct regardless of attribute order.
+    tag_close = content.find('>', last_key_match.end())
+    if tag_close == -1:
+        print("Could not find the closing '>' for the last key's tag -- "
+              "malformed SVG? Nothing done.")
+        return False
+    last_key_pos = tag_close + 1
     head = content[:last_key_pos]
     tail = content[last_key_pos:]
 

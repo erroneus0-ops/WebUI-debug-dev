@@ -496,7 +496,7 @@
          d="m 1838.8215,312.4948 h 121.14 c 5.0941,0 9.195,4.10098 9.195,9.19503 v 120.77793 c 0,5.09405 -4.1009,9.19503 -9.195,9.19503 h -121.14 c -5.094,0 -9.195,-4.10098 -9.195,-9.19503 V 321.6898 c 0,-5.09405 4.101,-9.19503 9.195,-9.19503 z"
          inkscape:label="key-left" /><path
          id="key-up"
-         style="display:inline;fill:#dcceae;fill-opacity:1;stroke:none;stroke-width:0.721661;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke;pointer-events:none"
+         style="display:inline;fill:#dcceae;fill-opacity:1;stroke:none;stroke-width:0.721661;stroke-linecap:square;stroke-dasharray:none;paint-order:markers fill stroke"
          d="m 1908.7865,169.8728 h 121.14 c 5.0941,0 9.195,4.10098 9.195,9.19503 v 120.77793 c 0,5.09405 -4.101,9.19503 -9.195,9.19503 h -121.14 c -5.094,0 -9.195,-4.10098 -9.195,-9.19503 V 179.0678 c 0,-5.09405 4.101,-9.19503 9.195,-9.19503 z"
          inkscape:label="key-up" /></g><g
        id="g1"
