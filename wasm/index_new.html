@@ -572,7 +572,11 @@ function applyMonitorLayout() {
     // monitor gets resized.
     var kbdWrapper = document.getElementById('mobile-kbd-wrapper');
     if (kbdWrapper) {
-        var kbdWidth = _isMobile ? effectiveWidth : csw;
+        // Raw window.innerWidth, not effectiveWidth -- the monitor
+        // deliberately respects the page's own padding (16px each side),
+        // but the keyboard should go truly edge-to-edge like a real
+        // device keyboard, not sit inset within the page's normal margins.
+        var kbdWidth = _isMobile ? window.innerWidth : csw;
         kbdWrapper.style.width = kbdWidth + 'px';
         if (!kbdWrapper.dataset.manuallyPositioned) {
             if (_isMobile) {
