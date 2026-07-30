@@ -1416,6 +1416,14 @@ var Module = {
 			wrapperEl.style.bottom = '';
 			wrapperEl.style.top = rect.top + 'px';
 			handle.style.cursor = 'grabbing';
+			// Bring to front while actively dragging -- normal resting
+			// z-index (49) is lower than the toolbox's (100), so dragging
+			// the keyboard over the toolbox made it disappear behind it.
+			// Bumping above both while dragging, then restoring afterward,
+			// means whichever one you're actively moving comes to the
+			// front temporarily without permanently changing which one
+			// rests on top the rest of the time.
+			wrapperEl.style.zIndex = '200';
 		}
 		function dragMove(e, x, y) {
 			if (!dragging) return;
@@ -1429,11 +1437,22 @@ var Module = {
 		function dragEnd() {
 			dragging = false;
 			handle.style.cursor = 'grab';
+			wrapperEl.style.zIndex = '49'; // restore normal resting stacking order
 		}
 
+		// Capture phase (true as the 3rd arg), not the default bubble
+		// phase -- makes drag tracking immune to anything else on the page
+		// (most likely XRoar's own compiled SDL2 canvas handling, used for
+		// its virtual mouse/joystick emulation) calling stopPropagation()
+		// or otherwise intercepting the event while the cursor passes over
+		// it. Capture-phase listeners fire BEFORE bubble-phase ones
+		// regardless of what's under the cursor, so this can't be
+		// disrupted by whatever XRoar's own canvas code does with mouse
+		// events -- reported symptom was the drag "getting weird" above
+		// roughly the lower quarter of the canvas.
 		handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
-		document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); });
-		document.addEventListener('mouseup', dragEnd);
+		document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); }, true);
+		document.addEventListener('mouseup', dragEnd, true);
 
 		handle.addEventListener('touchstart', function(e) {
 			var t = e.touches[0];
@@ -1443,9 +1462,9 @@ var Module = {
 			if (!dragging) return;
 			var t = e.touches[0];
 			dragMove(e, t.clientX, t.clientY);
-		}, {passive: false});
-		document.addEventListener('touchend', dragEnd);
-		document.addEventListener('touchcancel', dragEnd);
+		}, {passive: false, capture: true});
+		document.addEventListener('touchend', dragEnd, true);
+		document.addEventListener('touchcancel', dragEnd, true);
 
 		console.log('virtual keyboard: handle drag wired');
 	}
