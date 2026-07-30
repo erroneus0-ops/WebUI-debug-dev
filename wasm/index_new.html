@@ -533,12 +533,21 @@ function applySize(w) {
 // ─────────────────────────────────────────────────────────────────────────
 
 function applyMonitorLayout() {
-    var scale  = monitorWidth / 1073;
+    // On mobile, the Size slider concept doesn't really apply -- there's
+    // no reason to scale down from the actual screen width. Compute a
+    // local effective width instead of using the global monitorWidth
+    // directly, so the slider/toolbox and other code that reference
+    // monitorWidth elsewhere are completely unaffected -- this only
+    // changes what THIS function's own layout math uses.
+    // Body has 1rem (16px) padding each side -- subtract both so the
+    // monitor doesn't overflow into horizontal scroll.
+    var effectiveWidth = _isMobile ? (window.innerWidth - 32) : monitorWidth;
+    var scale  = effectiveWidth / 1073;
     var frame  = document.getElementById('monitor-region');
     var canvas = document.getElementById('canvas');
     if (!frame || !canvas) return;
 
-    var fw  = monitorWidth;
+    var fw  = effectiveWidth;
     var fh  = Math.round(967 * scale);
     frame.style.width  = fw + 'px';
     frame.style.height = fh + 'px';
@@ -583,6 +592,15 @@ function applyMonitorLayout() {
         Module.ccall('wasm_resize', null, ['number','number'], [csw, csh]);
     }
 }
+
+// Recompute on mobile when the actual screen size changes (e.g. rotating
+// the phone) -- separate from the fullscreen-specific resize listener
+// above, which only exists while fullscreen is active. This one's always
+// on, but only acts on mobile, where layout is tied to the real screen
+// width rather than the Size slider.
+window.addEventListener('resize', function() {
+    if (_isMobile) applyMonitorLayout();
+});
 
 // Wiring runs directly -- script is at bottom of page, DOM already ready
 (function() {
