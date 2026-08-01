@@ -1,12 +1,12 @@
 name: Build XRoar WASM (custom, debug-enabled)
 
 # Trigger manually from GitHub Actions tab
-# or automatically when xroar source or this workflow changes
+# or automatically when emcc_workflow/xroar source or this workflow changes
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'xroar/**'
+      - 'emcc_workflow/xroar/**'
       - '.github/workflows/build_xroar_wasm.yml'
 
 permissions:
@@ -35,28 +35,28 @@ jobs:
 
       - name: Generate configure script
         run: |
-          cd xroar
+          cd emcc_workflow/xroar
           bash autogen.sh
 
       - name: Configure for WASM
         run: |
-          cd xroar
+          cd emcc_workflow/xroar
           emconfigure ./configure --enable-wasm CFLAGS="-O2"
 
       - name: Build XRoar WASM
         run: |
-          cd xroar
+          cd emcc_workflow/xroar
           emmake make
 
       - name: Locate build output
         run: |
-          echo "Looking for xroar.js / xroar.wasm under xroar/src ..."
-          find xroar/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
+          echo "Looking for xroar.js / xroar.wasm under emcc_workflow/xroar/src ..."
+          find emcc_workflow/xroar/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
 
       - name: Copy output as xroar-custom (does not touch the live xroar.js/wasm)
         run: |
-          cp xroar/src/xroar.js   wasm/xroar-custom.js
-          cp xroar/src/xroar.wasm wasm/xroar-custom.wasm
+          cp emcc_workflow/xroar/src/xroar.js   wasm/xroar-custom.js
+          cp emcc_workflow/xroar/src/xroar.wasm wasm/xroar-custom.wasm
 
       - name: Verify output
         run: |
@@ -75,7 +75,7 @@ jobs:
           echo "# XRoar custom WASM Build Report" > wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "**Built:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
-          echo "**Source:** xroar/ (local checkout, XRoar 1.11 base + debug/register accessor additions)" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          echo "**Source:** emcc_workflow/xroar/ (local checkout, XRoar 1.11 base + debug/register accessor additions)" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "**WASM size:** $(wc -c < wasm/xroar-custom.wasm 2>/dev/null || echo 'build failed') bytes" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "## Debug exports found in built JS glue" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md

@@ -2,15 +2,17 @@
 # build.sh -- compile toolshed as monolithic WASM (DECB + OS-9 + CECB)
 #
 # Run from: wasm/toolshed/
+# toolshed source expected at: ../../emcc_workflow/toolshed-X.Y.Z/
 # Output: toolshed.js + toolshed.wasm
 
 set -e
 
-# Auto-detect toolshed directory
+# Auto-detect toolshed directory under emcc_workflow/ (all emcc-targeted
+# source trees live there, keeping the repo root itself free of build source)
 if [ -z "$TOOLSHED" ]; then
-    TOOLSHED=$(find $(cd ../.. && pwd) -maxdepth 1 -type d -name "toolshed-*" | sort -V | tail -1)
+    TOOLSHED=$(find $(cd ../.. && pwd)/emcc_workflow -maxdepth 1 -type d -name "toolshed-*" | sort -V | tail -1)
     if [ -z "$TOOLSHED" ]; then
-        echo "ERROR: no toolshed-* directory found in repo root"
+        echo "ERROR: no toolshed-* directory found in emcc_workflow/"
         exit 1
     fi
 fi

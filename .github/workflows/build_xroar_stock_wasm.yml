@@ -1,12 +1,12 @@
 name: Build XRoar WASM (stock, pure upstream)
 
 # Trigger manually from GitHub Actions tab
-# or automatically when the pristine xroar-1.12.1 source or this workflow changes
+# or automatically when the pristine emcc_workflow/xroar-1.12.1 source or this workflow changes
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'xroar-1.12.1/**'
+      - 'emcc_workflow/xroar-1.12.1/**'
       - '.github/workflows/build_xroar_stock_wasm.yml'
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate configure script (if needed)
         run: |
-          cd xroar-1.12.1
+          cd emcc_workflow/xroar-1.12.1
           if [ -f configure ]; then
             echo "configure already present in this release tarball -- skipping autogen.sh"
             echo "Fixing timestamps so autotools doesn't think pre-generated files are stale"
@@ -55,13 +55,13 @@ jobs:
 
       - name: Configure for WASM
         run: |
-          cd xroar-1.12.1
+          cd emcc_workflow/xroar-1.12.1
           chmod +x configure config.guess config.sub install-sh missing compile ar-lib depcomp 2>/dev/null || true
           emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
       - name: Build standalone version reporter (tiny, separate from xroar itself)
         run: |
-          emcc wasm/xroar_version_report.c -I xroar-1.12.1 -o wasm/xroar-version.js \
+          emcc wasm/xroar_version_report.c -I emcc_workflow/xroar-1.12.1 -o wasm/xroar-version.js \
             -s EXPORTED_FUNCTIONS='["_xroar_version_report_get_version","_malloc"]' \
             -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString"]' \
             -s MODULARIZE=1 -s EXPORT_NAME="XRoarVersionReportModule" \
@@ -69,12 +69,12 @@ jobs:
             -O2
           ls -la wasm/xroar-version.js wasm/xroar-version.wasm
           echo "=== version string this reports ==="
-          grep -o 'PACKAGE_TEXT[^,]*' xroar-1.12.1/config.h || true
+          grep -o 'PACKAGE_TEXT[^,]*' emcc_workflow/xroar-1.12.1/config.h || true
 
       - name: Build XRoar WASM
         id: build
         run: |
-          cd xroar-1.12.1
+          cd emcc_workflow/xroar-1.12.1
           set +e
           emmake make 2>&1 | tee /tmp/build.log
           BUILD_STATUS=${PIPESTATUS[0]}
@@ -99,20 +99,20 @@ jobs:
 
       - name: Locate build output
         run: |
-          find xroar-1.12.1/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
+          find emcc_workflow/xroar-1.12.1/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
 
       - name: Replace live xroar.js/xroar.wasm (and the index_custom.html copies)
         run: |
-          cp xroar-1.12.1/src/xroar.js   wasm/xroar.js
-          cp xroar-1.12.1/src/xroar.wasm wasm/xroar.wasm
+          cp emcc_workflow/xroar-1.12.1/src/xroar.js   wasm/xroar.js
+          cp emcc_workflow/xroar-1.12.1/src/xroar.wasm wasm/xroar.wasm
           # index_custom.html references xroar-custom-patched.js specifically --
           # stock build for now (per CUSTOM_DEBUG_FUNCTIONS_EXTRACTED.md, nothing
           # in the UI actually calls the custom debug-register functions yet, so
           # there's no functional loss in using the stock build here too). Fixes
           # a real broken link: the previous xroar-custom-patched.js had no
           # matching .wasm file at all.
-          cp xroar-1.12.1/src/xroar.js   wasm/xroar-custom-patched.js
-          cp xroar-1.12.1/src/xroar.wasm wasm/xroar-custom-patched.wasm
+          cp emcc_workflow/xroar-1.12.1/src/xroar.js   wasm/xroar-custom-patched.js
+          cp emcc_workflow/xroar-1.12.1/src/xroar.wasm wasm/xroar-custom-patched.wasm
 
       - name: Verify output
         run: |
@@ -128,7 +128,7 @@ jobs:
           echo "# XRoar stock WASM Build Report" > wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "**Built:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "**Source:** xroar-1.12.1/ (pure upstream, unmodified -- https://www.6809.org.uk/xroar/dl/xroar-1.12.1.tar.gz)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "**Source:** emcc_workflow/xroar-1.12.1/ (pure upstream, unmodified -- https://www.6809.org.uk/xroar/dl/xroar-1.12.1.tar.gz)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "**Build flags:** CFLAGS/LDFLAGS = -O3 -flto (per Ciaran's own XRoar Online build recommendation)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "**WASM size:** $(wc -c < wasm/xroar.wasm 2>/dev/null || echo 'build failed') bytes" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md

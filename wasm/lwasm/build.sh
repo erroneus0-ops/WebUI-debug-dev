@@ -2,7 +2,7 @@
 # build.sh -- compile lwasm to WASM using Emscripten
 #
 # Run from: wasm/lwasm/
-# lwtools source expected at: ../../lwtools-4.24/ (or set LWTOOLS env var)
+# lwtools source expected at: ../../emcc_workflow/lwtools-4.24/ (or set LWTOOLS env var)
 #
 # Output:
 #   lwasm.js    -- Emscripten JS loader
@@ -11,11 +11,12 @@
 set -e
 
 # Auto-detect lwtools directory -- finds the highest versioned lwtools-* folder
-# Set LWTOOLS env var to override
+# under emcc_workflow/ (all emcc-targeted source trees live there, keeping the
+# repo root itself free of build source). Set LWTOOLS env var to override.
 if [ -z "$LWTOOLS" ]; then
-    LWTOOLS=$(find $(cd ../.. && pwd) -maxdepth 1 -type d -name "lwtools-*" | sort -V | tail -1)
+    LWTOOLS=$(find $(cd ../.. && pwd)/emcc_workflow -maxdepth 1 -type d -name "lwtools-*" | sort -V | tail -1)
     if [ -z "$LWTOOLS" ]; then
-        echo "ERROR: no lwtools-* directory found in repo root"
+        echo "ERROR: no lwtools-* directory found in emcc_workflow/"
         exit 1
     fi
 fi
