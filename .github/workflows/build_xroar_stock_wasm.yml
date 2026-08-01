@@ -101,16 +101,26 @@ jobs:
         run: |
           find xroar-1.12.1/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
 
-      - name: Replace live xroar.js/xroar.wasm
+      - name: Replace live xroar.js/xroar.wasm (and the index_custom.html copies)
         run: |
           cp xroar-1.12.1/src/xroar.js   wasm/xroar.js
           cp xroar-1.12.1/src/xroar.wasm wasm/xroar.wasm
+          # index_custom.html references xroar-custom-patched.js specifically --
+          # stock build for now (per CUSTOM_DEBUG_FUNCTIONS_EXTRACTED.md, nothing
+          # in the UI actually calls the custom debug-register functions yet, so
+          # there's no functional loss in using the stock build here too). Fixes
+          # a real broken link: the previous xroar-custom-patched.js had no
+          # matching .wasm file at all.
+          cp xroar-1.12.1/src/xroar.js   wasm/xroar-custom-patched.js
+          cp xroar-1.12.1/src/xroar.wasm wasm/xroar-custom-patched.wasm
 
       - name: Verify output
         run: |
-          ls -la wasm/xroar.js wasm/xroar.wasm
+          ls -la wasm/xroar.js wasm/xroar.wasm wasm/xroar-custom-patched.js wasm/xroar-custom-patched.wasm
           test -s wasm/xroar.wasm && echo "xroar.wasm OK"
           test -s wasm/xroar.js   && echo "xroar.js OK"
+          test -s wasm/xroar-custom-patched.wasm && echo "xroar-custom-patched.wasm OK"
+          test -s wasm/xroar-custom-patched.js   && echo "xroar-custom-patched.js OK"
 
       - name: Write build report
         if: always()
@@ -123,9 +133,13 @@ jobs:
           echo "**WASM size:** $(wc -c < wasm/xroar.wasm 2>/dev/null || echo 'build failed') bytes" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "This replaces the live wasm/xroar.js and wasm/xroar.wasm used by" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "index.html, index_new.html, and index_custom.html. Pure upstream --" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "no custom modifications. The debug/register-accessor build stays" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "separate as wasm/xroar-custom.js / xroar-custom.wasm." >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "index.html and index_new.html, AND wasm/xroar-custom-patched.js /" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo ".wasm used by index_custom.html. Pure upstream, no custom" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "modifications -- the custom debug-register functions (wasm_get_pc" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "etc.) are not part of this build. Nothing in the UI calls them yet," >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "so using stock here too costs nothing functionally. Extracted and" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "documented in CUSTOM_DEBUG_FUNCTIONS_EXTRACTED.md for a future" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "rebase, if that work is picked back up." >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "Also built: wasm/xroar-version.js / xroar-version.wasm -- a tiny," >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "separate, MODULARIZE-d companion program (not part of xroar's own" >> wasm/XROAR_STOCK_BUILD_REPORT.md
@@ -141,7 +155,7 @@ jobs:
           echo "=== git status before add ==="
           git status --short | head -30
 
-          git add wasm/xroar.js wasm/xroar.wasm wasm/xroar-version.js wasm/xroar-version.wasm wasm/XROAR_STOCK_BUILD_REPORT.md
+          git add wasm/xroar.js wasm/xroar.wasm wasm/xroar-custom-patched.js wasm/xroar-custom-patched.wasm wasm/xroar-version.js wasm/xroar-version.wasm wasm/XROAR_STOCK_BUILD_REPORT.md
 
           if git diff --staged --quiet; then
             echo "Nothing staged -- output identical to what's already committed. Skipping commit/push."
