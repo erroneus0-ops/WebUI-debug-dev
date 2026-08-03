@@ -38,7 +38,8 @@ echo "  version:  $TS_VERSION"
 # Scan with: grep -rl "_fileno|ftruncate|digittoint" toolshed-NEW/lib*/
 #
 # libdecbsrec.c used digittoint() (BSD extension) -- NO LONGER EXCLUDED.
-#   native_stubs.c now provides a real digittoint() implementation
+#   emcc_workflow/emscripten_libc_shims.c (shared across projects, not
+#   toolshed-specific) now provides a real digittoint() implementation
 #   (it's a genuinely trivial, portable function), so this file compiles
 #   completely unmodified and its S-record encode/decode actually works,
 #   rather than being permanently stubbed to an error.
@@ -90,6 +91,7 @@ EXPORTED='["_ts_version","_ts_dskini","_ts_copy","_ts_read","_ts_dir","_ts_kill"
 emcc \
     toolshed_wrapper.c \
     native_stubs.c \
+    ../../emcc_workflow/emscripten_libc_shims.c \
     $LIBDECB_SRCS \
     $LIBRBF_SRCS \
     $LIBCECB_SRCS \
@@ -102,6 +104,7 @@ emcc \
     $OS9_SRCS \
     $CECB_SRCS \
     -I"$INCLUDE" \
+    -I../../emcc_workflow \
     -DTOOLSHED_VERSION=\"$TS_VERSION\" \
     -o toolshed.js \
     -s EXPORTED_FUNCTIONS="$EXPORTED" \

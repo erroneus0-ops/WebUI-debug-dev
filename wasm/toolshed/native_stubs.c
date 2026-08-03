@@ -45,27 +45,16 @@ error_code _native_ss_fd(native_path_id path, struct stat *statbuf)
 error_code _native_ss_size(native_path_id path, int size)
     { return EOS_UNKSVC; }
 
-/* digittoint() -- BSD extension, not in Emscripten's (musl-based) libc.
-   A genuinely trivial, fully portable function -- reimplemented here
-   with the same name/signature so libdecbsrec.c compiles and works
-   COMPLETELY UNMODIFIED, rather than needing to be excluded. This is
-   the preferred strategy whenever the missing thing is a real,
-   well-defined function: restore the actual functionality, don't just
-   stub it to an error. (Contrast with _fileno below -- that one can't
-   be fixed this same way, since it's a struct field access tied to
-   glibc's own internal layout, not a portable function call.) */
-#include <ctype.h>
+/* digittoint() -- BSD extension, needed by libdecbsrec.c. Moved to the
+   shared emcc_workflow/emscripten_libc_shims.c (2026-08-03), since it's
+   a genuinely portable function any future emcc project might also
+   need, not something specific to toolshed. build.sh now compiles that
+   shared file alongside toolshed's own sources -- see there for the
+   actual implementation.
 
-int digittoint(int c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    return 0;
-}
-
-/* _decb_srec_encode/_decb_srec_decode are no longer stubbed here --
-   with digittoint() now provided above, libdecbsrec.c compiles
-   completely unmodified and provides its own real implementations of
-   both. Stubbing them here too would cause a duplicate-symbol linker
-   error once that file is no longer excluded from the build (see
-   build.sh -- the libdecbsrec.c exclusion has been removed to match). */
+   _decb_srec_encode/_decb_srec_decode are not stubbed here -- with
+   digittoint() provided (from the shared shims file), libdecbsrec.c
+   compiles completely unmodified and provides its own real
+   implementations of both. Stubbing them here too would cause a
+   duplicate-symbol linker error, since that file is no longer excluded
+   from the build (see build.sh). */
