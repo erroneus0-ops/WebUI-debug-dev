@@ -45,16 +45,27 @@ error_code _native_ss_fd(native_path_id path, struct stat *statbuf)
 error_code _native_ss_size(native_path_id path, int size)
     { return EOS_UNKSVC; }
 
-/* _decb_srec_encode/_decb_srec_decode -- from libdecbsrec.c which uses
-   digittoint (BSD extension not in Emscripten libc).
-   S-record encode/decode used by cecb copy -s/-f flags.
-   Stubs return error -- S-record conversion not supported in WASM. */
-#include "cocotypes.h"
+/* digittoint() -- BSD extension, not in Emscripten's (musl-based) libc.
+   A genuinely trivial, fully portable function -- reimplemented here
+   with the same name/signature so libdecbsrec.c compiles and works
+   COMPLETELY UNMODIFIED, rather than needing to be excluded. This is
+   the preferred strategy whenever the missing thing is a real,
+   well-defined function: restore the actual functionality, don't just
+   stub it to an error. (Contrast with _fileno below -- that one can't
+   be fixed this same way, since it's a struct field access tied to
+   glibc's own internal layout, not a portable function call.) */
+#include <ctype.h>
 
-error_code _decb_srec_encode(unsigned char *in_buffer, int in_size,
-                              char **out_buffer, u_int *out_size)
-    { return -1; }
+int digittoint(int c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return 0;
+}
 
-error_code _decb_srec_decode(unsigned char *in_buffer, int in_size,
-                              unsigned char **out_buffer, u_int *out_size)
-    { return -1; }
+/* _decb_srec_encode/_decb_srec_decode are no longer stubbed here --
+   with digittoint() now provided above, libdecbsrec.c compiles
+   completely unmodified and provides its own real implementations of
+   both. Stubbing them here too would cause a duplicate-symbol linker
+   error once that file is no longer excluded from the build (see
+   build.sh -- the libdecbsrec.c exclusion has been removed to match). */

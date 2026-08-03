@@ -36,11 +36,26 @@ echo "  version:  $TS_VERSION"
 
 # Excluded files -- Emscripten libc compatibility issues
 # Scan with: grep -rl "_fileno|ftruncate|digittoint" toolshed-NEW/lib*/
-# libdecbsrec.c:  digittoint() -- BSD extension
-# libnativegs.c:  path->fd->_fileno -- glibc internal
-# libnativess.c:  ftruncate with _fileno -- glibc internal
+#
+# libdecbsrec.c used digittoint() (BSD extension) -- NO LONGER EXCLUDED.
+#   native_stubs.c now provides a real digittoint() implementation
+#   (it's a genuinely trivial, portable function), so this file compiles
+#   completely unmodified and its S-record encode/decode actually works,
+#   rather than being permanently stubbed to an error.
+#
+# libnativegs.c:  path->fd->_fileno -- glibc internal, still excluded.
+# libnativess.c:  ftruncate with _fileno -- same root cause as above,
+#   still excluded. Unlike digittoint, this genuinely can't be fixed by
+#   providing a same-named replacement -- _fileno is a struct field
+#   access tied to glibc's own internal layout, not a portable function
+#   call. The real fix, if this functionality is ever actually needed,
+#   is a small source patch to these two files: replace fd->_fileno with
+#   fileno(fd) (the standard, portable function), which Emscripten's
+#   libc does support correctly. Not done here since native_gs/ss
+#   functions are never called in practice in this WASM build (all
+#   paths are virtual filesystem paths).
 
-LIBDECB_SRCS=$(find "$LIBDECB" -name "*.c" ! -name "libdecbsrec.c" | tr '\n' ' ')
+LIBDECB_SRCS=$(find "$LIBDECB" -name "*.c" | tr '\n' ' ')
 LIBRBF_SRCS=$(find "$LIBRBF" -name "*.c" | tr '\n' ' ')
 LIBCECB_SRCS=$(find "$LIBCECB" -name "*.c" | tr '\n' ' ')
 LIBCOCO_SRCS=$(find "$LIBCOCO" -name "*.c" | tr '\n' ' ')
