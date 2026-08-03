@@ -105,6 +105,7 @@ emcc \
     $CECB_SRCS \
     -I"$INCLUDE" \
     -I../../emcc_workflow \
+    -include ../../emcc_workflow/emscripten_libc_shims.h \
     -DTOOLSHED_VERSION=\"$TS_VERSION\" \
     -o toolshed.js \
     -s EXPORTED_FUNCTIONS="$EXPORTED" \
