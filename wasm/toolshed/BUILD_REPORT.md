@@ -1,8 +1,8 @@
 # toolshed WASM Build Report
 
-**Built:** 2026-07-24 19:09 UTC
-**Toolshed:** toolshed-2.5.1
-**WASM size:** 103118 bytes
+**Built:** 2026-08-03 14:31 UTC
+**Toolshed:** emcc_workflow/toolshed-DiskShed-v0.9.0
+**WASM size:** 107198 bytes
 
 ## Smoke Test Output
 ```
