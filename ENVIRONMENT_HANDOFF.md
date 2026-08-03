@@ -651,3 +651,44 @@ configs. Once this custom system exists with its own more flexible,
 user-definable list, consider hiding or replacing that native tab
 entirely, since it would be redundant with (and more limited than) the
 custom system.
+
+## Future item, not started -- web-native disk image browser/editor, emulating DiskShed (added 2026-08-03)
+
+Raised while investigating toolshed's newer release (2.6.0), which
+turned out to include a new component called DiskShed -- a native
+wxWidgets desktop GUI for browsing and editing OS-9 RBF and CoCo Disk
+BASIC disk images. Confirmed directly from its own README, its actual
+feature set: multiple image windows, native import/export dialogs,
+multi-file drag and drop, rename/delete, OS-9 directory creation, and
+an automatic `IMAGE.diskshed-backup` safety copy before any
+modification.
+
+**Explicitly decided against:** porting the actual wxWidgets application
+to WASM. wxWidgets is a large native desktop GUI toolkit with its own
+windowing/rendering model that doesn't map cleanly onto a browser --
+"multiple image windows" specifically has no clean browser-tab
+equivalent, and its native file dialogs assume a completely different
+file-access model than a browser sandbox allows. Same category of
+problem as the custom keyboard's native-vs-web translation issues, at
+a much larger scale, with real uncertainty it's even achievable.
+
+**The actual plan: build our own web-native frontend, calling into the
+existing toolshed.wasm exports underneath.** DiskShed's real editing
+logic sits entirely on the same toolshed C libraries (libdecb, librbf)
+our toolshed.wasm already compiles and exports (`_ts_dskini`, `_ts_copy`,
+`_ts_dir`, `_ts_cecb_run`, etc., per `wasm/toolshed/build.sh`) -- DiskShed
+itself is just a native frontend on that same shared foundation. So this
+isn't starting from scratch: HTML panels for directory listings, the
+browser's own native drag-and-drop API, standard file input/download for
+import/export, calling into WASM functions we've already got compiled
+and working. Same proven pattern as the keyboard/toolbox work this
+session -- build native web UI, wire it to compiled WASM logic
+underneath, don't try to drag a foreign native UI paradigm across
+unchanged.
+
+Not started, not scoped in detail -- a genuine future feature, not
+something to build in the same session it was identified in.
+
+Separately noted: toolshed's actual current version is 2.6.0 (confirmed
+directly from its README), newer than the 2.5.1 previously referenced
+throughout this project's build tooling and documentation.
