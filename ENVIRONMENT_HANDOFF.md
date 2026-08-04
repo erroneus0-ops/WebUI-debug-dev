@@ -676,7 +676,7 @@ a much larger scale, with real uncertainty it's even achievable.
 existing toolshed.wasm exports underneath.** DiskShed's real editing
 logic sits entirely on the same toolshed C libraries (libdecb, librbf)
 our toolshed.wasm already compiles and exports (`_ts_dskini`, `_ts_copy`,
-`_ts_dir`, `_ts_cecb_run`, etc., per `wasm/toolshed/build.sh`) -- DiskShed
+`_ts_dir`, `_ts_cecb_run`, etc., per `wasm_builds/toolshed/build.sh`) -- DiskShed
 itself is just a native frontend on that same shared foundation. So this
 isn't starting from scratch: HTML panels for directory listings, the
 browser's own native drag-and-drop API, standard file input/download for
