@@ -2,7 +2,7 @@
 set -e
 
 if [ -z "$TOOLSHED" ]; then
-    TOOLSHED=$(find $(cd ../.. && pwd) -maxdepth 1 -type d -name "toolshed-*" | sort -V | tail -1)
+    TOOLSHED=$(find $(cd ../.. && pwd)/emcc_workflow -maxdepth 1 -type d -name "toolshed-*" | sort -V | tail -1)
 fi
 
 TS_VERSION=$(grep "^VERSION" "$TOOLSHED/build/unix/rules.mak" | awk '{print $3}')
