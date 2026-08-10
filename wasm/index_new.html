@@ -434,6 +434,44 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
         <div id="xroar-log" style="display:none; flex:1; overflow-y:auto; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px; white-space:pre-wrap;"></div>
       </div>
 
+      <!-- Debug tab -->
+      <input id="tab-debug" type="radio" name="tabs">
+      <label for="tab-debug" class="tab-label">Debug</label>
+      <div class="tab-content" id="debug-tab-content">
+        <p style="margin:0 0 6px 0;">
+          <span class="button" id="dbg-pause-btn" onclick="wasm_debug_pause()">Pause</span>
+          <span class="button" id="dbg-resume-btn" onclick="wasm_debug_resume()">Resume</span>
+          <span class="button" onclick="wasm_debug_step()">Step</span>
+          <span id="dbg-status" style="margin-left:8px; font-family:monospace;">running</span>
+        </p>
+        <table id="dbg-registers" style="font-family:monospace;">
+          <tr>
+            <th>PC</th><th>CC</th><th>A</th><th>B</th><th>DP</th><th>X</th><th>Y</th><th>U</th><th>S</th>
+          </tr>
+          <tr>
+            <td><input type="text" size="4" id="dbg-reg-pc" onchange="wasm_debug_set_reg('pc',this.value)"></td>
+            <td><input type="text" size="2" id="dbg-reg-cc" onchange="wasm_debug_set_reg('cc',this.value)"></td>
+            <td><input type="text" size="2" id="dbg-reg-a"  onchange="wasm_debug_set_reg('a',this.value)"></td>
+            <td><input type="text" size="2" id="dbg-reg-b"  onchange="wasm_debug_set_reg('b',this.value)"></td>
+            <td><input type="text" size="2" id="dbg-reg-dp" onchange="wasm_debug_set_reg('dp',this.value)"></td>
+            <td><input type="text" size="4" id="dbg-reg-x"  onchange="wasm_debug_set_reg('x',this.value)"></td>
+            <td><input type="text" size="4" id="dbg-reg-y"  onchange="wasm_debug_set_reg('y',this.value)"></td>
+            <td><input type="text" size="4" id="dbg-reg-u"  onchange="wasm_debug_set_reg('u',this.value)"></td>
+            <td><input type="text" size="4" id="dbg-reg-s"  onchange="wasm_debug_set_reg('s',this.value)"></td>
+          </tr>
+        </table>
+        <p style="margin:8px 0 4px 0;">
+          Breakpoint: $<input type="text" size="4" id="dbg-bp-addr" placeholder="0000">
+          <span class="button" onclick="wasm_debug_set_breakpoint()">Set</span>
+          <span class="button" onclick="wasm_debug_clear_breakpoint()">Clear</span>
+        </p>
+        <p style="margin:4px 0 0 0; font-size:11px; color:#664;">
+          Registers refresh only while paused. Watchpoints are not yet
+          available in this build (memory watch hooks aren't compiled in
+          for the WASM target -- see ENVIRONMENT_HANDOFF.md).
+        </p>
+      </div>
+
     </div><!-- .tabs -->
   </div><!-- #controls-region -->
 
@@ -1097,6 +1135,107 @@ var Module = {
 		if (!el) return;
 		el.style.display = (el.style.display === 'none') ? 'block' : 'none';
 	}
+
+	// ── Debugger panel ──────────────────────────────────────────────────
+	//
+	// Thin wrappers over the wasm_* debug exports added to wasm.c/wasm.h/
+	// exported_functions (pause/resume/step, register get+set, plain
+	// breakpoints). See wasm.c's "Debugger support" comment block for why
+	// watchpoints aren't exposed yet -- the memory-access hooks that would
+	// drive them are compiled out for this build target.
+	//
+	// Register fields only refresh while paused: reading them every frame
+	// while running would mean 9 extra ccall()s/frame for values the user
+	// can't usefully read anyway (they change every instruction).
+
+	var DBG_REGS = ['pc','cc','a','b','dp','x','y','u','s'];
+	var DBG_REG_WIDTH = { pc:4, cc:2, a:2, b:2, dp:2, x:4, y:4, u:4, s:4 };
+
+	function dbg_hex(value, width) {
+		return value.toString(16).toUpperCase().padStart(width, '0');
+	}
+
+	function wasm_debug_pause() {
+		Module.ccall('wasm_pause', null, [], []);
+		wasm_debug_refresh();
+	}
+
+	function wasm_debug_resume() {
+		Module.ccall('wasm_resume', null, [], []);
+		wasm_debug_refresh();
+	}
+
+	function wasm_debug_step() {
+		Module.ccall('wasm_step', null, [], []);
+		wasm_debug_refresh();
+	}
+
+	function wasm_debug_set_reg(reg, hexValue) {
+		var value = parseInt(hexValue, 16);
+		if (isNaN(value)) return;
+		Module.ccall('wasm_set_' + reg, null, ['number'], [value]);
+		wasm_debug_refresh();
+	}
+
+	function wasm_debug_set_breakpoint() {
+		var el = document.getElementById('dbg-bp-addr');
+		var addr = parseInt(el.value, 16);
+		if (isNaN(addr)) return;
+		Module.ccall('wasm_set_breakpoint', 'number', ['number'], [addr]);
+	}
+
+	function wasm_debug_clear_breakpoint() {
+		var el = document.getElementById('dbg-bp-addr');
+		var addr = parseInt(el.value, 16);
+		if (isNaN(addr)) return;
+		Module.ccall('wasm_clear_breakpoint', null, ['number'], [addr]);
+	}
+
+	// Called directly from wasm.c (EM_ASM in wasm_bp_hit) the instant a
+	// breakpoint fires -- gives the panel an immediate update rather than
+	// waiting for the next poll tick.
+	function wasm_on_debug_stop(reason, addr) {
+		if (reason === 1) {
+			log_message('Breakpoint hit at $' + dbg_hex(addr, 4));
+		}
+		wasm_debug_refresh();
+	}
+
+	function wasm_debug_refresh() {
+		if (typeof Module === 'undefined' || !Module.ccall) return;
+		var paused = Module.ccall('wasm_is_paused', 'number', [], []);
+		var statusEl = document.getElementById('dbg-status');
+		if (statusEl) {
+			if (paused) {
+				var reason = Module.ccall('wasm_get_stop_reason', 'number', [], []);
+				statusEl.textContent = (reason === 1) ? 'paused (breakpoint)' : 'paused';
+			} else {
+				statusEl.textContent = 'running';
+			}
+		}
+		var pauseBtn = document.getElementById('dbg-pause-btn');
+		var resumeBtn = document.getElementById('dbg-resume-btn');
+		if (pauseBtn) pauseBtn.style.opacity = paused ? '0.5' : '1';
+		if (resumeBtn) resumeBtn.style.opacity = paused ? '1' : '0.5';
+
+		if (!paused) return; // registers only meaningful (and only fetched) while paused
+
+		DBG_REGS.forEach(function(reg) {
+			var input = document.getElementById('dbg-reg-' + reg);
+			if (!input || document.activeElement === input) return; // don't clobber in-progress typing
+			var value = Module.ccall('wasm_get_' + reg, 'number', [], []);
+			input.value = dbg_hex(value, DBG_REG_WIDTH[reg]);
+		});
+	}
+
+	// Poll at a modest rate. Cheap when running (one ccall for the pause
+	// flag); the register reads above are skipped entirely unless paused.
+	setInterval(function() {
+		var debugTab = document.getElementById('tab-debug');
+		if (debugTab && debugTab.checked) {
+			wasm_debug_refresh();
+		}
+	}, 200);
 
 	function file_input_onload(el, loadtype, drive) {
 		resumeAudio();

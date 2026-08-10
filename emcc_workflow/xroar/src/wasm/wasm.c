@@ -36,6 +36,7 @@
 #include "xalloc.h"
 
 #include "auto_kbd.h"
+#include "breakpoint.h"
 #include "cart.h"
 #include "events.h"
 #include "fs.h"
@@ -66,6 +67,13 @@
 
 // Flag pending downloads.  Emulator will not run while waiting for files.
 static int wasm_waiting_files = 0;
+
+// Debugger pause state, checked once per frame in wasm_ui_run() below.
+// See the "Debugger support" block further down for why this exists
+// separately from gdb.c's pause/single-step mechanism.
+static int wasm_debug_paused = 0;
+static int wasm_debug_stop_reason = 0;   // 0 = running, 1 = breakpoint hit, 2 = user pause/step
+static int wasm_debug_stop_address = -1; // address of last breakpoint hit, -1 if not applicable
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -237,13 +245,23 @@ static void wasm_ui_run(void *sptr) {
 		return;
 	}
 
+	// Poll SDL events (need to refactor this).
+	run_sdl_event_loop(global_uisdl2);
+
+	// Don't advance emulation while paused for debugging (breakpoint hit,
+	// explicit pause, or mid-step-and-hold). Reset tickerr rather than
+	// letting it accumulate, so resuming doesn't burst-run a backlog of
+	// "missed" time in one go. See the debugger support block below for
+	// why this flag exists instead of reusing gdb.c's pause mechanism.
+	if (wasm_debug_paused) {
+		uiwasm->tickerr = 0;
+		return;
+	}
+
 	// Calculate number of ticks to run based on time delta.
 	uiwasm->tickerr += ((double)EVENT_TICK_RATE / 1000.) * dt;
 	int nticks = (int)(uiwasm->tickerr + 0.5);
 	event_ticks last_tick = event_current_tick;
-
-	// Poll SDL events (need to refactor this).
-	run_sdl_event_loop(global_uisdl2);
 
 	// Run emulator.
 	xroar_run(nticks);
@@ -251,6 +269,223 @@ static void wasm_ui_run(void *sptr) {
 	// Record time offset based on actual number of ticks run.
 	int dtick = event_current_tick - last_tick;
 	uiwasm->tickerr -= (double)dtick;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//
+// Debugger support: pause/resume/step, register read+write, breakpoints.
+//
+// Design note: gdb.c's single-step/pause model uses a pthread condvar to
+// block the emulation thread while a separate GDB-client thread inspects
+// state. That model requires WANT_GDB_TARGET (pthreads), which our WASM
+// build does not enable -- and wouldn't want to even if it could, since
+// blocking the browser's single JS thread on a condvar would freeze the
+// tab rather than pause the emulator. Instead, wasm_debug_paused is a
+// plain flag checked once per animation frame in wasm_ui_run() (same
+// pattern already used for wasm_waiting_files above): while set, we skip
+// calling xroar_run() entirely, so no emulated time passes, but SDL/JS
+// event handling keeps working normally. wasm_step() sidesteps the pause
+// flag entirely and calls machine->single_step() directly -- this is the
+// same primitive XRoar's own GDB target uses per single-step request
+// (see coco3_single_step()/mc10_single_step()), and it already runs
+// exactly one instruction and returns without touching cpu->halt, so it
+// is safe to call regardless of pause state.
+//
+// WATCHPOINTS ARE DELIBERATELY NOT EXPOSED HERE YET. bp_wp_add_range()/
+// bp_wp_remove_range() in breakpoint.c look like the right call, but the
+// hooks that actually check those lists on memory access
+// (bp_wp_read_hook()/bp_wp_write_hook(), and their call sites inside
+// coco3.c's cpu_cycle()/cpu_cycle_noclock()) are compiled out entirely
+// unless WANT_GDB_TARGET is defined. configure.ac defaults
+// enable_gdb_target=no for WASM builds regardless of pthread
+// availability, so in this build a watchpoint registered via those
+// functions would silently do nothing -- same failure shape as the
+// machine/cartridge dropdown bug in ENVIRONMENT_HANDOFF.md (no error,
+// calls simply don't do anything downstream). Fixing this needs a small,
+// separate patch to coco3.c's cpu_cycle()/cpu_cycle_noclock() to check
+// the watch lists unconditionally (or at least under a WASM-specific
+// guard) rather than only under WANT_GDB_TARGET. Flagging clearly rather
+// than shipping a watchpoint API that looks like it works and doesn't.
+// Plain hardware breakpoints (below) do NOT have this problem: bp_add()/
+// bp_remove() and the instruction_hook path they use are always compiled
+// in, unguarded by WANT_GDB_TARGET.
+
+#define WASM_MAX_BREAKPOINTS 32
+static struct {
+	_Bool used;
+	unsigned addr;
+	struct breakpoint bp;
+} wasm_breakpoints[WASM_MAX_BREAKPOINTS];
+
+static struct MC6809 *wasm_cpu(void) {
+	if (!xroar.machine) return NULL;
+	return (struct MC6809 *)part_component_by_id_is_a(
+		&xroar.machine->part, "CPU", "MC6809");
+}
+
+// Fired synchronously from inside CPU->run() (via breakpoint.c's
+// instruction_hook) the instant a breakpointed address is reached.
+// Mirrors what coco3_trap()/coco3_signal() do for the native GDB path:
+// stop the CPU's *current* run() call immediately by clearing `running`.
+// wasm_debug_paused then stops any *future* frame from calling
+// xroar_run() at all, until wasm_resume() or wasm_step() is called.
+
+static void wasm_bp_hit(void *sptr) {
+	unsigned addr = (unsigned)(intptr_t)sptr;
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) {
+		cpu->running = 0;
+	}
+	wasm_debug_paused = 1;
+	wasm_debug_stop_reason = 1;
+	wasm_debug_stop_address = (int)addr;
+	EM_ASM({
+		if (typeof wasm_on_debug_stop === 'function') {
+			wasm_on_debug_stop($0, $1);
+		}
+	}, wasm_debug_stop_reason, (int)addr);
+}
+
+void wasm_pause(void) {
+	wasm_debug_paused = 1;
+	wasm_debug_stop_reason = 2;
+	wasm_debug_stop_address = -1;
+}
+
+void wasm_resume(void) {
+	wasm_debug_paused = 0;
+	wasm_debug_stop_reason = 0;
+	wasm_debug_stop_address = -1;
+}
+
+int wasm_is_paused(void) {
+	return wasm_debug_paused;
+}
+
+int wasm_get_stop_reason(void) {
+	return wasm_debug_stop_reason;
+}
+
+int wasm_get_stop_address(void) {
+	return wasm_debug_stop_address;
+}
+
+// Execute exactly one instruction, then remain paused so JS can inspect
+// state before deciding to step again or resume.
+
+void wasm_step(void) {
+	if (!xroar.machine || !xroar.machine->single_step) {
+		return;
+	}
+	xroar.machine->single_step(xroar.machine);
+	wasm_debug_paused = 1;
+	wasm_debug_stop_reason = 2;
+	wasm_debug_stop_address = -1;
+}
+
+// Plain address breakpoints. Returns a slot index (>= 0) on success, -1 if
+// there's no machine/bp-session yet or the table is full. Re-setting an
+// address already breakpointed is a no-op that returns its existing slot.
+
+int wasm_set_breakpoint(int addr) {
+	if (!xroar.machine) {
+		return -1;
+	}
+	struct bp_session *bps = xroar.machine->get_interface(xroar.machine, "bp-session");
+	if (!bps) {
+		return -1;
+	}
+	unsigned a = (unsigned)addr & 0xffff;
+	for (int i = 0; i < WASM_MAX_BREAKPOINTS; i++) {
+		if (wasm_breakpoints[i].used && wasm_breakpoints[i].addr == a) {
+			return i;
+		}
+	}
+	for (int i = 0; i < WASM_MAX_BREAKPOINTS; i++) {
+		if (!wasm_breakpoints[i].used) {
+			wasm_breakpoints[i].used = 1;
+			wasm_breakpoints[i].addr = a;
+			wasm_breakpoints[i].bp = (struct breakpoint){0};
+			wasm_breakpoints[i].bp.address = a;
+			wasm_breakpoints[i].bp.handler = DELEGATE_AS0(void, wasm_bp_hit, (void *)(intptr_t)a);
+			bp_add(bps, &wasm_breakpoints[i].bp);
+			return i;
+		}
+	}
+	return -1;
+}
+
+void wasm_clear_breakpoint(int addr) {
+	if (!xroar.machine) {
+		return;
+	}
+	struct bp_session *bps = xroar.machine->get_interface(xroar.machine, "bp-session");
+	if (!bps) {
+		return;
+	}
+	unsigned a = (unsigned)addr & 0xffff;
+	for (int i = 0; i < WASM_MAX_BREAKPOINTS; i++) {
+		if (wasm_breakpoints[i].used && wasm_breakpoints[i].addr == a) {
+			bp_remove(bps, &wasm_breakpoints[i].bp);
+			wasm_breakpoints[i].used = 0;
+		}
+	}
+}
+
+// Register getters filling the gap in the original nine (DP and U were
+// never exposed).
+
+uint8_t wasm_get_dp(void) {
+	struct MC6809 *cpu = wasm_cpu();
+	return cpu ? cpu->reg_dp : 0;
+}
+
+uint16_t wasm_get_u(void) {
+	struct MC6809 *cpu = wasm_cpu();
+	return cpu ? cpu->reg_u : 0;
+}
+
+// Register setters, paired with the existing/above getters -- for
+// modifying state while paused ("what if this were X instead").
+// Intentionally do not validate/clamp beyond the register's natural
+// width: callers are expected to be a debugger UI operating on a paused
+// machine, not untrusted input.
+
+void wasm_set_pc(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) cpu->reg_pc = (uint16_t)value;
+}
+void wasm_set_cc(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) cpu->reg_cc = (uint8_t)value;
+}
+void wasm_set_a(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) MC6809_REG_A(cpu) = (uint8_t)value;
+}
+void wasm_set_b(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) MC6809_REG_B(cpu) = (uint8_t)value;
+}
+void wasm_set_dp(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) cpu->reg_dp = (uint8_t)value;
+}
+void wasm_set_x(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) cpu->reg_x = (uint16_t)value;
+}
+void wasm_set_y(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) cpu->reg_y = (uint16_t)value;
+}
+void wasm_set_u(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) cpu->reg_u = (uint16_t)value;
+}
+void wasm_set_s(int value) {
+	struct MC6809 *cpu = wasm_cpu();
+	if (cpu) cpu->reg_s = (uint16_t)value;
 }
 
 // Wasm event handler relays information to web page handlers.

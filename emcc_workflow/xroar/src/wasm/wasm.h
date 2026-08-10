@@ -93,6 +93,37 @@ uint8_t wasm_get_b(void);
 uint16_t wasm_get_x(void);
 uint16_t wasm_get_y(void);
 uint16_t wasm_get_s(void);
+uint8_t wasm_get_dp(void);
+uint16_t wasm_get_u(void);
+
+void wasm_set_pc(int value);
+void wasm_set_cc(int value);
+void wasm_set_a(int value);
+void wasm_set_b(int value);
+void wasm_set_dp(int value);
+void wasm_set_x(int value);
+void wasm_set_y(int value);
+void wasm_set_u(int value);
+void wasm_set_s(int value);
+
+// Pause/resume/step. wasm_get_stop_reason(): 0 = running, 1 = breakpoint
+// hit, 2 = user pause/step. wasm_get_stop_address() is only meaningful
+// after a breakpoint stop (-1 otherwise).
+
+void wasm_pause(void);
+void wasm_resume(void);
+int wasm_is_paused(void);
+void wasm_step(void);
+int wasm_get_stop_reason(void);
+int wasm_get_stop_address(void);
+
+// Plain address breakpoints. wasm_set_breakpoint() returns a slot index
+// (>= 0) on success, -1 on failure (no machine yet, or table full).
+// NOTE: watchpoints are intentionally not exposed here -- see the large
+// comment above the debugger support block in wasm.c for why.
+
+int wasm_set_breakpoint(int addr);
+void wasm_clear_breakpoint(int addr);
 
 #endif
 
