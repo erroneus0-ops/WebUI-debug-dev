@@ -19,6 +19,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Default is a shallow clone (depth 1) of just the ref being
+          # built. That's fine when this runs on a push to main (the
+          # later "git pull --rebase origin main" step is then a no-op,
+          # since we're already on main). It breaks when this runs on
+          # any other branch/PR: with no shared history fetched at all,
+          # git sees every file as independently "added" on both sides
+          # and the rebase fails with CONFLICT (add/add) on everything,
+          # even though the branch and main don't actually conflict.
+          # fetch-depth: 0 fetches full history so the rebase has a real
+          # common ancestor to work from, regardless of which ref
+          # triggered the run.
+          fetch-depth: 0
 
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14

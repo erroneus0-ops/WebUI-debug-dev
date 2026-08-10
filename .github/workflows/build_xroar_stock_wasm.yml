@@ -19,6 +19,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # See the identical comment in build_xroar_wasm.yml -- same
+          # latent bug applies here (never hit yet because this workflow
+          # has so far only ever run via push to main).
+          fetch-depth: 0
 
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14
