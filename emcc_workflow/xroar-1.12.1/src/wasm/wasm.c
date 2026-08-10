@@ -37,6 +37,7 @@
 
 #include "auto_kbd.h"
 #include "cart.h"
+#include "debug.h"
 #include "events.h"
 #include "fs.h"
 #include "hkbd.h"
@@ -64,6 +65,11 @@
 
 // Flag pending downloads.  Emulator will not run while waiting for files.
 static int wasm_waiting_files = 0;
+
+// Debugger pause state, checked once per frame in wasm_ui_run() below.
+static int wasm_debug_paused = 0;
+static int wasm_debug_stop_reason = 0;   // 0 = running, 1 = breakpoint hit, 2 = user pause/step
+static int wasm_debug_stop_address = -1; // address of last breakpoint hit, -1 if not applicable
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -236,13 +242,22 @@ static void wasm_ui_run(void *sptr) {
 		return;
 	}
 
+	// Poll SDL events (need to refactor this).
+	run_sdl_event_loop(global_uisdl2);
+
+	// Don't advance emulation while paused for debugging (breakpoint hit,
+	// explicit pause, or mid-step-and-hold). Reset tickerr rather than
+	// letting it accumulate, so resuming doesn't burst-run a backlog of
+	// "missed" time in one go.
+	if (wasm_debug_paused) {
+		uiwasm->tickerr = 0;
+		return;
+	}
+
 	// Calculate number of ticks to run based on time delta.
 	uiwasm->tickerr += ((double)EVENT_TICK_RATE / 1000.) * dt;
 	int nticks = (int)(uiwasm->tickerr + 0.5);
 	event_ticks last_tick = event_current_tick;
-
-	// Poll SDL events (need to refactor this).
-	run_sdl_event_loop(global_uisdl2);
 
 	// Run emulator.
 	xroar_run(nticks);
@@ -1001,4 +1016,169 @@ void wasm_new_disk(int drive) {
 
 void wasm_vdrive_flush(void) {
 	vdrive_flush(xroar.vdrive_interface);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//
+// Debugger support: pause/resume/step, generic register read+write via
+// 1.12.1's new debug_target framework, and plain address breakpoints via
+// the new machine->debug.add_breakpoint()/remove_breakpoint() API.
+//
+// Registers are NOT exposed as one hand-written wasm_get_x()/wasm_set_x()
+// pair per register (that was the 1.11-era approach). 1.12.1 introduced
+// debug.c/debug.h: a generic, name-and-index-addressable register table
+// (see mc6809.c's feature_regs[]) that both this code and XRoar's own GDB
+// target read from. Duplicating that table here as a second, hand-written
+// copy is exactly the "second parser waiting to disagree with the first
+// one" problem -- so this wraps debug_get_register()/debug_set_register()/
+// debug_register_by_name() generically instead. It automatically covers
+// every register Ciaran has defined (currently cc, a, b, dp, x, y, u, s,
+// pc for the 6809 core -- confirmed directly in mc6809.c), and picks up
+// anything he adds later without this file needing to change.
+//
+// Pause: a plain flag checked once per frame in wasm_ui_run() above,
+// gating the call to xroar_run(). Not built on gdb.c's pthread-condvar
+// pause model -- that needs WANT_GDB_TARGET (pthreads), which this WASM
+// build doesn't enable, and blocking the browser's one JS thread on a
+// condvar would freeze the tab rather than pause the emulator anyway.
+//
+// Step: calls the existing machine->single_step(), the same primitive
+// XRoar's own GDB target uses per single-step request. Runs exactly one
+// instruction and returns; doesn't touch cpu->halt, so it's safe
+// regardless of the pause flag.
+//
+// Breakpoints: machine->debug.add_breakpoint()/remove_breakpoint() are
+// unconditionally compiled (confirmed directly in coco3.c -- no
+// WANT_GDB_TARGET guard on these two, unlike watchpoints below).
+//
+// WATCHPOINTS ARE DELIBERATELY NOT EXPOSED HERE. machine->debug.
+// add_watchpoint() itself is unconditionally compiled and will happily
+// register one, but the code that actually checks watchpoints against
+// memory accesses -- bp_check_watchpoints(), called from coco3.c's
+// cpu_cycle() -- is still wrapped in #ifdef WANT_GDB_TARGET, confirmed
+// directly in this 1.12.1 tree, same as 1.11. A watchpoint added via the
+// new API would register successfully and then silently never fire in
+// this build. Needs a small, separate patch to coco3.c's cpu_cycle()
+// (and cpu_cycle_noclock()) to check the watch lists unconditionally
+// before this is worth exposing.
+
+// Look up a register's index by name ("pc", "cc", "a", "b", "dp", "x",
+// "y", "u", "s", or anything else Ciaran's debug_target defines). Returns
+// -1 if not found or no machine/target yet.
+
+int wasm_register_by_name(const char *name) {
+	if (!xroar.machine || !xroar.machine->debug.target || !name) {
+		return -1;
+	}
+	return debug_register_by_name(xroar.machine->debug.target, name);
+}
+
+// Total number of registers the current machine's debug target exposes
+// (CPU core plus any other parts added, e.g. GIME/PIA on the CoCo3).
+
+int wasm_register_count(void) {
+	if (!xroar.machine || !xroar.machine->debug.target) {
+		return 0;
+	}
+	return (int)xroar.machine->debug.target->nregs;
+}
+
+// Register name by index, for JS to enumerate all available registers
+// without hardcoding a name list that could drift from Ciaran's table.
+// Returns an empty string (not NULL) for an out-of-range index, since
+// this crosses back to JS as a 'string' return.
+
+const char *wasm_register_name(int regno) {
+	struct debug_target *target = xroar.machine ? xroar.machine->debug.target : NULL;
+	if (!target || regno < 0 || (unsigned)regno >= target->nregs) {
+		return "";
+	}
+	return target->reg[regno]->name;
+}
+
+uint32_t wasm_get_register(int regno) {
+	if (!xroar.machine || !xroar.machine->debug.target) {
+		return 0;
+	}
+	return debug_get_register(xroar.machine->debug.target, regno);
+}
+
+void wasm_set_register(int regno, uint32_t value) {
+	if (!xroar.machine || !xroar.machine->debug.target) {
+		return;
+	}
+	debug_set_register(xroar.machine->debug.target, regno, value);
+}
+
+void wasm_pause(void) {
+	wasm_debug_paused = 1;
+	wasm_debug_stop_reason = 2;
+	wasm_debug_stop_address = -1;
+}
+
+void wasm_resume(void) {
+	wasm_debug_paused = 0;
+	wasm_debug_stop_reason = 0;
+	wasm_debug_stop_address = -1;
+}
+
+int wasm_is_paused(void) {
+	return wasm_debug_paused;
+}
+
+int wasm_get_stop_reason(void) {
+	return wasm_debug_stop_reason;
+}
+
+int wasm_get_stop_address(void) {
+	return wasm_debug_stop_address;
+}
+
+// Execute exactly one instruction, then remain paused so JS can inspect
+// state before deciding to step again or resume.
+
+void wasm_step(void) {
+	if (!xroar.machine || !xroar.machine->single_step) {
+		return;
+	}
+	xroar.machine->single_step(xroar.machine);
+	wasm_debug_paused = 1;
+	wasm_debug_stop_reason = 2;
+	wasm_debug_stop_address = -1;
+}
+
+// Breakpoint handler. The (bool, uint32) signature is shared with
+// watchpoint handlers by machine.h's delegate type; for a breakpoint the
+// bool is always passed as true by bp_instruction_hook() (confirmed
+// directly in breakpoint.c) and carries no meaning here.
+
+static void wasm_bp_hit(void *sptr, _Bool dummy, uint32_t addr) {
+	(void)sptr;
+	(void)dummy;
+	wasm_debug_paused = 1;
+	wasm_debug_stop_reason = 1;
+	wasm_debug_stop_address = (int)addr;
+	EM_ASM({
+		if (typeof wasm_on_debug_stop === 'function') {
+			wasm_on_debug_stop($0, $1);
+		}
+	}, wasm_debug_stop_reason, (int)addr);
+}
+
+void wasm_set_breakpoint(int addr) {
+	if (!xroar.machine || !xroar.machine->debug.add_breakpoint) {
+		return;
+	}
+	xroar.machine->debug.add_breakpoint(
+		xroar.machine, (uint32_t)addr & 0xffff,
+		DELEGATE_AS2(void, bool, uint32, wasm_bp_hit, NULL));
+}
+
+void wasm_clear_breakpoint(int addr) {
+	if (!xroar.machine || !xroar.machine->debug.remove_breakpoint) {
+		return;
+	}
+	xroar.machine->debug.remove_breakpoint(
+		xroar.machine, (int32_t)((uint32_t)addr & 0xffff),
+		DELEGATE_AS2(void, bool, uint32, wasm_bp_hit, NULL));
 }

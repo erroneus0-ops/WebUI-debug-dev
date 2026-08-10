@@ -21,6 +21,7 @@
 #ifndef XROAR_WASM_H_
 #define XROAR_WASM_H_
 
+#include <stdint.h>
 #include <stdio.h>
 
 #include "sdl2/common.h"
@@ -79,6 +80,27 @@ void wasm_load_file(const char *filename, int type, int drive);
 void wasm_queue_basic(const char *string);
 void wasm_resize(int w, int h);
 void wasm_vdrive_flush(void);
+
+// Debugger support -- see the large comment above these functions in
+// wasm.c for the reasoning (generic register access via 1.12.1's
+// debug_target framework rather than one function per register; why
+// watchpoints aren't exposed yet).
+
+int wasm_register_by_name(const char *name);
+int wasm_register_count(void);
+const char *wasm_register_name(int regno);
+uint32_t wasm_get_register(int regno);
+void wasm_set_register(int regno, uint32_t value);
+
+void wasm_pause(void);
+void wasm_resume(void);
+int wasm_is_paused(void);
+void wasm_step(void);
+int wasm_get_stop_reason(void);
+int wasm_get_stop_address(void);
+
+void wasm_set_breakpoint(int addr);
+void wasm_clear_breakpoint(int addr);
 
 #endif
 
