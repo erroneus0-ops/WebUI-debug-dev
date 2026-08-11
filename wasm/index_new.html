@@ -247,7 +247,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
 <body>
 
 <div id="title">
-  <img src="hamburger.svg" id="hamburger-menu" style="width:28px; height:28px; cursor:pointer; flex-shrink:0; -webkit-touch-callout:none;" alt="menu" oncontextmenu="return false">
+  <img src="hamburger.svg" id="hamburger-menu" style="width:28px; height:28px; cursor:pointer; flex-shrink:0; -webkit-touch-callout:none;" alt="menu">
   <span id="title-text">XRoar Online</span>
   <div id="size-control">
     <label for="size-slider">Size:</label>
@@ -791,7 +791,22 @@ window.addEventListener('resize', function() {
         ctrl.style.right = '';
         ctrl.style.width = '100%';
         ctrl.style.maxWidth = '';
+        // Was ctrl.style.height = '' -- falls back to the CSS class's fixed
+        // height:462px, which never changes no matter how tall the wrapper
+        // gets resized. That's why dragging the resize handle taller looked
+        // like it did nothing: the wrapper really was growing, but the
+        // content inside stayed pinned at 462px, so it was just empty space
+        // being added below the visible toolbox. flex:1 makes it a normal
+        // stretchy flex child instead, filling whatever space the wrapper
+        // actually has after the handle's own fixed height -- the rest of
+        // the chain underneath (.tabs{height:100%},
+        // #help-tab-content{height:calc(100% - 28px)}, and #xroar-log's own
+        // flex:1) already cascades percentage-based sizing correctly, so
+        // fixing this one spot is enough to make the whole tree respond,
+        // including the log panel actually getting taller for the console.
         ctrl.style.height = '';
+        ctrl.style.flex = '1 1 auto';
+        ctrl.style.minHeight = '0';
         ctrl.style.maxHeight = '100%';
         ctrl.style.overflowY = 'auto';
         ctrl.style.zIndex = '';
@@ -856,12 +871,11 @@ window.addEventListener('resize', function() {
         }
 
         // Right-click the handle to snap back to the default position/size.
-        // Recomputes fresh against the current window size rather than
-        // reusing whatever was captured at page load, in case the window's
-        // been resized since -- otherwise "reset" could land somewhere that
-        // was only correct a while ago.
-        handle.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
+        // Named and hung off window (not just an inline listener) so the
+        // hamburger menu's own right-click can call the exact same reset --
+        // one implementation, two entry points, rather than a second copy
+        // of this logic living on the hamburger's handler.
+        window._resetToolboxPosition = function() {
             var freshIdealLeft = 16 + monitorWidth + 24;
             var freshMaxLeft = window.innerWidth - 100;
             var freshLeft = _isMobile ? '0px' : Math.min(freshIdealLeft, Math.max(freshMaxLeft, 0)) + 'px';
@@ -869,6 +883,10 @@ window.addEventListener('resize', function() {
             wrapper.style.top = '2.5rem';
             wrapper.style.width = '380px';
             wrapper.style.height = '';  // resize:both may have set an explicit height; let it size to content again
+        };
+        handle.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            window._resetToolboxPosition();
         });
 
         handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
@@ -922,10 +940,13 @@ window.addEventListener('resize', function() {
                 // Double-tap detected -- cancel pending single tap, reset position
                 clearTimeout(singleTapTimer);
                 singleTapTimer = null;
-                var wrapper = window._mobileControlsWrapper;
-                if (wrapper) {
-                    wrapper.style.left = '0';
-                    wrapper.style.top = '2.5rem';
+                // Was its own inline reset (left/top only, no width/height) --
+                // now calls the same window._resetToolboxPosition() the
+                // handle's own right-click and the desktop hamburger
+                // right-click both use, so there's one reset implementation
+                // instead of three slightly-different copies.
+                if (typeof window._resetToolboxPosition === 'function') {
+                    window._resetToolboxPosition();
                 }
             } else {
                 // First tap -- wait to see if second tap arrives
@@ -936,6 +957,21 @@ window.addEventListener('resize', function() {
                 }, 300);
             }
             lastTap = now;
+        });
+
+        // Right-click the hamburger (desktop) resets both panels at once --
+        // same idea as the existing mobile double-tap reset above, just a
+        // second entry point for desktop where double-tap isn't a thing.
+        // Calls the exact same window._reset*Position() functions the
+        // panels' own handles use, not separate copies of the same logic.
+        burger.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            if (typeof window._resetToolboxPosition === 'function') {
+                window._resetToolboxPosition();
+            }
+            if (typeof window._resetKeyboardPosition === 'function') {
+                window._resetKeyboardPosition();
+            }
         });
     }
 
@@ -1529,19 +1565,25 @@ var Module = {
 		}
 
 		// Right-click the handle to snap back to the default position.
-		// Clearing manuallyPositioned and calling applyMonitorLayout() again
-		// reuses its real default-position logic directly (mobile:
-		// left edge; desktop: aligned under the canvas) rather than a
-		// second, hand-written copy of the same computation that could
-		// drift out of sync with it over time.
-		handle.addEventListener('contextmenu', function(e) {
-			e.preventDefault();
+		// Named and hung off window, same reasoning as the toolbox's
+		// window._resetToolboxPosition just above: one implementation,
+		// callable from both this handle's own right-click and the
+		// hamburger's. Clearing manuallyPositioned and calling
+		// applyMonitorLayout() again reuses its real default-position logic
+		// directly (mobile: left edge; desktop: aligned under the canvas)
+		// rather than a second, hand-written copy of the same computation
+		// that could drift out of sync with it over time.
+		window._resetKeyboardPosition = function() {
 			delete wrapperEl.dataset.manuallyPositioned;
 			wrapperEl.style.bottom = '0';
 			wrapperEl.style.top = '';
 			if (typeof applyMonitorLayout === 'function') {
 				applyMonitorLayout();
 			}
+		};
+		handle.addEventListener('contextmenu', function(e) {
+			e.preventDefault();
+			window._resetKeyboardPosition();
 		});
 
 		// Capture phase (true as the 3rd arg), not the default bubble
