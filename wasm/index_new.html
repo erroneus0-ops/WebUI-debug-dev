@@ -755,18 +755,29 @@ window.addEventListener('resize', function() {
         var idealLeft = 16 + monitorWidth + 24;
         var maxLeft = window.innerWidth - 100;
         var startLeft = _isMobile ? '0' : Math.min(idealLeft, Math.max(maxLeft, 0)) + 'px';
+        // Width was previously set to monitorWidth (800-1600px depending on
+        // config) -- wrong value entirely, not a design choice: the toolbox
+        // has its own natural width (380px, matching index.html/
+        // index_custom.html, see the real #controls-region rule above) that
+        // has nothing to do with how big the emulated screen is. Fixed here;
+        // resize:both lets the user override it manually afterward if 380px
+        // isn't what they want.
         wrapper.style.cssText = [
             'position: fixed',
             'top: 2.5rem',
             'left: ' + startLeft,
             'right: auto',
-            'width: ' + monitorWidth + 'px',
+            'width: 380px',
             'max-width: 95vw',
             'max-height: 70vh',
             'z-index: 100',
             'display: ' + (_isMobile ? 'none' : 'flex'),
             'flex-direction: column',
             'box-shadow: 0 4px 16px rgba(0,0,0,0.5)',
+            'resize: both',
+            'overflow: hidden',
+            'min-width: 220px',
+            'min-height: 120px',
         ].join(';');
 
         // Insert wrapper before controls-region in DOM
@@ -843,6 +854,22 @@ window.addEventListener('resize', function() {
             dragging = false;
             handle.style.cursor = 'grab';
         }
+
+        // Right-click the handle to snap back to the default position/size.
+        // Recomputes fresh against the current window size rather than
+        // reusing whatever was captured at page load, in case the window's
+        // been resized since -- otherwise "reset" could land somewhere that
+        // was only correct a while ago.
+        handle.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            var freshIdealLeft = 16 + monitorWidth + 24;
+            var freshMaxLeft = window.innerWidth - 100;
+            var freshLeft = _isMobile ? '0px' : Math.min(freshIdealLeft, Math.max(freshMaxLeft, 0)) + 'px';
+            wrapper.style.left = freshLeft;
+            wrapper.style.top = '2.5rem';
+            wrapper.style.width = '380px';
+            wrapper.style.height = '';  // resize:both may have set an explicit height; let it size to content again
+        });
 
         handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
         document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); });
@@ -1500,6 +1527,22 @@ var Module = {
 			// it in the shared stacking order, so the panel stays on top
 			// after being dropped, until the other one is touched.
 		}
+
+		// Right-click the handle to snap back to the default position.
+		// Clearing manuallyPositioned and calling applyMonitorLayout() again
+		// reuses its real default-position logic directly (mobile:
+		// left edge; desktop: aligned under the canvas) rather than a
+		// second, hand-written copy of the same computation that could
+		// drift out of sync with it over time.
+		handle.addEventListener('contextmenu', function(e) {
+			e.preventDefault();
+			delete wrapperEl.dataset.manuallyPositioned;
+			wrapperEl.style.bottom = '0';
+			wrapperEl.style.top = '';
+			if (typeof applyMonitorLayout === 'function') {
+				applyMonitorLayout();
+			}
+		});
 
 		// Capture phase (true as the 3rd arg), not the default bubble
 		// phase -- makes drag tracking immune to anything else on the page
