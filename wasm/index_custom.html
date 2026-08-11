@@ -430,6 +430,13 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
       <div class="tab-content" id="help-tab-content" style="flex-direction:column; box-sizing:border-box;">
         <p>XRoar Online emulates the Dragon 32/64 and Tandy Colour Computers.</p>
         <p>Read more <a href="https://www.6809.org.uk/xroar/online/about.shtml">about XRoar Online</a>.</p>
+        <p style="margin:8px 0 2px 0;">
+          <textarea id="console-input" rows="3" style="width:100%; box-sizing:border-box; font-family:monospace; font-size:11px; resize:vertical;" placeholder="Paste JS here (e.g. Module.ccall(...)). Ctrl+Enter to run."></textarea>
+        </p>
+        <p style="margin:0 0 4px 0;">
+          <span class="button" onclick="runConsoleInput()">Run</span>
+          <span style="font-size:11px; color:#664;">Ctrl+Enter also works. Variables persist between runs, like the browser's own console.</span>
+        </p>
         <p style="text-align:right; margin:0 0 4px 0;"><span class="button" onclick="toggleLog()">...</span></p>
         <div id="xroar-log" style="display:none; flex:1; overflow-y:auto; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px; white-space:pre-wrap;"></div>
       </div>
@@ -859,8 +866,8 @@ var Module = {
 		initial_resize: 0,
 		is_fullscreen: 0,
 
-		print: function(text) { console.log(text); log_message(text); },
-		printErr: function(text) { console.error(text); log_message(text); },
+		print: function(text) { console.log(text); },
+		printErr: function(text) { console.error(text); },
 
         <!--arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos' ],-->
         arguments: [ '-no-vo-colour-killer', '-no-disk-auto-os9', '-ao-fragments', '3', '-kbd-translate', '-kbd-lang', 'US', '-machine', 'coco2bus', '-cart', 'rsdos', '-debug-file', '1' ],
@@ -996,6 +1003,61 @@ var Module = {
 		if (!el) return;
 		el.style.display = (el.style.display === 'none') ? 'block' : 'none';
 	}
+
+	// ── Console input: paste JS (e.g. Module.ccall(...) test snippets) here and
+	// see the output in the panel above, not just the browser's own DevTools
+	// console. console.log/console.error are patched exactly once, globally, to
+	// also mirror into log_message() -- this is also what makes XRoar's own
+	// print/printErr hooks show up in the panel now (they just call
+	// console.log/console.error directly; no separate log_message call needed
+	// there anymore, which would have double-printed every line once this patch
+	// is in place).
+	(function() {
+		var realLog = console.log.bind(console);
+		var realErr = console.error.bind(console);
+		function fmt(args) {
+			return args.map(function(a) {
+				if (typeof a === 'object') {
+					try { return JSON.stringify(a); } catch (e) { return String(a); }
+				}
+				return String(a);
+			}).join(' ');
+		}
+		console.log = function(...args) { realLog(...args); log_message(fmt(args)); };
+		console.error = function(...args) { realErr(...args); log_message('ERROR: ' + fmt(args)); };
+	})();
+
+	function runConsoleInput() {
+		var input = document.getElementById('console-input');
+		if (!input) return;
+		var code = input.value;
+		if (!code.trim()) return;
+		var logEl = document.getElementById('xroar-log');
+		if (logEl) logEl.style.display = 'block';
+		log_message('> ' + code);
+		try {
+			// Indirect eval (via window.eval) runs in true global scope, so
+			// `var pc = ...` etc. persists across separate Run clicks, same as
+			// pasting into the browser's own console.
+			var result = window.eval(code);
+			if (result !== undefined) {
+				log_message('< ' + (typeof result === 'object' ? JSON.stringify(result) : String(result)));
+			}
+		} catch (e) {
+			log_message('ERROR: ' + e.message);
+		}
+	}
+
+	(function() {
+		var input = document.getElementById('console-input');
+		if (!input) return;
+		input.addEventListener('keydown', function(e) {
+			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+				e.preventDefault();
+				runConsoleInput();
+			}
+		});
+	})();
 
 	function file_input_onload(el, loadtype, drive) {
 		resumeAudio();
