@@ -1057,6 +1057,27 @@ var Module = {
 				runConsoleInput();
 			}
 		});
+		// Same technique as the type-dialog's textarea (see stop_event() above
+		// -- reused here, not redefined): XRoar's SDL2 keyboard capture grabs
+		// keydown/keyup/keypress globally so the emulated machine can be typed
+		// on directly, regardless of what's focused. Without this, typing into
+		// this box does the same thing typing anywhere else on the page does
+		// -- gets swallowed by the emulator instead of reaching the textarea,
+		// which is exactly the bug: clicking in lets you select existing text,
+		// but keystrokes never arrive. Scoped to this field's own focus/blur
+		// rather than a dialog's open/close, since this box is always visible
+		// (not modal) -- protection should only apply while it actually has
+		// focus, not all the time.
+		input.addEventListener('focus', function() {
+			document.addEventListener('keydown',  stop_event, true);
+			document.addEventListener('keyup',    stop_event, true);
+			document.addEventListener('keypress', stop_event, true);
+		});
+		input.addEventListener('blur', function() {
+			document.removeEventListener('keydown',  stop_event, true);
+			document.removeEventListener('keyup',    stop_event, true);
+			document.removeEventListener('keypress', stop_event, true);
+		});
 	})();
 
 	function file_input_onload(el, loadtype, drive) {
