@@ -1,6 +1,6 @@
 # XRoar stock WASM Build Report
 
-**Built:** 2026-08-11 14:45 UTC
+**Built:** 2026-08-12 21:38 UTC
 **Source:** emcc_workflow/xroar-1.12.1/ (pure upstream, unmodified -- https://www.6809.org.uk/xroar/dl/xroar-1.12.1.tar.gz)
 **Build flags:** CFLAGS/LDFLAGS = -O3 -flto (per Ciaran's own XRoar Online build recommendation)
 **WASM size:** 1323857 bytes
