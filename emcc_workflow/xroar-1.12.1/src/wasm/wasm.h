@@ -81,6 +81,11 @@ void wasm_queue_basic(const char *string);
 void wasm_resize(int w, int h);
 void wasm_vdrive_flush(void);
 
+// Direct memory read/write -- see the comment above these in wasm.c
+// for why this taps the exact same mechanism GDB itself uses.
+uint8_t wasm_read_byte(int addr);
+void wasm_write_byte(int addr, int value);
+
 // Debugger support -- see the large comment above these functions in
 // wasm.c for the reasoning (generic register access via 1.12.1's
 // debug_target framework rather than one function per register; why

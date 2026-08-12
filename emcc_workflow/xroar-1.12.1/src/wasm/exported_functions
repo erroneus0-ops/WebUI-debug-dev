@@ -16,6 +16,8 @@
 	'_wasm_set_joystick_port',
 	'_wasm_set_machine_cart',
 	'_wasm_vdrive_flush',
+	'_wasm_read_byte',
+	'_wasm_write_byte',
 	'_wasm_register_by_name',
 	'_wasm_register_count',
 	'_wasm_register_name',

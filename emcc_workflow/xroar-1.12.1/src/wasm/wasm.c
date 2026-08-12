@@ -1018,6 +1018,23 @@ void wasm_vdrive_flush(void) {
 	vdrive_flush(xroar.vdrive_interface);
 }
 
+// Direct memory read/write, ported from the original pre-debugger-work
+// wasm_read_byte()/wasm_write_byte() (still present, unmodified, in the
+// now-retired 1.11-based emcc_workflow/xroar/ tree). Confirmed directly
+// against gdb.c: machine->read_byte()/write_byte() is the exact same
+// function XRoar's own GDB target calls for memory packets ('m'/'M') --
+// not a parallel mechanism, the same one.
+
+uint8_t wasm_read_byte(int addr) {
+	if (!xroar.machine) return 0;
+	return xroar.machine->read_byte(xroar.machine, addr & 0xffff, 0);
+}
+
+void wasm_write_byte(int addr, int value) {
+	if (!xroar.machine) return;
+	xroar.machine->write_byte(xroar.machine, addr & 0xffff, value & 0xff);
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
 // Debugger support: pause/resume/step, generic register read+write via
