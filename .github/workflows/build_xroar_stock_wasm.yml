@@ -1,12 +1,27 @@
 name: Build XRoar WASM (stock, pure upstream)
 
 # Trigger manually from GitHub Actions tab
-# or automatically when the pristine emcc_workflow/xroar-1.12.1 source or this workflow changes
+# or automatically when the pristine emcc_workflow/xroar-1.12.1-pristine source or this workflow changes
+#
+# Builds ONLY from emcc_workflow/xroar-1.12.1-pristine/ -- a genuinely
+# untouched copy of upstream, refreshed manually (by Daniel, deliberately,
+# git-committed as its own visible event) only when a real new release
+# drops, never fetched fresh inside CI. Feeds xroar.js/.wasm, used by
+# index.html and index_new.html.
+#
+# This workflow used to ALSO copy its own output to
+# wasm/xroar-custom-patched.js/.wasm (a stopgap from before the custom
+# debugger work existed for real, when nothing in the UI called any
+# custom function yet, so using a stock copy there cost nothing). That's
+# no longer true -- see build_xroar_wasm.yml, which now builds the
+# actually-patched emcc_workflow/xroar-1.12.1/ tree into that exact
+# filename instead. This workflow no longer touches
+# xroar-custom-patched.* at all.
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'emcc_workflow/xroar-1.12.1/**'
+      - 'emcc_workflow/xroar-1.12.1-pristine/**'
       - '.github/workflows/build_xroar_stock_wasm.yml'
 
 permissions:
@@ -19,6 +34,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14
@@ -35,7 +52,7 @@ jobs:
 
       - name: Generate configure script (if needed)
         run: |
-          cd emcc_workflow/xroar-1.12.1
+          cd emcc_workflow/xroar-1.12.1-pristine
           if [ -f configure ]; then
             echo "configure already present in this release tarball -- skipping autogen.sh"
             echo "Fixing timestamps so autotools doesn't think pre-generated files are stale"
@@ -55,13 +72,18 @@ jobs:
 
       - name: Configure for WASM
         run: |
-          cd emcc_workflow/xroar-1.12.1
+          cd emcc_workflow/xroar-1.12.1-pristine
           chmod +x configure config.guess config.sub install-sh missing compile ar-lib depcomp 2>/dev/null || true
           emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
-      - name: Build standalone version reporter (tiny, separate from xroar itself)
+      - name: Build standalone version reporter (plain -- this is the stock build)
         run: |
-          emcc wasm/xroar_version_report.c -I emcc_workflow/xroar-1.12.1 -o wasm/xroar-version.js \
+          # No -DXROAR_BUILD_TAG here -- reports the bare "XRoar 1.12.1",
+          # accurately, because this really is unmodified upstream. The
+          # tagged variant (build_xroar_wasm.yml, "+debug-exports") is
+          # built separately, from the patched tree, to a different
+          # output filename.
+          emcc wasm/xroar_version_report.c -I emcc_workflow/xroar-1.12.1-pristine -o wasm/xroar-version.js \
             -s EXPORTED_FUNCTIONS='["_xroar_version_report_get_version","_malloc"]' \
             -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString"]' \
             -s MODULARIZE=1 -s EXPORT_NAME="XRoarVersionReportModule" \
@@ -69,12 +91,12 @@ jobs:
             -O2
           ls -la wasm/xroar-version.js wasm/xroar-version.wasm
           echo "=== version string this reports ==="
-          grep -o 'PACKAGE_TEXT[^,]*' emcc_workflow/xroar-1.12.1/config.h || true
+          grep -o 'PACKAGE_TEXT[^,]*' emcc_workflow/xroar-1.12.1-pristine/config.h || true
 
       - name: Build XRoar WASM
         id: build
         run: |
-          cd emcc_workflow/xroar-1.12.1
+          cd emcc_workflow/xroar-1.12.1-pristine
           set +e
           emmake make 2>&1 | tee /tmp/build.log
           BUILD_STATUS=${PIPESTATUS[0]}
@@ -99,28 +121,18 @@ jobs:
 
       - name: Locate build output
         run: |
-          find emcc_workflow/xroar-1.12.1/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
+          find emcc_workflow/xroar-1.12.1-pristine/src -maxdepth 1 -name "xroar.js" -o -name "xroar.wasm" 2>/dev/null
 
-      - name: Replace live xroar.js/xroar.wasm (and the index_custom.html copies)
+      - name: Replace live xroar.js/xroar.wasm
         run: |
-          cp emcc_workflow/xroar-1.12.1/src/xroar.js   wasm/xroar.js
-          cp emcc_workflow/xroar-1.12.1/src/xroar.wasm wasm/xroar.wasm
-          # index_custom.html references xroar-custom-patched.js specifically --
-          # stock build for now (per CUSTOM_DEBUG_FUNCTIONS_EXTRACTED.md, nothing
-          # in the UI actually calls the custom debug-register functions yet, so
-          # there's no functional loss in using the stock build here too). Fixes
-          # a real broken link: the previous xroar-custom-patched.js had no
-          # matching .wasm file at all.
-          cp emcc_workflow/xroar-1.12.1/src/xroar.js   wasm/xroar-custom-patched.js
-          cp emcc_workflow/xroar-1.12.1/src/xroar.wasm wasm/xroar-custom-patched.wasm
+          cp emcc_workflow/xroar-1.12.1-pristine/src/xroar.js   wasm/xroar.js
+          cp emcc_workflow/xroar-1.12.1-pristine/src/xroar.wasm wasm/xroar.wasm
 
       - name: Verify output
         run: |
-          ls -la wasm/xroar.js wasm/xroar.wasm wasm/xroar-custom-patched.js wasm/xroar-custom-patched.wasm
+          ls -la wasm/xroar.js wasm/xroar.wasm
           test -s wasm/xroar.wasm && echo "xroar.wasm OK"
           test -s wasm/xroar.js   && echo "xroar.js OK"
-          test -s wasm/xroar-custom-patched.wasm && echo "xroar-custom-patched.wasm OK"
-          test -s wasm/xroar-custom-patched.js   && echo "xroar-custom-patched.js OK"
 
       - name: Write build report
         if: always()
@@ -128,24 +140,22 @@ jobs:
           echo "# XRoar stock WASM Build Report" > wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "**Built:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "**Source:** emcc_workflow/xroar-1.12.1/ (pure upstream, unmodified -- https://www.6809.org.uk/xroar/dl/xroar-1.12.1.tar.gz)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "**Source:** emcc_workflow/xroar-1.12.1-pristine/ -- genuinely untouched upstream, refreshed manually only when a real new release drops (see https://www.6809.org.uk/xroar/dl/)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "**Build flags:** CFLAGS/LDFLAGS = -O3 -flto (per Ciaran's own XRoar Online build recommendation)" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "**WASM size:** $(wc -c < wasm/xroar.wasm 2>/dev/null || echo 'build failed') bytes" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "This replaces the live wasm/xroar.js and wasm/xroar.wasm used by" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "index.html and index_new.html, AND wasm/xroar-custom-patched.js /" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo ".wasm used by index_custom.html. Pure upstream, no custom" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "modifications -- the custom debug-register functions (wasm_get_pc" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "etc.) are not part of this build. Nothing in the UI calls them yet," >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "so using stock here too costs nothing functionally. Extracted and" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "documented in CUSTOM_DEBUG_FUNCTIONS_EXTRACTED.md for a future" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "rebase, if that work is picked back up." >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "index.html and index_new.html. Pure upstream, no custom modifications" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "at all -- the debug/register/breakpoint/memory-access functions live" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "only in the separately-built xroar-custom-patched.js/.wasm, produced" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "by build_xroar_wasm.yml from the patched tree, used only by" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "index_custom.html. This workflow no longer touches those files at all." >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "Also built: wasm/xroar-version.js / xroar-version.wasm -- a tiny," >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "separate, MODULARIZE-d companion program (not part of xroar's own" >> wasm/XROAR_STOCK_BUILD_REPORT.md
           echo "source) that reports the version string from the same config.h" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "this build generated. Exists so the page can query the version at" >> wasm/XROAR_STOCK_BUILD_REPORT.md
-          echo "runtime without touching xroar.wasm itself at all." >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "this build generated. Reports the bare version (e.g. \"XRoar 1.12.1\")" >> wasm/XROAR_STOCK_BUILD_REPORT.md
+          echo "with no build tag, since this really is unmodified upstream." >> wasm/XROAR_STOCK_BUILD_REPORT.md
 
       - name: Commit WASM output
         run: |
@@ -155,7 +165,7 @@ jobs:
           echo "=== git status before add ==="
           git status --short | head -30
 
-          git add wasm/xroar.js wasm/xroar.wasm wasm/xroar-custom-patched.js wasm/xroar-custom-patched.wasm wasm/xroar-version.js wasm/xroar-version.wasm wasm/XROAR_STOCK_BUILD_REPORT.md
+          git add wasm/xroar.js wasm/xroar.wasm wasm/xroar-version.js wasm/xroar-version.wasm wasm/XROAR_STOCK_BUILD_REPORT.md
 
           if git diff --staged --quiet; then
             echo "Nothing staged -- output identical to what's already committed. Skipping commit/push."
