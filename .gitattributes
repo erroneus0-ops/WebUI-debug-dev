@@ -1,24 +1,49 @@
-# Normalize line endings to LF for everything Git considers text, so
-# Windows/Linux/Mac clones all see the same bytes and nobody gets the
-# "LF will be replaced by CRLF" warning going forward. Git's own
-# text/binary auto-detection is generally reliable, but the binary
-# extensions below are pinned explicitly rather than left to
-# heuristics -- getting this wrong for a real binary (corrupting a
-# .wasm by attempting line-ending conversion on it) is a much worse
-# failure than a false negative on some obscure text format.
+# Normalize line endings to LF for text files, so Windows/Linux/Mac
+# clones all see the same bytes and nobody gets the "LF will be
+# replaced by CRLF" warning going forward. Repo-level fix rather than
+# relying on everyone's local core.autocrlf -- this takes effect for
+# any future clone regardless of local git config, since
+# .gitattributes overrides autocrlf for matched paths.
+#
+# IMPORTANT: text=auto's own binary-detection heuristic got a real
+# file wrong once already while building this list -- it misjudged
+# wasm/cp400bas.rom (a raw CoCo ROM image) as text and would have
+# altered 118 lines' worth of actual ROM bytes on commit. Caught by
+# comparing the staged blob's hash against HEAD's before committing,
+# not by trusting the "nothing looks different" surface impression.
+# Every binary format actually present in this repo (confirmed via
+# `file` against every tracked path, not guessed at) is listed
+# explicitly below so none of them are left to that heuristic again.
 
 * text=auto eol=lf
 
-*.wasm   binary
-*.png    binary
-*.jpg    binary
-*.jpeg   binary
-*.gif    binary
-*.ico    binary
-*.xls    binary
-*.xlsx   binary
-*.zip    binary
-*.pem    binary
-*.key    binary
-*.woff   binary
-*.woff2  binary
+# Compiled/binary artifacts
+*.wasm    binary
+*.rom     binary
+*.ROM     binary
+*.bin     binary
+*.raw     binary
+*.ccc     binary
+*.zip     binary
+*.pem     binary
+*.key     binary
+*.xls     binary
+*.xlsx    binary
+*.xcf     binary
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.icns    binary
+*.pdf     binary
+*.woff    binary
+*.woff2   binary
+*.info    binary
+
+# Windows resource file with an unusual encoding (ISO-8859 with NEL
+# line terminators, not plain LF) -- marking binary rather than
+# guessing at how to normalize it correctly means git leaves it
+# completely alone, zero risk, at the minor cost of not getting
+# line-based diffs on a single pristine-upstream file we don't edit.
+*.rc      binary
