@@ -610,10 +610,6 @@ static char const * const default_config[] = {
 	"cart-becker",
 #ifndef HAVE_WASM
 #ifdef WANT_EXPERIMENTAL
-	// CoCoSDC cartridge
-	"cart cocosdc",
-	"cart-desc 'CoCoSDC'",
-	"cart-type cocosdc",
 	// Ikon Ultra Drive cartridge
 	"cart ikon",
 	"cart-desc 'Ikon Ultra Drive cartridge'",
@@ -3356,7 +3352,6 @@ static struct xconfig_option const xroar_options[] = {
 	{ XC_SET_STRING("gdb-ip", &xroar.cfg.debug.gdb_ip) },
 	{ XC_SET_STRING("gdb-port", &xroar.cfg.debug.gdb_port) },
 	{ XC_SET_BOOL("gdb-pseudo-regs", &xroar.cfg.debug.gdb_pseudo_regs) },
-	{ XC_SET_BOOL("gdb-flags-as-struct", &xroar.cfg.debug.gdb_flags_as_struct) },
 	{ XC_SET_BOOL("trace", &logging.trace_cpu) },
 	{ XC_SET_BOOL("trace-timing", &logging.trace_cpu_timing) },
 #ifdef WANT_TRAPS
@@ -3578,7 +3573,6 @@ static void helptext(void) {
 "  -gdb-ip ADDRESS       address of interface for GDB target [" GDB_IP_DEFAULT "]\n"
 "  -gdb-port PORT        port for GDB target to listen on [" GDB_PORT_DEFAULT "]\n"
 "  -gdb-pseudo-regs      enable pseudo-registers (e.g. SAM, PIA) for GDB\n"
-"  -gdb-flags-as-struct  describe CPU flags as a struct to GDB\n"
 #endif
 "  -no-ratelimit         run cpu as fast as possible\n"
 #ifdef TRACE

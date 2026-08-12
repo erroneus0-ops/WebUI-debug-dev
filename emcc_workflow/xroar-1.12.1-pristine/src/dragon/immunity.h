@@ -21,7 +21,6 @@
 
 #include <stdint.h>
 
-#include "debug.h"
 #include "part.h"
 
 struct dragon;
@@ -36,10 +35,6 @@ struct immunity {
 	uint8_t init0;
 	uint8_t init1;
 	struct ram *mem;
-
-	struct {
-		struct debug_part part;
-	} debug;
 };
 
 // iMMUnity interposes the CPU when used.

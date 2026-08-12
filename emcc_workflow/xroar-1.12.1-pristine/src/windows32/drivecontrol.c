@@ -30,7 +30,6 @@
 #include "ui.h"
 #include "vdisk.h"
 #include "vdrive.h"
-#include "wd279x.h"
 #include "xroar.h"
 
 #include "sdl3/common.h"
@@ -51,8 +50,6 @@ static INT_PTR CALLBACK dc_proc(struct uiw32_dialog *, UINT msg, WPARAM wParam, 
 
 static void dc_new_hd(struct uiw32_dialog *dlg, int hd);
 
-static void w32_update_drive_info(struct uiw32_dialog *dlg);
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Create floppy disks dialog window
@@ -65,7 +62,6 @@ struct uiw32_dialog *uiw32_dc_dialog_new(struct ui_windows32_interface *uiw32) {
 	ui_messenger_join_group(dlg->msgr_client_id, ui_tag_disk_write_enable, MESSENGER_NOTIFY_DELEGATE(dc_ui_state_notify, dlg));
 	ui_messenger_join_group(dlg->msgr_client_id, ui_tag_disk_write_back, MESSENGER_NOTIFY_DELEGATE(dc_ui_state_notify, dlg));
 	ui_messenger_join_group(dlg->msgr_client_id, ui_tag_disk_drive_info, MESSENGER_NOTIFY_DELEGATE(dc_ui_state_notify, dlg));
-	ui_messenger_join_group(dlg->msgr_client_id, ui_tag_fdc_status, MESSENGER_NOTIFY_DELEGATE(dc_ui_state_notify, dlg));
 	ui_messenger_join_group(dlg->msgr_client_id, ui_tag_hd_filename, MESSENGER_NOTIFY_DELEGATE(dc_ui_state_notify, dlg));
 
 	return dlg;
@@ -113,18 +109,13 @@ static void dc_ui_state_notify(void *sptr, int tag, void *smsg) {
 	case ui_tag_disk_drive_info:
 		{
 			const struct vdrive_info *vi = data;
-			dlg->uiw32->floppy.drive = vi->drive;
-			dlg->uiw32->floppy.cylinder = vi->cylinder;
-			dlg->uiw32->floppy.head = vi->head;
-			w32_update_drive_info(dlg);
-		}
-		break;
-
-	case ui_tag_fdc_status:
-		{
-			const struct wd279x_status *st = data;
-			dlg->uiw32->floppy.sector = st->sector;
-			w32_update_drive_info(dlg);
+			unsigned d = vi->drive + 1;
+			unsigned c = vi->cylinder;
+			unsigned h = vi->head;
+			char string[16];
+			snprintf(string, sizeof(string), "Dr %01u Tr %02u He %01u", d, c, h);
+			HWND hWnd = GetDlgItem(dlg->hWnd, IDC_STM_DRIVE_CYL_HEAD);
+			SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)string);
 		}
 		break;
 
@@ -301,17 +292,4 @@ static void dc_new_hd(struct uiw32_dialog *dlg, int hd) {
 		}
 		free(filename);
 	}
-}
-
-// Helpers
-
-static void w32_update_drive_info(struct uiw32_dialog *dlg) {
-	unsigned d = dlg->uiw32->floppy.drive + 1;
-	unsigned c = dlg->uiw32->floppy.cylinder;
-	unsigned h = dlg->uiw32->floppy.head;
-	unsigned s = dlg->uiw32->floppy.sector;
-	char string[23];
-	snprintf(string, sizeof(string), "Dr %01u Tr %02u He %01u Se %3u", d, c, h, s);
-	HWND hWnd = GetDlgItem(dlg->hWnd, IDC_STM_DRIVE_CYL_HEAD);
-	SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)string);
 }

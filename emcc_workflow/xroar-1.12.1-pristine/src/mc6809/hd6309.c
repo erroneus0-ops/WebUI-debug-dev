@@ -641,10 +641,7 @@ static void hd6309_run(struct MC6809 *cpu) {
 				continue;
 
 			// 0x12 NOP inherent
-			case 0x12:
-				if (!NATIVE_MODE)
-					peek_byte(cpu, REG_PC);
-				break;
+			case 0x12: peek_byte(cpu, REG_PC); break;
 
 			// 0x13 SYNC inherent
 			// TODO: "There appears to be a bug with SYNC in native
@@ -697,8 +694,7 @@ static void hd6309_run(struct MC6809 *cpu) {
 				// TODO: behaviour for illegal input differs on
 				// the 6309 [hoglet67]
 				REG_A = op_daa(cpu, REG_A);
-				if (!NATIVE_MODE)
-					peek_byte(cpu, REG_PC);
+				peek_byte(cpu, REG_PC);
 				break;
 
 			// 0x1a ORCC immediate
@@ -706,8 +702,7 @@ static void hd6309_run(struct MC6809 *cpu) {
 				unsigned data;
 				data = byte_immediate(cpu);
 				REG_CC |= data;
-				if (!NATIVE_MODE)
-					peek_byte(cpu, REG_PC);
+				peek_byte(cpu, REG_PC);
 			} break;
 
 			// 0x1c ANDCC immediate
@@ -715,8 +710,7 @@ static void hd6309_run(struct MC6809 *cpu) {
 				unsigned data;
 				data = byte_immediate(cpu);
 				REG_CC &= data;
-				if (!NATIVE_MODE)
-					peek_byte(cpu, REG_PC);
+				peek_byte(cpu, REG_PC);
 			} break;
 
 			// 0x1d SEX inherent
@@ -961,8 +955,7 @@ static void hd6309_run(struct MC6809 *cpu) {
 
 			// 0x39 RTS inherent
 			case 0x39:
-				if (!NATIVE_MODE)
-					peek_byte(cpu, REG_PC);
+				peek_byte(cpu, REG_PC);
 				REG_PC = pull_s_word(cpu);
 				NVMA_CYCLE;
 				break;
@@ -970,10 +963,9 @@ static void hd6309_run(struct MC6809 *cpu) {
 			// 0x3a ABX inherent
 			case 0x3a:
 				REG_X += REG_B;
-				if (!NATIVE_MODE) {
-					peek_byte(cpu, REG_PC);
+				peek_byte(cpu, REG_PC);
+				if (!NATIVE_MODE)
 					NVMA_CYCLE;
-				}
 				break;
 
 			// 0x3b RTI inherent
@@ -2204,14 +2196,14 @@ static void instruction_posthook(struct MC6809 *cpu) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 static struct debug_feature_field feature_type_md_flags_fields[] = {
-	{ .name = "D0", .start = 7, .end = 7 },
-	{ .name = "IL", .start = 6, .end = 6 },
-	{ .name = "FM", .start = 1, .end = 1 },
-	{ .name = "NM", .start = 0, .end = 0 },
+	{ .name = "NM", .start = 0, .end = 0, .type = &debug_feature_type_uint8 },
+	{ .name = "FM", .start = 1, .end = 1, .type = &debug_feature_type_uint8 },
+	{ .name = "IL", .start = 6, .end = 6, .type = &debug_feature_type_uint8 },
+	{ .name = "D0", .start = 7, .end = 7, .type = &debug_feature_type_uint8 },
 };
 
 static const struct debug_feature_type feature_type_md_flags = {
-	.type = debug_feature_base_type_flags,
+	.type = debug_feature_base_type_struct,
 	.id = "md_flags",
 	.size = 1,
 	.as_struct = {

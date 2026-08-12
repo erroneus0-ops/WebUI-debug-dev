@@ -148,7 +148,6 @@ xroar_SOURCES += \
 
 if EXPERIMENTAL
 xroar_SOURCES += \
-	cocosdc.c \
 	ikon.c
 endif
 endif

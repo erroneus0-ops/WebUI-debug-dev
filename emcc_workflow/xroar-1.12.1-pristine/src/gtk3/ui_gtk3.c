@@ -24,15 +24,6 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#ifdef HAVE_SIGNAL_H
-#include <glib.h>
-#include <signal.h>
-#ifdef G_OS_UNIX
-#include <glib-unix.h>
-#define USE_SIGNAL_HANDLER
-#endif
-#endif
-
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #include <gtk/gtk.h>
@@ -94,10 +85,6 @@ struct ui_module ui_gtk3_module = {
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-#ifdef USE_SIGNAL_HANDLER
-static gboolean handle_os_signal(gpointer sptr);
-#endif
 
 // Dynamic menus
 
@@ -325,11 +312,6 @@ static void *ui_gtk3_new(void *cfg) {
 	struct ui_gtk3_interface *uigtk3 = g_malloc(sizeof(*uigtk3));
 	*uigtk3 = (struct ui_gtk3_interface){0};
 	struct ui_interface *ui = &uigtk3->public;
-
-#ifdef USE_SIGNAL_HANDLER
-	g_unix_signal_add(SIGHUP, (GSourceFunc)handle_os_signal, uigtk3);
-	g_unix_signal_add(SIGINT, (GSourceFunc)handle_os_signal, uigtk3);
-#endif
 
 	uigtk3->builder = gtk_builder_new();
 	uigtk3_add_from_resource(uigtk3, "/uk/org/6809/xroar/gtk3/application.ui");
@@ -775,16 +757,6 @@ static void gtk3_update_joystick_menus(void *sptr) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Callbacks
-
-// Signal handler
-
-#ifdef USE_SIGNAL_HANDLER
-static gboolean handle_os_signal(gpointer sptr) {
-	(void)sptr;
-	xroar_shutdown();
-	return 0;
-}
-#endif
 
 // File menu callbacks
 

@@ -138,7 +138,6 @@ struct xroar_cfg {
 		char *gdb_ip;
 		char *gdb_port;
 		bool gdb_pseudo_regs;
-		bool gdb_flags_as_struct;
 	} debug;
 };
 

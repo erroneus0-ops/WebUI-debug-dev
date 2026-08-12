@@ -105,14 +105,6 @@ struct ui_gtk3_interface {
 	// Window geometry
 	bool user_specified_geometry;
 
-	// Floppy drive state
-	struct {
-		unsigned drive;
-		unsigned cylinder;
-		unsigned head;
-		unsigned sector;
-	} floppy;
-
 	// Printer state
 	struct {
 		char *pipe;

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([xroar],[1.13.0.dev])
+AC_INIT([xroar],[1.12.1])
 AM_INIT_AUTOMAKE([foreign])
 AM_SILENT_RULES([yes])
 
@@ -33,7 +33,7 @@ AC_CHECK_TOOL(RC, windres, :)
 # Checks for libraries.
 
 # Checks for header files.
-AC_CHECK_HEADERS([endian.h regex.h signal.h])
+AC_CHECK_HEADERS([endian.h regex.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT16_T

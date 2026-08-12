@@ -418,9 +418,6 @@ bool dragon_finish_common(struct dragon *md) {
 		debug_target_add_part(m->debug.target, NULL, &md->SAM->debug.part);
 		debug_target_add_part(m->debug.target, "pia0", &md->PIA0->debug.part);
 		debug_target_add_part(m->debug.target, "pia1", &md->PIA1->debug.part);
-		if (md->immunity) {
-			debug_target_add_part(m->debug.target, NULL, &md->immunity->debug.part);
-		}
 	}
 	m->debug.target_xml = debug_target_xml(m->debug.target);
 #endif
@@ -1288,12 +1285,10 @@ static void dragon_op_rts(struct machine *m) {
 static void dragon_dump_ram(struct machine *m, FILE *fd) {
 	struct dragon *md = (struct dragon *)m;
 	struct ram *ram = md->RAM;
-	ram_dump(ram, fd);
-	if (md->SAM->RAM) {
-		ram_dump(md->SAM->RAM, fd);
-	}
-	if (md->immunity) {
-		ram_dump(md->immunity->mem, fd);
+	for (unsigned bank = 0; bank < ram->nbanks; bank++) {
+		if (ram->d && ram->d[bank]) {
+			fwrite(ram->d[bank], ram->bank_nelems, 1, fd);
+		}
 	}
 }
 

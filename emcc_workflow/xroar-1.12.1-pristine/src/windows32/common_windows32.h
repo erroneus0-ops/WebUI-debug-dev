@@ -56,14 +56,6 @@ struct ui_windows32_interface {
 	int max_cartridge_id;
 	int max_joystick_id;
 
-	// Floppy drive state
-	struct {
-		unsigned drive;
-		unsigned cylinder;
-		unsigned head;
-		unsigned sector;
-	} floppy;
-
 	// About dialog
 	struct {
 		HWND window;

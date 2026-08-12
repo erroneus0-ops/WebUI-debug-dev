@@ -57,7 +57,6 @@ extern const struct cart_partdb_entry deltados_part;
 extern const struct cart_partdb_entry dragondos_part;
 extern const struct cart_partdb_entry gmc_part;
 extern const struct cart_partdb_entry idecart_part;
-extern const struct cart_partdb_entry cocosdc_part;
 extern const struct cart_partdb_entry ikon_part;
 extern const struct cart_partdb_entry mooh_part;
 extern const struct cart_partdb_entry mpi_part;
@@ -123,7 +122,6 @@ const struct partdb_entry *partdb[] = {
 	(const struct partdb_entry *)&idecart_part,
 #ifndef HAVE_WASM
 #ifdef WANT_EXPERIMENTAL
-	(const struct partdb_entry *)&cocosdc_part,
 	(const struct partdb_entry *)&ikon_part,
 #endif
 #endif
@@ -284,7 +282,7 @@ void *part_new(size_t psize) {
 	void *m = xmalloc(psize < sizeof(struct part) ? sizeof(struct part) : psize);
 	struct part *p = m;
 	*p = (struct part){0};
-	PART_DEBUG("part_new() = %p\n", (void *)p);
+	PART_DEBUG("part_new() = %p\n", p);
 	return m;
 }
 
@@ -294,7 +292,7 @@ void part_free(struct part *p) {
 
 	const struct partdb_entry *pe = p->partdb;
 
-	PART_DEBUG("part_free(%p) '%s'\n", (void *)p, pe->name);
+	PART_DEBUG("part_free(%p) '%s'\n", p, pe->name);
 
 	if (p->parent) {
 		part_remove_component(p->parent, p);
