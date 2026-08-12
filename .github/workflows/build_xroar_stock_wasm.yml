@@ -74,6 +74,20 @@ jobs:
         run: |
           cd emcc_workflow/xroar-1.12.1-pristine
           chmod +x configure config.guess config.sub install-sh missing compile ar-lib depcomp 2>/dev/null || true
+          # tools/win2rc and tools/xkb_to_hk_scancode.pl lost their
+          # executable bit somewhere in the Windows-to-GitHub round trip
+          # for this pristine copy (Daniel's own machine, not WSL2 this
+          # time) -- confirmed directly from a real failed run: make
+          # decided windows32/resources.h needed regenerating (a fresh
+          # checkout gives every file nearly the same mtime, so make's
+          # timestamp-based staleness check is close to arbitrary even
+          # though the existing generated file's content was already
+          # correct) and failed with "Permission denied" trying to run
+          # win2rc to do it. Same risk applies to
+          # xkb_to_hk_scancode.pl -> x11/hkbd_x11_keycode_tables.h,
+          # fixed proactively even though a WASM build likely never
+          # touches the X11-specific path.
+          chmod +x tools/win2rc tools/xkb_to_hk_scancode.pl 2>/dev/null || true
           emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
       - name: Build standalone version reporter (plain -- this is the stock build)
