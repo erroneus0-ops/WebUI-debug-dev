@@ -1,22 +1,30 @@
 # XRoar custom WASM Build Report
 
-**Built:** 2026-08-01 15:21 UTC
-**Source:** emcc_workflow/xroar/ (local checkout, XRoar 1.11 base + debug/register accessor additions)
-**WASM size:** 1125576 bytes
+**Built:** 2026-08-12 21:55 UTC
+**Source:** emcc_workflow/xroar-1.12.1/ -- patched, NOT pristine upstream (see build_xroar_stock_wasm.yml for the genuinely untouched copy)
+**Build tag:** debug-exports (reported version becomes e.g. "XRoar 1.12.1+debug-exports", SemVer build-metadata convention)
+**WASM size:** 1323950 bytes
 
 ## Debug exports found in built JS glue
 ```
-wasm_get_a
-wasm_get_b
-wasm_get_cc
-wasm_get_pc
-wasm_get_s
-wasm_get_x
-wasm_get_y
+wasm_clear_breakpoint
+wasm_get_register
+wasm_get_stop_address
+wasm_get_stop_reason
+wasm_is_paused
+wasm_pause
 wasm_read_byte
+wasm_register_by_name
+wasm_register_count
+wasm_register_name
+wasm_resume
+wasm_set_breakpoint
+wasm_set_register
+wasm_step
 wasm_write_byte
 ```
 
-**Note:** this build is NOT wired into index_new.html or index.html.
-It sits alongside the live xroar.js/xroar.wasm as xroar-custom.js/xroar-custom.wasm
-until deliberately wired in for the future monitor/debugger page.
+This is what index_custom.html actually loads (xroar-custom-patched.js/.wasm),
+along with the build-tagged version reporter (xroar-version-custom.js/.wasm).
+index.html and index_new.html load the separate stock build instead --
+see build_xroar_stock_wasm.yml.
