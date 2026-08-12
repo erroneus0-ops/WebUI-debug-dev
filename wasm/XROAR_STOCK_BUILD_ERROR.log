@@ -1,0 +1,100 @@
+# Build failure log (tail -300)
+emmake: "make" in "/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine"
+make  all-recursive
+make[1]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine'
+Making all in portalib
+make[2]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine/portalib'
+  CC       c-ctype.o
+  CC       c-strcasecmp.o
+  CC       c-strncasecmp.o
+  CC       delegate.o
+  CC       intfuncs.o
+  CC       pl-estrcpy.o
+  CC       sds.o
+  CC       sdsx.o
+  CC       slist.o
+  CC       strnlen.o
+  CC       strsep.o
+  CC       xmalloc.o
+  AR       libporta.a
+make[2]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine/portalib'
+Making all in src
+make[2]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine/src'
+make  all-am
+make[3]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine/src'
+  CC       xroar-ao.o
+  CC       xroar-auto_kbd.o
+  CC       xroar-ay891x.o
+  CC       xroar-becker.o
+  CC       xroar-blockdev.o
+  CC       xroar-breakpoint.o
+  CC       xroar-cart.o
+  CC       xroar-clock.o
+  CC       xroar-colourspace.o
+  CC       xroar-crc16.o
+  CC       xroar-crc32.o
+  CC       xroar-crclist.o
+  CC       xroar-debug.o
+  CC       xroar-dkbd.o
+  CC       xroar-events.o
+  CC       xroar-filter.o
+  CC       xroar-fs.o
+  CC       xroar-hexs19.o
+  CC       xroar-hkbd.o
+  CC       xroar-hkbd_joystick.o
+  CC       xroar-joystick.o
+  CC       xroar-keyboard.o
+  CC       xroar-logging.o
+  CC       xroar-machine.o
+  CC       xroar-mc10_cart.o
+  CC       xroar-messenger.o
+  CC       xroar-module.o
+  CC       xroar-mos6551.o
+  CC       xroar-ntsc.o
+  CC       null/xroar-ui_null.o
+  CC       xroar-part.o
+  CC       xroar-path.o
+  CC       xroar-printer.o
+  CC       xroar-ram.o
+  CC       xroar-rom.o
+  CC       xroar-rombank.o
+In file included from rombank.c:43:
+In file included from ./wasm/wasm.h:26:
+In file included from ./sdl2/common.h:24:
+/home/runner/work/_temp/a1b2e16a-d63b-41b0-9df8-e15c3eeb4a75/emsdk-main/upstream/emscripten/cache/sysroot/include/fakesdl/SDL.h:1:2: error: "To use the emscripten port of SDL use -sUSE_SDL or -sUSE_SDL=2"
+    1 | #error "To use the emscripten port of SDL use -sUSE_SDL or -sUSE_SDL=2"
+      |  ^
+In file included from rombank.c:43:
+In file included from ./wasm/wasm.h:26:
+In file included from ./sdl2/common.h:25:
+/home/runner/work/_temp/a1b2e16a-d63b-41b0-9df8-e15c3eeb4a75/emsdk-main/upstream/emscripten/cache/sysroot/include/fakesdl/SDL_syswm.h:1:2: error: "To use the emscripten port of SDL use -sUSE_SDL or -sUSE_SDL=2"
+    1 | #error "To use the emscripten port of SDL use -sUSE_SDL or -sUSE_SDL=2"
+      |  ^
+In file included from rombank.c:43:
+In file included from ./wasm/wasm.h:26:
+./sdl2/common.h:39:2: error: unknown type name 'SDL_Window'
+   39 |         SDL_Window *vo_window;
+      |         ^
+./sdl2/common.h:40:2: error: unknown type name 'Uint32'
+   40 |         Uint32 vo_window_id;
+      |         ^
+./sdl2/common.h:67:39: error: unknown type name 'SDL_Event'
+   67 | int filter_sdl_events(void *userdata, SDL_Event *event);
+      |                                       ^
+./sdl2/common.h:69:53: error: unknown type name 'SDL_Keysym'
+   69 | void sdl_keypress(struct ui_sdl2_interface *uisdl2, SDL_Keysym *keysym);
+      |                                                     ^
+./sdl2/common.h:70:55: error: unknown type name 'SDL_Keysym'
+   70 | void sdl_keyrelease(struct ui_sdl2_interface *uisdl2, SDL_Keysym *keysym);
+      |                                                       ^
+./sdl2/common.h:93:72: error: unknown type name 'SDL_SysWMmsg'
+   93 | inline void sdl_os_handle_syswmevent(struct ui_sdl2_interface *uisdl2, SDL_SysWMmsg *wmmsg) {
+      |                                                                        ^
+8 errors generated.
+make[3]: *** [Makefile:2173: xroar-rombank.o] Error 1
+make[3]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine/src'
+make[2]: *** [Makefile:1099: all] Error 2
+make[2]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine/src'
+make[1]: *** [Makefile:447: all-recursive] Error 1
+make[1]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1-pristine'
+make: *** [Makefile:388: all] Error 2
