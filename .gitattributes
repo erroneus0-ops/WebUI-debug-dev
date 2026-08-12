@@ -1,0 +1,24 @@
+# Normalize line endings to LF for everything Git considers text, so
+# Windows/Linux/Mac clones all see the same bytes and nobody gets the
+# "LF will be replaced by CRLF" warning going forward. Git's own
+# text/binary auto-detection is generally reliable, but the binary
+# extensions below are pinned explicitly rather than left to
+# heuristics -- getting this wrong for a real binary (corrupting a
+# .wasm by attempting line-ending conversion on it) is a much worse
+# failure than a false negative on some obscure text format.
+
+* text=auto eol=lf
+
+*.wasm   binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.xls    binary
+*.xlsx   binary
+*.zip    binary
+*.pem    binary
+*.key    binary
+*.woff   binary
+*.woff2  binary
