@@ -43,6 +43,7 @@
 #include "hkbd.h"
 #include "joystick.h"
 #include "logging.h"
+#include "vo.h"
 #include "machine.h"
 #include "romlist.h"
 #include "vdisk.h"
@@ -1162,6 +1163,25 @@ void wasm_step(void) {
 	wasm_debug_paused = 1;
 	wasm_debug_stop_reason = 2;
 	wasm_debug_stop_address = -1;
+	// Confirmed by real testing: without this, stepping through a
+	// program that writes to screen memory character-by-character
+	// showed nothing changing at all, then the whole result appeared
+	// at once the moment Resume let a normal frame run. Cause,
+	// confirmed by reading xroar.c directly: the canvas is normally
+	// repainted only on vsync (once per emulated video frame) --
+	// single_step() bypasses that whole per-frame pipeline entirely, so
+	// nothing ever triggers a repaint between steps even though the
+	// actual memory writes are happening correctly at each one.
+	// vo_refresh() is XRoar's own existing, purpose-built answer to
+	// exactly this -- its own comment in vo.h says "useful while
+	// single-stepping, where the usual render functions won't be
+	// called". xroar_run() already calls this itself, but only for the
+	// GDB-target's stopped state (machine_run_state_stopped), which
+	// this WASM build's own pause/step mechanism runs entirely outside
+	// of -- so it needs calling directly here instead.
+	if (xroar.vo_interface) {
+		vo_refresh(xroar.vo_interface);
+	}
 }
 
 // Breakpoint handler. The (bool, uint32) signature is shared with
@@ -1197,6 +1217,14 @@ static void wasm_bp_hit(void *sptr, _Bool dummy, uint32_t addr) {
 	wasm_debug_paused = 1;
 	wasm_debug_stop_reason = 1;
 	wasm_debug_stop_address = (int)addr;
+	// Same reasoning as wasm_step() above -- a breakpoint firing stops
+	// the CPU mid-frame, before that frame's own vsync/draw ever
+	// happens, so without this the screen would still show whatever it
+	// last looked like before the breakpoint, not the state at the
+	// moment execution actually stopped.
+	if (xroar.vo_interface) {
+		vo_refresh(xroar.vo_interface);
+	}
 	EM_ASM({
 		if (typeof wasm_on_debug_stop === 'function') {
 			wasm_on_debug_stop($0, $1);
