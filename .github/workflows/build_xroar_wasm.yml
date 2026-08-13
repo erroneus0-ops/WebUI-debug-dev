@@ -151,6 +151,31 @@ jobs:
           cp emcc_workflow/xroar-1.12.1/src/xroar.js   wasm/xroar-custom-patched.js
           cp emcc_workflow/xroar-1.12.1/src/xroar.wasm wasm/xroar-custom-patched.wasm
 
+          # THE ACTUAL ROOT CAUSE of tonight's whole "identical source,
+          # always broken, no matter what changes" mystery: emscripten
+          # bakes the paired .wasm filename directly into the compiled
+          # .js glue as a literal string (it's always "xroar.wasm" here,
+          # since that's the Makefile's own fixed build target name,
+          # unrelated to whatever we rename the file to afterward). A
+          # plain `cp` renames the file on disk but does not touch that
+          # embedded string -- so the renamed xroar-custom-patched.js
+          # was silently still fetching the STOCK build's xroar.wasm
+          # (a completely different binary, no custom exports, sitting
+          # right next to it in the same wasm/ directory) every single
+          # time, regardless of any change to this tree's actual source.
+          # Confirmed directly: `grep -o '"[^"]*\.wasm"'` on the built
+          # file showed "xroar.wasm", not "xroar-custom-patched.wasm".
+          # Explains every confusing symptom from tonight's debugging:
+          # perfect determinism no matter what source changed (the
+          # custom source was never actually being loaded at all), and
+          # why the exact error text drifted between attempts (stock's
+          # own xroar.wasm kept changing content as it got rebuilt
+          # independently, while this file always pointed at whatever
+          # stock happened to be at that moment).
+          sed -i 's/"xroar\.wasm"/"xroar-custom-patched.wasm"/' wasm/xroar-custom-patched.js
+          echo "=== confirming the fix took effect ==="
+          grep -o '"[^"]*\.wasm"' wasm/xroar-custom-patched.js
+
       - name: Verify output
         run: |
           ls -la wasm/xroar-custom-patched.js wasm/xroar-custom-patched.wasm
