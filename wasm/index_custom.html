@@ -1354,6 +1354,17 @@ var Module = {
 			<span class="button" onclick="wasm_debug_set_bp()">Set</span>
 			<span class="button" onclick="wasm_debug_clear_bp()">Clear</span>
 		</p>
+		<p style="margin:4px 0 4px 0;">
+			<label style="cursor:pointer;">
+				<input type="checkbox" id="dbg2-auto-refresh" checked onchange="wasm_debug_toggle_refresh()">
+				Auto-refresh screen on step/breakpoint
+			</label>
+		</p>
+		<p style="margin:4px 0 4px 0;">
+			Dump: $<input type="text" size="4" id="dbg2-dump-addr" placeholder="0400" style="font-family:monospace;">
+			len <input type="text" size="3" id="dbg2-dump-len" placeholder="32" value="32" style="font-family:monospace;">
+			<span class="button" onclick="wasm_debug_dump()">Dump</span>
+		</p>
 	</div>
 </div>
 <script>
@@ -1453,6 +1464,34 @@ var Module = {
 		refresh();
 	};
 
+	window.wasm_debug_toggle_refresh = function() {
+		var checked = document.getElementById('dbg2-auto-refresh').checked;
+		Module.ccall('wasm_set_auto_refresh', null, ['number'], [checked ? 1 : 0]);
+	};
+
+	window.wasm_debug_dump = function() {
+		var addr = parseInt(document.getElementById('dbg2-dump-addr').value, 16);
+		var len = parseInt(document.getElementById('dbg2-dump-len').value, 10);
+		if (isNaN(addr) || addr < 0 || addr > 0xffff) {
+			if (typeof log_message === 'function') {
+				log_message('ERROR: dump address out of range (must be $0000-$FFFF)');
+			}
+			return;
+		}
+		if (isNaN(len) || len <= 0 || len > 4096) {
+			if (typeof log_message === 'function') {
+				log_message('ERROR: dump length out of range (must be 1-4096)');
+			}
+			return;
+		}
+		var dump = window.wasm_hex_dump(addr, len);
+		if (typeof log_message === 'function') {
+			log_message(dump);
+		} else {
+			console.log(dump);
+		}
+	};
+
 	// Called directly from wasm.c's EM_ASM in wasm_bp_hit -- immediate
 	// update on a breakpoint hit rather than waiting for the next poll.
 	window.wasm_on_debug_stop = function(reason, addr) {
@@ -1460,6 +1499,42 @@ var Module = {
 			log_message('Breakpoint hit at $' + addr.toString(16).toUpperCase().padStart(4, '0'));
 		}
 		refresh();
+	};
+
+	// Read `length` bytes of live machine memory starting at `addr` and
+	// return a classic hex-dump string (16 bytes/row, hex + ASCII
+	// columns, matching the format XRoar itself uses for -trace output
+	// and the same layout used to manually verify HELLO.BIN earlier).
+	// Reads the C side's malloc'd buffer directly via Module.HEAPU8
+	// rather than one ccall per byte, then frees it -- built
+	// specifically so memory contents can be checked directly,
+	// independent of whatever the screen happens to show (see
+	// wasm_set_auto_refresh below for why that distinction matters).
+	window.wasm_hex_dump = function(addr, length) {
+		if (typeof Module === 'undefined' || !Module.ccall) return '';
+		var ptr = Module.ccall('wasm_dump_memory', 'number', ['number', 'number'], [addr, length]);
+		if (!ptr) return '(dump failed -- no machine loaded, or invalid length)';
+		var bytes = Module.HEAPU8.subarray(ptr, ptr + length);
+		var lines = [];
+		for (var row = 0; row < length; row += 16) {
+			var rowBytes = bytes.subarray(row, Math.min(row + 16, length));
+			var hexPart = '';
+			var asciiPart = '';
+			for (var i = 0; i < 16; i++) {
+				if (i < rowBytes.length) {
+					var b = rowBytes[i];
+					hexPart += b.toString(16).toUpperCase().padStart(2, '0') + ' ';
+					asciiPart += (b >= 0x20 && b < 0x7f) ? String.fromCharCode(b) : '.';
+				} else {
+					hexPart += '   ';
+				}
+				if (i === 7) hexPart += ' ';
+			}
+			var rowAddr = ((addr + row) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+			lines.push('$' + rowAddr + '  ' + hexPart + ' |' + asciiPart + '|');
+		}
+		Module.ccall('wasm_free_dump_buffer', null, ['number'], [ptr]);
+		return lines.join('\n');
 	};
 
 	// Register/breakpoint inputs need the same protection the
@@ -1483,6 +1558,8 @@ var Module = {
 		});
 	}
 	protectInputFromSDL2(document.getElementById('dbg2-bp-addr'));
+	protectInputFromSDL2(document.getElementById('dbg2-dump-addr'));
+	protectInputFromSDL2(document.getElementById('dbg2-dump-len'));
 
 	function buildRegisterGrid() {
 		var count = Module.ccall('wasm_register_count', 'number', [], []);

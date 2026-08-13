@@ -104,6 +104,11 @@ void wasm_step(void);
 int wasm_get_stop_reason(void);
 int wasm_get_stop_address(void);
 
+void wasm_set_auto_refresh(int enabled);
+int wasm_get_auto_refresh(void);
+void *wasm_dump_memory(int addr, int length);
+void wasm_free_dump_buffer(void *buf);
+
 void wasm_set_breakpoint(int addr);
 void wasm_clear_breakpoint(int addr);
 

@@ -23,6 +23,7 @@
 
 #include <libgen.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -71,6 +72,15 @@ static int wasm_waiting_files = 0;
 static int wasm_debug_paused = 0;
 static int wasm_debug_stop_reason = 0;   // 0 = running, 1 = breakpoint hit, 2 = user pause/step
 static int wasm_debug_stop_address = -1; // address of last breakpoint hit, -1 if not applicable
+
+// Whether wasm_step()/wasm_bp_hit() force a screen repaint. Defaults on
+// (matches the behavior added just before this), but toggleable --
+// sometimes not repainting between steps is the actually correct thing
+// to want: it lets you inspect memory directly (via wasm_dump_memory
+// below) to confirm writes happened exactly as expected, independent
+// of whatever the display would show, rather than the display's own
+// vsync-driven redraw silently doing the "confirmation" for you.
+static int wasm_debug_auto_refresh = 1;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1152,6 +1162,47 @@ int wasm_get_stop_address(void) {
 	return wasm_debug_stop_address;
 }
 
+void wasm_set_auto_refresh(int enabled) {
+	wasm_debug_auto_refresh = enabled ? 1 : 0;
+}
+
+int wasm_get_auto_refresh(void) {
+	return wasm_debug_auto_refresh;
+}
+
+// Read `length` bytes of live machine memory starting at `addr` into a
+// freshly malloc'd buffer, returning a pointer JS can read directly via
+// Module.HEAPU8.subarray(ptr, ptr+length) -- avoids one ccall per byte
+// for anything more than a trivial range, unlike looping
+// wasm_read_byte() from JS. Caller must free the result via
+// wasm_free_dump_buffer() once done reading it, or it leaks.
+//
+// This exists specifically so memory contents can be verified directly
+// -- independent of whatever the display happens to show, which is
+// exactly the point when auto-refresh is turned off (see
+// wasm_set_auto_refresh above): confirm a write actually happened by
+// reading the bytes themselves, not by trusting a screen redraw to
+// have shown it.
+
+void *wasm_dump_memory(int addr, int length) {
+	if (!xroar.machine || length <= 0) {
+		return NULL;
+	}
+	uint8_t *buf = malloc((size_t)length);
+	if (!buf) {
+		return NULL;
+	}
+	unsigned a = (unsigned)addr & 0xffff;
+	for (int i = 0; i < length; i++) {
+		buf[i] = xroar.machine->read_byte(xroar.machine, (a + i) & 0xffff, 0);
+	}
+	return buf;
+}
+
+void wasm_free_dump_buffer(void *buf) {
+	free(buf);
+}
+
 // Execute exactly one instruction, then remain paused so JS can inspect
 // state before deciding to step again or resume.
 
@@ -1179,7 +1230,7 @@ void wasm_step(void) {
 	// GDB-target's stopped state (machine_run_state_stopped), which
 	// this WASM build's own pause/step mechanism runs entirely outside
 	// of -- so it needs calling directly here instead.
-	if (xroar.vo_interface) {
+	if (wasm_debug_auto_refresh && xroar.vo_interface) {
 		vo_refresh(xroar.vo_interface);
 	}
 }
@@ -1222,7 +1273,7 @@ static void wasm_bp_hit(void *sptr, _Bool dummy, uint32_t addr) {
 	// happens, so without this the screen would still show whatever it
 	// last looked like before the breakpoint, not the state at the
 	// moment execution actually stopped.
-	if (xroar.vo_interface) {
+	if (wasm_debug_auto_refresh && xroar.vo_interface) {
 		vo_refresh(xroar.vo_interface);
 	}
 	EM_ASM({
