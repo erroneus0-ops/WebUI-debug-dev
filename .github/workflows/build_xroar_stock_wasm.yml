@@ -40,7 +40,7 @@ jobs:
       - name: Install Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
-          version: latest
+          version: 6.0.6  # pinned, not "latest" -- see commit message for why
 
       - name: Verify emcc
         run: emcc --version
