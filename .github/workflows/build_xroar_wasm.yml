@@ -115,7 +115,23 @@ jobs:
           # Unlike --enable-gdb-target, this has no pthread/socket
           # dependency -- just a data table and a switch statement --
           # so there's no reason not to turn it on for the custom build.
-          emconfigure ./configure --enable-wasm --enable-trace CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
+          # Dropped -flto as a diagnostic step: real runtime failure
+          # reported ("__emscripten_stack_alloc is not a function",
+          # thrown from callMain -- the compiled module's own internal
+          # runtime setup failing, not a bug in any HTML/JS). Suspected
+          # cause: aggressive LTO has a known failure class with
+          # emscripten specifically -- it can eliminate internal
+          # runtime functions it doesn't realize are still needed, and
+          # --enable-trace (new today, not present in the working stock
+          # build at all) pulls in a substantial new code path
+          # (mc6809_trace.c's full 3-page opcode table) that could
+          # easily shift what LTO decides is unused. Stock build uses
+          # -flto too and works fine, but stock never enables trace, so
+          # it never exercises this interaction. Testing without -flto
+          # first since it's the smaller, more reversible change versus
+          # also dropping --enable-trace (which the whole point of this
+          # build depends on).
+          emconfigure ./configure --enable-wasm --enable-trace CFLAGS="-O3" LDFLAGS="-O3"
 
       - name: Build standalone version reporter (tagged -- this is the custom build)
         run: |
