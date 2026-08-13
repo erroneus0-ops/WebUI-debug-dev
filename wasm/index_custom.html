@@ -1505,24 +1505,26 @@ var Module = {
 	// return a classic hex-dump string (16 bytes/row, hex + ASCII
 	// columns, matching the format XRoar itself uses for -trace output
 	// and the same layout used to manually verify HELLO.BIN earlier).
-	// Reads the C side's malloc'd buffer directly via Module.HEAPU8
-	// rather than one ccall per byte, then frees it -- built
-	// specifically so memory contents can be checked directly,
-	// independent of whatever the screen happens to show (see
-	// wasm_set_auto_refresh below for why that distinction matters).
+	//
+	// Originally tried reading the C side's malloc'd buffer directly
+	// via Module.HEAPU8 (one ccall total instead of one per byte) --
+	// confirmed by real testing that this build's Module doesn't expose
+	// HEAPU8 at all (not listed in EXPORTED_RUNTIME_METHODS), so that
+	// approach threw immediately. Switched to wasm_read_byte() in a
+	// loop instead -- more ccalls, but it's the exact mechanism already
+	// proven working everywhere else tonight, and for an occasional
+	// manual dump of a few dozen-to-few-hundred bytes the overhead is
+	// not something a person clicking a button would ever notice.
 	window.wasm_hex_dump = function(addr, length) {
 		if (typeof Module === 'undefined' || !Module.ccall) return '';
-		var ptr = Module.ccall('wasm_dump_memory', 'number', ['number', 'number'], [addr, length]);
-		if (!ptr) return '(dump failed -- no machine loaded, or invalid length)';
-		var bytes = Module.HEAPU8.subarray(ptr, ptr + length);
 		var lines = [];
 		for (var row = 0; row < length; row += 16) {
-			var rowBytes = bytes.subarray(row, Math.min(row + 16, length));
 			var hexPart = '';
 			var asciiPart = '';
+			var rowLen = Math.min(16, length - row);
 			for (var i = 0; i < 16; i++) {
-				if (i < rowBytes.length) {
-					var b = rowBytes[i];
+				if (i < rowLen) {
+					var b = Module.ccall('wasm_read_byte', 'number', ['number'], [(addr + row + i) & 0xffff]);
 					hexPart += b.toString(16).toUpperCase().padStart(2, '0') + ' ';
 					asciiPart += (b >= 0x20 && b < 0x7f) ? String.fromCharCode(b) : '.';
 				} else {
@@ -1533,7 +1535,6 @@ var Module = {
 			var rowAddr = ((addr + row) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
 			lines.push('$' + rowAddr + '  ' + hexPart + ' |' + asciiPart + '|');
 		}
-		Module.ccall('wasm_free_dump_buffer', null, ['number'], [ptr]);
 		return lines.join('\n');
 	};
 
