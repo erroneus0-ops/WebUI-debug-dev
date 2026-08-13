@@ -87,58 +87,7 @@ jobs:
       - name: Configure for WASM
         run: |
           cd emcc_workflow/xroar-1.12.1
-          # This tree's tools/win2rc has had a broken executable bit
-          # the entire time (checked directly: only one commit ever
-          # touched it, showing mode 100644) -- it just never triggered
-          # a failure until this exact run, purely by chance. Every CI
-          # checkout gives every file a fresh, nearly-simultaneous
-          # timestamp, so whether make decides windows32/resources.h
-          # needs regenerating (which needs win2rc to actually run) is
-          # close to a coin flip on every single run, regardless of
-          # what changed in that particular push. Same fix already
-          # applied to build_xroar_stock_wasm.yml for the exact same
-          # reason -- applying here too rather than continuing to rely
-          # on lucky timestamp ordering.
-          chmod +x tools/win2rc tools/xkb_to_hk_scancode.pl 2>/dev/null || true
-          # --enable-trace: the WASM target defaults this OFF (same
-          # pattern as --enable-traps/--enable-gdb-target, all default
-          # to no for --enable-wasm specifically -- see configure.ac).
-          # Needed because mc6809_trace.c (which now also holds
-          # mc6809_instruction_length(), used by
-          # wasm_get_instruction_length()) is only added to
-          # xroar_SOURCES inside Makefile.am's "if TRACE" block --
-          # without this flag the whole file, and
-          # MC6809_MAX_TRACE_BYTES itself, don't exist in this build at
-          # all. Confirmed directly from a real failed run (undeclared
-          # identifier MC6809_MAX_TRACE_BYTES, and mc6809_trace.o simply
-          # absent from the compiled-object list) rather than assumed.
-          # Unlike --enable-gdb-target, this has no pthread/socket
-          # dependency -- just a data table and a switch statement --
-          # so there's no reason not to turn it on for the custom build.
-          # Dropped -flto as a diagnostic step: real runtime failure
-          # reported ("__emscripten_stack_alloc is not a function",
-          # thrown from callMain -- the compiled module's own internal
-          # runtime setup failing, not a bug in any HTML/JS). Suspected
-          # cause: aggressive LTO has a known failure class with
-          # emscripten specifically -- it can eliminate internal
-          # runtime functions it doesn't realize are still needed, and
-          # --enable-trace (new today, not present in the working stock
-          # build at all) pulls in a substantial new code path
-          # (mc6809_trace.c's full 3-page opcode table) that could
-          # easily shift what LTO decides is unused. Stock build uses
-          # -flto too and works fine, but stock never enables trace, so
-          # it never exercises this interaction. Testing without -flto
-          # first since it's the smaller, more reversible change versus
-          # also dropping --enable-trace (which the whole point of this
-          # build depends on).
-          # DIAGNOSTIC ISOLATION TEST: --enable-trace removed temporarily
-          # (along with the code that needs it, commented out in wasm.c/
-          # wasm.h/exported_functions) to get a clean baseline matching
-          # the last confirmed-working build from earlier tonight, before
-          # testing whether re-adding --enable-trace alone (independent
-          # of the already-removed -flto) reproduces the WASM import
-          # LinkError. See commit history for the full story.
-          emconfigure ./configure --enable-wasm CFLAGS="-O3" LDFLAGS="-O3"
+          emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
       - name: Build standalone version reporter (tagged -- this is the custom build)
         run: |

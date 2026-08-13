@@ -31,8 +31,4 @@ void mc6809_trace_vector(struct mc6809_trace *, uint16_t vec,
 void mc6809_trace_instruction(struct mc6809_trace *, uint16_t pc,
 			      unsigned nbytes, uint8_t *bytes);
 
-// Added for the WASM debugger UI -- see the comment above its
-// definition in mc6809_trace.c for the full explanation.
-unsigned mc6809_instruction_length(uint8_t *bytes);
-
 #endif
