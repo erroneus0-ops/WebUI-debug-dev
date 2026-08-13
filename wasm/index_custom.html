@@ -1308,5 +1308,217 @@ var Module = {
 	});
 </script>
 
+<!-- Floating debugger panel -- register display, pause/step/breakpoint
+     controls. Deliberately its own small floating window (like the
+     keyboard/toolbox on index_new.html), separate from the main
+     toolbox here, which isn't floating yet -- see the discussion this
+     was built from. Reuses the exact drag-handle technique already
+     proven twice (index_new.html's keyboard and toolbox wrappers)
+     rather than a new mechanism.
+
+     Registers are NOT hardcoded to 9 named fields -- built dynamically
+     from wasm_register_count()/wasm_register_name(), same reasoning as
+     the wasm_register_by_name() export itself: don't keep a second,
+     hand-maintained copy of Ciaran's register table that could drift
+     out of sync with it if he adds more registers later. -->
+<div id="debugger-wrapper" style="display:none; position:fixed; top:2.5rem; left:16px; z-index:100; flex-direction:column; box-shadow:0 4px 16px rgba(0,0,0,0.5); background:#c8c8c8; border-top:2px solid #ffffff; border-left:2px solid #ffffff; border-bottom:2px solid #808080; border-right:2px solid #808080; resize:both; overflow:hidden; min-width:260px; min-height:160px; width:300px;">
+	<div id="debugger-drag-handle" style="background:#404040; color:#ccc; font:bold 11px sans-serif; padding:4px 8px; cursor:grab; user-select:none; -webkit-user-select:none; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #222; touch-action:none; flex-shrink:0;">
+		<span>Debugger</span><span style="letter-spacing:2px;opacity:0.5">&#8801;</span>
+	</div>
+	<div style="padding:6px; overflow-y:auto; flex:1 1 auto; min-height:0; font-family:monospace; font-size:11px;">
+		<p style="margin:0 0 6px 0;">
+			<span class="button" id="dbg2-pause-btn" onclick="wasm_debug_pause()">Pause</span>
+			<span class="button" id="dbg2-resume-btn" onclick="wasm_debug_resume()">Resume</span>
+			<span class="button" onclick="wasm_debug_step()">Step</span>
+			<span id="dbg2-status" style="margin-left:6px;">running</span>
+		</p>
+		<table id="dbg2-registers" style="border-collapse:collapse; width:100%;"></table>
+		<p style="margin:8px 0 4px 0;">
+			Break: $<input type="text" size="4" id="dbg2-bp-addr" placeholder="0000" style="font-family:monospace;">
+			<span class="button" onclick="wasm_debug_set_bp()">Set</span>
+			<span class="button" onclick="wasm_debug_clear_bp()">Clear</span>
+		</p>
+	</div>
+</div>
+<img id="debugger-toggle" src="hamburger.svg" title="Toggle Debugger panel" style="position:fixed; top:8px; right:44px; width:24px; height:24px; cursor:pointer; z-index:101; -webkit-touch-callout:none;">
+
+<script>
+(function() {
+	var wrapper = document.getElementById('debugger-wrapper');
+	var handle = document.getElementById('debugger-drag-handle');
+	var toggle = document.getElementById('debugger-toggle');
+	var regTable = document.getElementById('dbg2-registers');
+	var regNames = [];   // filled in once Module is ready
+
+	toggle.addEventListener('click', function() {
+		var showing = wrapper.style.display !== 'none';
+		wrapper.style.display = showing ? 'none' : 'flex';
+	});
+
+	// ── Drag, identical technique to index_new.html's toolbox/keyboard ──
+	var dragging = false, startX, startY, origLeft, origTop;
+	function dragStart(x, y) {
+		dragging = true;
+		var rect = wrapper.getBoundingClientRect();
+		startX = x; startY = y;
+		origLeft = rect.left; origTop = rect.top;
+		handle.style.cursor = 'grabbing';
+		window._topDraggableZ = (window._topDraggableZ || 100) + 1;
+		wrapper.style.zIndex = window._topDraggableZ;
+	}
+	function dragMove(e, x, y) {
+		if (!dragging) return;
+		e.preventDefault();
+		wrapper.style.left = Math.max(0, origLeft + (x - startX)) + 'px';
+		wrapper.style.top  = Math.max(0, origTop  + (y - startY)) + 'px';
+	}
+	function dragEnd() {
+		dragging = false;
+		handle.style.cursor = 'grab';
+	}
+	handle.addEventListener('mousedown', function(e) { dragStart(e.clientX, e.clientY); });
+	document.addEventListener('mousemove', function(e) { dragMove(e, e.clientX, e.clientY); });
+	document.addEventListener('mouseup', dragEnd);
+	handle.addEventListener('touchstart', function(e) {
+		var t = e.touches[0];
+		dragStart(t.clientX, t.clientY);
+	}, {passive: true});
+	document.addEventListener('touchmove', function(e) {
+		if (!dragging) return;
+		var t = e.touches[0];
+		dragMove(e, t.clientX, t.clientY);
+	}, {passive: false});
+	document.addEventListener('touchend', dragEnd);
+
+	// Right-click the handle to reset position/size -- same convention
+	// as index_new.html's panels.
+	handle.addEventListener('contextmenu', function(e) {
+		e.preventDefault();
+		wrapper.style.left = '16px';
+		wrapper.style.top = '2.5rem';
+		wrapper.style.width = '300px';
+		wrapper.style.height = '';
+	});
+
+	// ── Debug controls -- thin wrappers, same functions the console-input
+	// box already exercises manually. Global (not IIFE-local) since the
+	// onclick= attributes above need to reach them. ──
+	window.wasm_debug_pause  = function() { Module.ccall('wasm_pause',  null, [], []); refresh(); };
+	window.wasm_debug_resume = function() { Module.ccall('wasm_resume', null, [], []); refresh(); };
+	window.wasm_debug_step   = function() { Module.ccall('wasm_step',   null, [], []); refresh(); };
+	window.wasm_debug_set_bp = function() {
+		var v = parseInt(document.getElementById('dbg2-bp-addr').value, 16);
+		if (!isNaN(v)) Module.ccall('wasm_set_breakpoint', null, ['number'], [v]);
+	};
+	window.wasm_debug_clear_bp = function() {
+		var v = parseInt(document.getElementById('dbg2-bp-addr').value, 16);
+		if (!isNaN(v)) Module.ccall('wasm_clear_breakpoint', null, ['number'], [v]);
+	};
+
+	// Called directly from wasm.c's EM_ASM in wasm_bp_hit -- immediate
+	// update on a breakpoint hit rather than waiting for the next poll.
+	window.wasm_on_debug_stop = function(reason, addr) {
+		if (reason === 1 && typeof log_message === 'function') {
+			log_message('Breakpoint hit at $' + addr.toString(16).toUpperCase().padStart(4, '0'));
+		}
+		refresh();
+	};
+
+	// Register/breakpoint inputs need the same protection the
+	// console-input textarea needed earlier tonight, and the same
+	// reason: XRoar's SDL2 keyboard capture grabs keydown/keyup/keypress
+	// globally so the emulated machine can be typed on directly, which
+	// swallows keystrokes meant for any other text field on the page
+	// unless explicitly protected. Reuses the existing stop_event()
+	// (defined once, further down this same script, for the type-dialog
+	// textarea) rather than a second copy of the same two-line function.
+	function protectInputFromSDL2(el) {
+		el.addEventListener('focus', function() {
+			document.addEventListener('keydown',  stop_event, true);
+			document.addEventListener('keyup',    stop_event, true);
+			document.addEventListener('keypress', stop_event, true);
+		});
+		el.addEventListener('blur', function() {
+			document.removeEventListener('keydown',  stop_event, true);
+			document.removeEventListener('keyup',    stop_event, true);
+			document.removeEventListener('keypress', stop_event, true);
+		});
+	}
+	protectInputFromSDL2(document.getElementById('dbg2-bp-addr'));
+
+	function buildRegisterGrid() {
+		var count = Module.ccall('wasm_register_count', 'number', [], []);
+		regNames = [];
+		var headRow = document.createElement('tr');
+		var valRow = document.createElement('tr');
+		for (var i = 0; i < count; i++) {
+			var name = Module.ccall('wasm_register_name', 'string', ['number'], [i]);
+			regNames.push(name);
+			var th = document.createElement('th');
+			th.textContent = name.toUpperCase();
+			th.style.cssText = 'font-size:10px; padding:1px 3px; text-align:center;';
+			headRow.appendChild(th);
+			var td = document.createElement('td');
+			var input = document.createElement('input');
+			input.type = 'text';
+			input.id = 'dbg2-reg-' + name;
+			input.size = 4;
+			input.style.cssText = 'font-family:monospace; font-size:11px; width:100%; box-sizing:border-box;';
+			protectInputFromSDL2(input);
+			input.addEventListener('change', function() {
+				var regno = regNames.indexOf(this.id.replace('dbg2-reg-', ''));
+				var v = parseInt(this.value, 16);
+				if (regno >= 0 && !isNaN(v)) {
+					Module.ccall('wasm_set_register', null, ['number', 'number'], [regno, v]);
+				}
+				refresh();
+			});
+			td.appendChild(input);
+			valRow.appendChild(td);
+		}
+		regTable.innerHTML = '';
+		regTable.appendChild(headRow);
+		regTable.appendChild(valRow);
+	}
+
+	function refresh() {
+		if (typeof Module === 'undefined' || !Module.ccall) return;
+		var paused = Module.ccall('wasm_is_paused', 'number', [], []);
+		var statusEl = document.getElementById('dbg2-status');
+		if (statusEl) {
+			if (paused) {
+				var reason = Module.ccall('wasm_get_stop_reason', 'number', [], []);
+				statusEl.textContent = (reason === 1) ? 'paused (breakpoint)' : 'paused';
+			} else {
+				statusEl.textContent = 'running';
+			}
+		}
+		if (!paused) return;   // registers only meaningful, and only fetched, while paused
+		regNames.forEach(function(name, regno) {
+			var input = document.getElementById('dbg2-reg-' + name);
+			if (!input || document.activeElement === input) return;   // don't clobber in-progress typing
+			var value = Module.ccall('wasm_get_register', 'number', ['number'], [regno]);
+			input.value = value.toString(16).toUpperCase().padStart(4, '0');
+		});
+	}
+
+	function whenModuleReady() {
+		if (typeof Module !== 'undefined' && Module.ccall) {
+			try {
+				buildRegisterGrid();
+				setInterval(function() {
+					if (wrapper.style.display !== 'none') refresh();
+				}, 200);
+				return;
+			} catch (e) {
+				// Module exists but exports aren't wired yet -- retry.
+			}
+		}
+		setTimeout(whenModuleReady, 200);
+	}
+	whenModuleReady();
+})();
+</script>
+
 </body>
 </html>
