@@ -437,7 +437,7 @@ table th { font-weight: normal; text-align: right; white-space: nowrap; }
           <span class="button" onclick="runConsoleInput()">Run</span>
           <span style="font-size:11px; color:#664;">Ctrl+Enter also works. Variables persist between runs, like the browser's own console.</span>
         </p>
-        <p style="text-align:right; margin:0 0 4px 0;"><span class="button" onclick="toggleLog()">...</span></p>
+        <p style="text-align:right; margin:0 0 4px 0;"><span class="button" onclick="clearLog()">Clear</span> <span class="button" onclick="toggleLog()">...</span></p>
         <div id="xroar-log" style="display:none; flex:1; overflow-y:auto; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px; white-space:pre-wrap;"></div>
       </div>
 
@@ -1012,6 +1012,12 @@ var Module = {
 		var el = document.getElementById('xroar-log');
 		if (!el) return;
 		el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+	}
+
+	function clearLog() {
+		var el = document.getElementById('xroar-log');
+		if (!el) return;
+		el.innerHTML = '';
 	}
 
 	// ── Console input: paste JS (e.g. Module.ccall(...) test snippets) here and
