@@ -1172,6 +1172,28 @@ void wasm_step(void) {
 static void wasm_bp_hit(void *sptr, _Bool dummy, uint32_t addr) {
 	(void)sptr;
 	(void)dummy;
+	// Was missing entirely -- this only ever set wasm_debug_paused,
+	// which correctly blocks *future* animation frames from calling
+	// xroar_run() again, but does nothing to stop the CPU's *current*,
+	// already-in-progress run call for this frame's cycle budget. One
+	// frame's worth of cycles is easily enough to finish a whole small
+	// test program, so the breakpoint would fire and log correctly
+	// every time it was reached, then execution would just continue to
+	// completion within the same frame, never actually appearing to
+	// pause at all -- confirmed directly: a real test hit the same
+	// breakpoint 6 times in a single burst (matching a 6-character
+	// loop) with no pause ever visible.
+	//
+	// machine->signal() is the correct, generic, machine-level primitive
+	// for this -- confirmed by reading coco3_signal()'s actual
+	// implementation, which does exactly cpu->running = 0 internally.
+	// Using this instead of reaching into struct MC6809 directly
+	// (which is what the now-abandoned 1.11-era port did) keeps this
+	// consistent with everything else in this file going through the
+	// machine-level generic interface rather than CPU internals.
+	if (xroar.machine && xroar.machine->signal) {
+		xroar.machine->signal(xroar.machine, 5);  // SIGTRAP -- conventional "stopped at a breakpoint" value, matches what gdb.c itself passes for the same situation
+	}
 	wasm_debug_paused = 1;
 	wasm_debug_stop_reason = 1;
 	wasm_debug_stop_address = (int)addr;
