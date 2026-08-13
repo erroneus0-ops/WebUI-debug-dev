@@ -819,7 +819,17 @@ function applyMonitorLayout() {
                 // First tap -- wait to see if second tap arrives
                 clearTimeout(singleTapTimer);
                 singleTapTimer = setTimeout(function() {
-                    toggleControls();
+                    // Was toggleControls() -- toolbox now stays always
+                    // visible on this page (per the discussion this
+                    // was built from: the second hamburger-shaped
+                    // button the debugger panel added collided with
+                    // the existing scale-slider controls in the
+                    // top-right). Toolbox no longer needs a toggle at
+                    // all, freeing this one up to be the debugger
+                    // panel's toggle instead of adding a second icon.
+                    if (typeof window._toggleDebuggerPanel === 'function') {
+                        window._toggleDebuggerPanel();
+                    }
                     singleTapTimer = null;
                 }, 300);
             }
@@ -1340,20 +1350,20 @@ var Module = {
 		</p>
 	</div>
 </div>
-<img id="debugger-toggle" src="hamburger.svg" title="Toggle Debugger panel" style="position:fixed; top:8px; right:44px; width:24px; height:24px; cursor:pointer; z-index:101; -webkit-touch-callout:none;">
-
 <script>
 (function() {
 	var wrapper = document.getElementById('debugger-wrapper');
 	var handle = document.getElementById('debugger-drag-handle');
-	var toggle = document.getElementById('debugger-toggle');
 	var regTable = document.getElementById('dbg2-registers');
 	var regNames = [];   // filled in once Module is ready
 
-	toggle.addEventListener('click', function() {
+	// Called by the existing top-left hamburger's single-click now,
+	// instead of a second hamburger-shaped icon that collided with the
+	// scale slider already in the top-right.
+	window._toggleDebuggerPanel = function() {
 		var showing = wrapper.style.display !== 'none';
 		wrapper.style.display = showing ? 'none' : 'flex';
-	});
+	};
 
 	// ── Drag, identical technique to index_new.html's toolbox/keyboard ──
 	var dragging = false, startX, startY, origLeft, origTop;
