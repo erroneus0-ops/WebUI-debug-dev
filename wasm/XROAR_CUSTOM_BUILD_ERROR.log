@@ -1,0 +1,130 @@
+# Build failure log (tail -300)
+emmake: "make" in "/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1"
+make  all-recursive
+make[1]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1'
+Making all in portalib
+make[2]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1/portalib'
+  CC       c-ctype.o
+  CC       c-strcasecmp.o
+  CC       c-strncasecmp.o
+  CC       delegate.o
+  CC       intfuncs.o
+  CC       pl-estrcpy.o
+  CC       sds.o
+  CC       sdsx.o
+  CC       slist.o
+  CC       strnlen.o
+  CC       strsep.o
+  CC       xmalloc.o
+  AR       libporta.a
+make[2]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1/portalib'
+Making all in src
+make[2]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1/src'
+make  all-am
+make[3]: Entering directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1/src'
+  CC       xroar-ao.o
+  CC       xroar-auto_kbd.o
+  CC       xroar-ay891x.o
+  CC       xroar-becker.o
+  CC       xroar-blockdev.o
+  CC       xroar-breakpoint.o
+  CC       xroar-cart.o
+  CC       xroar-clock.o
+  CC       xroar-colourspace.o
+  CC       xroar-crc16.o
+  CC       xroar-crc32.o
+  CC       xroar-crclist.o
+  CC       xroar-debug.o
+  CC       xroar-dkbd.o
+  CC       xroar-events.o
+  CC       xroar-filter.o
+  CC       xroar-fs.o
+  CC       xroar-hexs19.o
+  CC       xroar-hkbd.o
+  CC       xroar-hkbd_joystick.o
+  CC       xroar-joystick.o
+  CC       xroar-keyboard.o
+  CC       xroar-logging.o
+  CC       xroar-machine.o
+  CC       xroar-mc10_cart.o
+  CC       xroar-messenger.o
+  CC       xroar-module.o
+  CC       xroar-mos6551.o
+  CC       xroar-ntsc.o
+  CC       null/xroar-ui_null.o
+  CC       xroar-part.o
+  CC       xroar-path.o
+  CC       xroar-printer.o
+  CC       xroar-ram.o
+  CC       xroar-rom.o
+  CC       xroar-rombank.o
+  CC       xroar-romlist.o
+  CC       xroar-screenshot.o
+  CC       xroar-serialise.o
+  CC       xroar-snapshot.o
+  CC       xroar-sndfile_compat.o
+  CC       xroar-sound.o
+  CC       xroar-symtab.o
+  CC       xroar-tape.o
+  CC       xroar-tape_cas.o
+  CC       xroar-tape_sndfile.o
+  CC       xroar-ui.o
+  CC       xroar-vdg_pal.o
+  CC       xroar-vdg_palette.o
+  CC       xroar-vdisk.o
+  CC       xroar-vdrive.o
+  CC       xroar-vo.o
+  CC       xroar-vo_render.o
+  CC       xroar-xconfig.o
+  CC       xroar-xroar.o
+  CC       dragon/xroar-coco.o
+  CC       dragon/xroar-immunity.o
+  CC       dragon/xroar-deluxecoco.o
+  CC       dragon/xroar-dragon.o
+  CC       dragon/xroar-dragon32.o
+  CC       dragon/xroar-dragon64.o
+  CC       dragon/xroar-dragonpro.o
+  CC       xroar-coco3.o
+  CC       xroar-mc10.o
+  CC       mc6801/xroar-mc6801.o
+  CC       mc6809/xroar-hd6309.o
+  CC       mc6809/xroar-mc6809.o
+  CC       xroar-mc6821.o
+  CC       mc6847/xroar-font-6847.o
+  CC       mc6847/xroar-font-6847t1.o
+  CC       mc6847/xroar-mc6847.o
+  CC       xroar-mc6883.o
+  CC       xroar-samx8.o
+  CC       tcc1014/xroar-font-gime.o
+  CC       tcc1014/xroar-tcc1014.o
+  CC       xroar-deltados.o
+  CC       xroar-dragondos.o
+  CC       xroar-gmc.o
+  CC       xroar-ide.o
+  CC       xroar-idecart.o
+  CC       xroar-mooh.o
+  CC       xroar-mpi.o
+  CC       xroar-nx32.o
+  CC       xroar-orch90.o
+  CC       xroar-rsdos.o
+  CC       xroar-sn76489.o
+  CC       xroar-spi65.o
+  CC       xroar-spi_sdcard.o
+  CC       xroar-wd279x.o
+  CC       xroar-mcx128.o
+  CC       xroar-main_unix.o
+  CC       wasm/xroar-wasm.o
+wasm/wasm.c:1055:16: error: use of undeclared identifier 'MC6809_MAX_TRACE_BYTES'
+ 1055 |         uint8_t bytes[MC6809_MAX_TRACE_BYTES];
+      |                       ^~~~~~~~~~~~~~~~~~~~~~
+wasm/wasm.c:1057:22: error: use of undeclared identifier 'MC6809_MAX_TRACE_BYTES'
+ 1057 |         for (int i = 0; i < MC6809_MAX_TRACE_BYTES; i++) {
+      |                             ^~~~~~~~~~~~~~~~~~~~~~
+2 errors generated.
+make[3]: *** [Makefile:2986: wasm/xroar-wasm.o] Error 1
+make[3]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1/src'
+make[2]: *** [Makefile:1101: all] Error 2
+make[2]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1/src'
+make[1]: *** [Makefile:453: all-recursive] Error 1
+make[1]: Leaving directory '/home/runner/work/WebUI-debug-dev/WebUI-debug-dev/emcc_workflow/xroar-1.12.1'
+make: *** [Makefile:394: all] Error 2
