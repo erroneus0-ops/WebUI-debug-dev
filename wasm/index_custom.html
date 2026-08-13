@@ -1418,11 +1418,33 @@ var Module = {
 	window.wasm_debug_step   = function() { Module.ccall('wasm_step',   null, [], []); refresh(); };
 	window.wasm_debug_set_bp = function() {
 		var v = parseInt(document.getElementById('dbg2-bp-addr').value, 16);
-		if (!isNaN(v)) Module.ccall('wasm_set_breakpoint', null, ['number'], [v]);
+		// Range check: the C side masks with & 0xffff silently, so a
+		// typo like a stray extra digit (0xA2822 instead of 0xA282)
+		// would previously just set a breakpoint at the masked-down
+		// address ($2822) with zero warning -- confirmed happening for
+		// real during testing. Rejecting out-of-range input here
+		// instead of letting it through to be silently truncated.
+		if (isNaN(v) || v < 0 || v > 0xffff) {
+			if (typeof log_message === 'function') {
+				log_message('ERROR: breakpoint address out of range (must be $0000-$FFFF)');
+			}
+			return;
+		}
+		Module.ccall('wasm_set_breakpoint', null, ['number'], [v]);
+		lastBreakpointAddr = v;
+		refresh();
 	};
 	window.wasm_debug_clear_bp = function() {
 		var v = parseInt(document.getElementById('dbg2-bp-addr').value, 16);
-		if (!isNaN(v)) Module.ccall('wasm_clear_breakpoint', null, ['number'], [v]);
+		if (isNaN(v) || v < 0 || v > 0xffff) {
+			if (typeof log_message === 'function') {
+				log_message('ERROR: breakpoint address out of range (must be $0000-$FFFF)');
+			}
+			return;
+		}
+		Module.ccall('wasm_clear_breakpoint', null, ['number'], [v]);
+		if (lastBreakpointAddr === v) lastBreakpointAddr = null;
+		refresh();
 	};
 
 	// Called directly from wasm.c's EM_ASM in wasm_bp_hit -- immediate
@@ -1491,25 +1513,45 @@ var Module = {
 		regTable.appendChild(valRow);
 	}
 
+	// Tracks the last address explicitly set/cleared via this panel, so
+	// there's some visible feedback for breakpoint state -- there's no
+	// wasm_* export to query "what's currently set" (breakpoints are
+	// stored in machine->debug's own table, not something wasm.c
+	// exposes a list of), so this is JS-side bookkeeping of what the
+	// panel itself has asked for, not a query of ground truth.
+	var lastBreakpointAddr = null;
+
 	function refresh() {
 		if (typeof Module === 'undefined' || !Module.ccall) return;
-		var paused = Module.ccall('wasm_is_paused', 'number', [], []);
-		var statusEl = document.getElementById('dbg2-status');
-		if (statusEl) {
-			if (paused) {
-				var reason = Module.ccall('wasm_get_stop_reason', 'number', [], []);
-				statusEl.textContent = (reason === 1) ? 'paused (breakpoint)' : 'paused';
-			} else {
-				statusEl.textContent = 'running';
+		try {
+			var paused = Module.ccall('wasm_is_paused', 'number', [], []);
+			var statusEl = document.getElementById('dbg2-status');
+			if (statusEl) {
+				var bpText = (lastBreakpointAddr !== null)
+					? (' [BP $' + lastBreakpointAddr.toString(16).toUpperCase().padStart(4, '0') + ']')
+					: '';
+				if (paused) {
+					var reason = Module.ccall('wasm_get_stop_reason', 'number', [], []);
+					statusEl.textContent = ((reason === 1) ? 'paused (breakpoint)' : 'paused') + bpText;
+				} else {
+					statusEl.textContent = 'running' + bpText;
+				}
 			}
+			if (!paused) return;   // registers only meaningful, and only fetched, while paused
+			regNames.forEach(function(name, regno) {
+				var input = document.getElementById('dbg2-reg-' + name);
+				if (!input || document.activeElement === input) return;   // don't clobber in-progress typing
+				var value = Module.ccall('wasm_get_register', 'number', ['number'], [regno]);
+				input.value = value.toString(16).toUpperCase().padStart(4, '0');
+			});
+		} catch (e) {
+			// Was silent before -- a thrown exception here would leave
+			// the status text stuck at whatever it last said (or the
+			// HTML's hardcoded initial "running") with no visible sign
+			// anything was wrong. Surfacing it instead of guessing
+			// blindly at the cause.
+			console.error('debugger panel refresh() failed:', e);
 		}
-		if (!paused) return;   // registers only meaningful, and only fetched, while paused
-		regNames.forEach(function(name, regno) {
-			var input = document.getElementById('dbg2-reg-' + name);
-			if (!input || document.activeElement === input) return;   // don't clobber in-progress typing
-			var value = Module.ccall('wasm_get_register', 'number', ['number'], [regno]);
-			input.value = value.toString(16).toUpperCase().padStart(4, '0');
-		});
 	}
 
 	function whenModuleReady() {
