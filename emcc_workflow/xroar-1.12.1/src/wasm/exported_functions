@@ -18,7 +18,6 @@
 	'_wasm_vdrive_flush',
 	'_wasm_read_byte',
 	'_wasm_write_byte',
-	'_wasm_get_instruction_length',
 	'_wasm_register_by_name',
 	'_wasm_register_count',
 	'_wasm_register_name',

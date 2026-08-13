@@ -1048,6 +1048,11 @@ void wasm_write_byte(int addr, int value) {
 // rather than a second copy of 6809 addressing-mode rules living in
 // this file.
 
+// TEMPORARILY DISABLED for diagnostic isolation -- testing whether
+// --enable-trace itself (not the earlier-removed -flto) is the actual
+// cause of the WASM link error reported after enabling it. Re-enable
+// once isolated. See commit history for the full story.
+#if 0
 int wasm_get_instruction_length(int addr) {
 	if (!xroar.machine) {
 		return 0;
@@ -1059,6 +1064,7 @@ int wasm_get_instruction_length(int addr) {
 	}
 	return (int)mc6809_instruction_length(bytes);
 }
+#endif
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
