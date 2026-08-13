@@ -195,7 +195,7 @@ jobs:
           # breakpoints/memory read-write. A check still grepping for
           # the old names would silently find nothing and not notice.
           echo "Checking for debugger exports in the built JS glue..."
-          grep -o "wasm_pause\|wasm_resume\|wasm_is_paused\|wasm_step\|wasm_get_register\|wasm_set_register\|wasm_register_by_name\|wasm_register_count\|wasm_register_name\|wasm_set_breakpoint\|wasm_clear_breakpoint\|wasm_get_stop_reason\|wasm_get_stop_address\|wasm_read_byte\|wasm_write_byte" wasm/xroar-custom-patched.js | sort -u
+          grep -o "wasm_pause\|wasm_resume\|wasm_is_paused\|wasm_step\|wasm_get_register\|wasm_set_register\|wasm_register_by_name\|wasm_register_count\|wasm_register_name\|wasm_set_breakpoint\|wasm_clear_breakpoint\|wasm_get_stop_reason\|wasm_get_stop_address\|wasm_read_byte\|wasm_write_byte\|wasm_get_instruction_length" wasm/xroar-custom-patched.js | sort -u
 
       - name: Write build report
         if: always()
@@ -209,7 +209,7 @@ jobs:
           echo "" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "## Debug exports found in built JS glue" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo '```' >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
-          grep -o "wasm_pause\|wasm_resume\|wasm_is_paused\|wasm_step\|wasm_get_register\|wasm_set_register\|wasm_register_by_name\|wasm_register_count\|wasm_register_name\|wasm_set_breakpoint\|wasm_clear_breakpoint\|wasm_get_stop_reason\|wasm_get_stop_address\|wasm_read_byte\|wasm_write_byte" wasm/xroar-custom-patched.js 2>/dev/null | sort -u >> wasm/XROAR_CUSTOM_BUILD_REPORT.md || echo "none found -- build likely failed" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
+          grep -o "wasm_pause\|wasm_resume\|wasm_is_paused\|wasm_step\|wasm_get_register\|wasm_set_register\|wasm_register_by_name\|wasm_register_count\|wasm_register_name\|wasm_set_breakpoint\|wasm_clear_breakpoint\|wasm_get_stop_reason\|wasm_get_stop_address\|wasm_read_byte\|wasm_write_byte\|wasm_get_instruction_length" wasm/xroar-custom-patched.js 2>/dev/null | sort -u >> wasm/XROAR_CUSTOM_BUILD_REPORT.md || echo "none found -- build likely failed" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo '```' >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "" >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
           echo "This is what index_custom.html actually loads (xroar-custom-patched.js/.wasm)," >> wasm/XROAR_CUSTOM_BUILD_REPORT.md
