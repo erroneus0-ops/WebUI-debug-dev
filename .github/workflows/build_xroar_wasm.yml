@@ -87,6 +87,19 @@ jobs:
       - name: Configure for WASM
         run: |
           cd emcc_workflow/xroar-1.12.1
+          # This tree's tools/win2rc has had a broken executable bit
+          # the entire time (checked directly: only one commit ever
+          # touched it, showing mode 100644) -- it just never triggered
+          # a failure until this exact run, purely by chance. Every CI
+          # checkout gives every file a fresh, nearly-simultaneous
+          # timestamp, so whether make decides windows32/resources.h
+          # needs regenerating (which needs win2rc to actually run) is
+          # close to a coin flip on every single run, regardless of
+          # what changed in that particular push. Same fix already
+          # applied to build_xroar_stock_wasm.yml for the exact same
+          # reason -- applying here too rather than continuing to rely
+          # on lucky timestamp ordering.
+          chmod +x tools/win2rc tools/xkb_to_hk_scancode.pl 2>/dev/null || true
           emconfigure ./configure --enable-wasm CFLAGS="-O3 -flto" LDFLAGS="-O3 -flto"
 
       - name: Build standalone version reporter (tagged -- this is the custom build)
