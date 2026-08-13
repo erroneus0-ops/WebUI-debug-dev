@@ -43,6 +43,7 @@
 #include "hkbd.h"
 #include "joystick.h"
 #include "logging.h"
+#include "mc6809/mc6809_trace.h"
 #include "machine.h"
 #include "romlist.h"
 #include "vdisk.h"
@@ -1033,6 +1034,30 @@ uint8_t wasm_read_byte(int addr) {
 void wasm_write_byte(int addr, int value) {
 	if (!xroar.machine) return;
 	xroar.machine->write_byte(xroar.machine, addr & 0xffff, value & 0xff);
+}
+
+// How many bytes the instruction at `addr` actually occupies --
+// page prefix, opcode, postbyte, and operand, all included. Needed for
+// anything wanting to verify live memory against a MAME-style comment
+// file (lst2cmt's XML output): those files record a CRC of the opcode
+// bytes but not how many bytes were CRC'd, so a debugger has to
+// determine that independently by decoding the instruction, not by
+// reading a fixed or guessed byte count. Reuses
+// mc6809_instruction_length() (mc6809/mc6809_trace.c, added there
+// rather than duplicated here -- see the comment above its definition)
+// rather than a second copy of 6809 addressing-mode rules living in
+// this file.
+
+int wasm_get_instruction_length(int addr) {
+	if (!xroar.machine) {
+		return 0;
+	}
+	uint8_t bytes[MC6809_MAX_TRACE_BYTES];
+	unsigned a = (unsigned)addr & 0xffff;
+	for (int i = 0; i < MC6809_MAX_TRACE_BYTES; i++) {
+		bytes[i] = xroar.machine->read_byte(xroar.machine, (a + i) & 0xffff, 0);
+	}
+	return (int)mc6809_instruction_length(bytes);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
