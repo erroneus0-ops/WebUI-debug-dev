@@ -1388,7 +1388,13 @@ var Module = {
 				Live (refresh with Step/Pause)
 			</label>
 		</p>
+		<p style="margin:0 0 6px 0; flex-shrink:0;">
+			View:
+			<label style="cursor:pointer;"><input type="radio" name="hexdump-view" value="hex" checked onchange="wasm_hexdump_view_changed()">Hex</label>
+			<label style="cursor:pointer;"><input type="radio" name="hexdump-view" value="char" onchange="wasm_hexdump_view_changed()">Characters</label>
+		</p>
 		<pre id="hexdump-output" style="flex:1 1 auto; min-height:0; overflow:auto; margin:0; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px;">(no dump yet)</pre>
+		<canvas id="hexdump-canvas" style="display:none; flex:1 1 auto; min-height:0; overflow:auto; margin:0; background:#000; image-rendering:pixelated;"></canvas>
 	</div>
 </div>
 <script>
@@ -1494,6 +1500,26 @@ var Module = {
 	};
 
 	var hexdumpLive = false;
+	var hexdumpView = 'hex';
+
+	// VDG character bitmaps -- extracted directly, byte-for-byte, from
+	// XRoar's own emcc_workflow/xroar-1.12.1/src/mc6847/font-6847t1.c
+	// and font-6847.c (programmatically, not retyped, to avoid any
+	// transcription risk). 128 glyphs x 12 bytes (rows) for the T1
+	// variant, 64 x 12 for the original VDG -- confirmed against the
+	// real files, not assumed.
+	const FONT_6847T1 = [0,8,20,34,0,0,0,0,0,0,0,0,0,0,0,28,2,30,34,30,0,0,0,0,0,32,32,44,50,34,50,44,0,0,0,0,0,0,0,28,34,32,34,28,0,0,0,0,0,2,2,26,38,34,38,26,0,0,0,0,0,0,0,28,34,62,32,28,0,0,0,0,0,4,10,8,28,8,8,8,0,0,0,0,0,0,0,26,38,38,26,2,34,28,0,0,0,32,32,44,50,34,34,34,0,0,0,0,0,8,0,24,8,8,8,28,0,0,0,0,0,0,2,0,2,2,2,2,34,28,0,0,0,32,32,36,40,48,40,36,0,0,0,0,0,24,8,8,8,8,8,28,0,0,0,0,0,0,0,52,42,42,42,42,0,0,0,0,0,0,0,44,50,34,34,34,0,0,0,0,0,0,0,28,34,34,34,28,0,0,0,0,0,0,0,44,50,34,50,44,32,32,0,0,0,0,0,26,38,34,38,26,2,2,0,0,0,0,0,44,50,32,32,32,0,0,0,0,0,0,0,30,32,28,2,60,0,0,0,0,0,8,8,62,8,8,10,4,0,0,0,0,0,0,0,34,34,34,38,26,0,0,0,0,0,0,0,34,34,34,20,8,0,0,0,0,0,0,0,34,34,42,42,20,0,0,0,0,0,0,0,34,20,8,20,34,0,0,0,0,0,0,0,34,34,34,30,2,34,28,0,0,0,0,0,62,4,8,16,62,0,0,0,0,0,4,8,8,16,8,8,4,0,0,0,0,0,8,8,8,0,8,8,8,0,0,0,0,0,16,8,8,4,8,8,16,0,0,0,0,0,16,42,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,62,0,0,0,0,255,255,255,255,255,255,255,255,255,255,255,255,255,247,247,247,247,247,255,247,255,255,255,255,255,235,235,235,255,255,255,255,255,255,255,255,255,235,235,193,255,193,235,235,255,255,255,255,255,247,225,223,227,253,195,247,255,255,255,255,255,207,205,251,247,239,217,249,255,255,255,255,255,239,215,215,239,213,219,229,255,255,255,255,255,231,231,239,223,255,255,255,255,255,255,255,255,251,247,239,239,239,247,251,255,255,255,255,255,239,247,251,251,251,247,239,255,255,255,255,255,255,247,213,227,227,213,247,255,255,255,255,255,255,247,247,193,247,247,255,255,255,255,255,255,255,255,255,255,255,231,231,239,223,255,255,255,255,255,255,193,255,255,255,255,255,255,255,255,255,255,255,255,255,231,231,255,255,255,255,255,255,253,251,247,239,223,255,255,255,255,255,255,227,221,217,213,205,221,227,255,255,255,255,255,247,231,247,247,247,247,227,255,255,255,255,255,227,221,253,227,223,223,193,255,255,255,255,255,227,221,253,243,253,221,227,255,255,255,255,255,251,243,235,219,193,251,251,255,255,255,255,255,193,223,195,253,253,221,227,255,255,255,255,255,243,239,223,195,221,221,227,255,255,255,255,255,193,253,251,247,239,223,223,255,255,255,255,255,227,221,221,227,221,221,227,255,255,255,255,255,227,221,221,225,253,251,231,255,255,255,255,255,255,255,231,231,255,231,231,255,255,255,255,255,255,255,231,231,255,231,231,239,223,255,255,255,251,247,239,223,239,247,251,255,255,255,255,255,255,255,193,255,193,255,255,255,255,255,255,255,239,247,251,253,251,247,239,255,255,255,255,255,227,221,253,251,247,255,247,255,255,255,255,0,28,34,2,26,38,34,28,0,0,0,0,0,8,20,34,34,62,34,34,0,0,0,0,0,60,18,18,28,18,18,60,0,0,0,0,0,28,34,32,32,32,34,28,0,0,0,0,0,60,18,18,18,18,18,60,0,0,0,0,0,62,32,32,56,32,32,62,0,0,0,0,0,62,32,32,56,32,32,32,0,0,0,0,0,30,32,32,38,34,34,30,0,0,0,0,0,34,34,34,62,34,34,34,0,0,0,0,0,28,8,8,8,8,8,28,0,0,0,0,0,2,2,2,2,34,34,28,0,0,0,0,0,34,36,40,48,40,36,34,0,0,0,0,0,32,32,32,32,32,32,62,0,0,0,0,0,34,54,42,42,34,34,34,0,0,0,0,0,34,34,50,42,38,34,34,0,0,0,0,0,28,34,34,34,34,34,28,0,0,0,0,0,60,34,34,60,32,32,32,0,0,0,0,0,28,34,34,34,42,36,26,0,0,0,0,0,60,34,34,60,40,36,34,0,0,0,0,0,28,34,32,28,2,34,28,0,0,0,0,0,62,8,8,8,8,8,8,0,0,0,0,0,34,34,34,34,34,34,28,0,0,0,0,0,34,34,34,20,20,8,8,0,0,0,0,0,34,34,34,34,42,54,34,0,0,0,0,0,34,34,20,8,20,34,34,0,0,0,0,0,34,34,20,8,8,8,8,0,0,0,0,0,62,2,4,8,16,32,62,0,0,0,0,0,28,16,16,16,16,16,28,0,0,0,0,0,0,32,16,8,4,2,0,0,0,0,0,0,28,4,4,4,4,4,28,0,0,0,0,0,8,28,42,8,8,8,8,0,0,0,0,0,0,8,16,62,16,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,8,8,8,8,0,8,0,0,0,0,0,20,20,20,0,0,0,0,0,0,0,0,0,20,20,62,0,62,20,20,0,0,0,0,0,8,30,32,28,2,60,8,0,0,0,0,0,48,50,4,8,16,38,6,0,0,0,0,0,16,40,40,16,42,36,26,0,0,0,0,0,24,24,16,32,0,0,0,0,0,0,0,0,4,8,16,16,16,8,4,0,0,0,0,0,16,8,4,4,4,8,16,0,0,0,0,0,0,8,42,28,28,42,8,0,0,0,0,0,0,8,8,62,8,8,0,0,0,0,0,0,0,0,0,0,0,24,24,16,32,0,0,0,0,0,0,62,0,0,0,0,0,0,0,0,0,0,0,0,0,24,24,0,0,0,0,0,0,2,4,8,16,32,0,0,0,0,0,0,28,34,38,42,50,34,28,0,0,0,0,0,8,24,8,8,8,8,28,0,0,0,0,0,28,34,2,28,32,32,62,0,0,0,0,0,28,34,2,12,2,34,28,0,0,0,0,0,4,12,20,36,62,4,4,0,0,0,0,0,62,32,60,2,2,34,28,0,0,0,0,0,12,16,32,60,34,34,28,0,0,0,0,0,62,2,4,8,16,32,32,0,0,0,0,0,28,34,34,28,34,34,28,0,0,0,0,0,28,34,34,30,2,4,24,0,0,0,0,0,0,0,24,24,0,24,24,0,0,0,0,0,0,0,24,24,0,24,24,16,32,0,0,0,4,8,16,32,16,8,4,0,0,0,0,0,0,0,62,0,62,0,0,0,0,0,0,0,16,8,4,2,4,8,16,0,0,0,0,0,28,34,2,4,8,0,8,0,0,0,0];
+	const FONT_6847 = [0,0,0,28,34,2,26,42,42,28,0,0,0,0,0,8,20,34,34,62,34,34,0,0,0,0,0,60,18,18,28,18,18,60,0,0,0,0,0,28,34,32,32,32,34,28,0,0,0,0,0,60,18,18,18,18,18,60,0,0,0,0,0,62,32,32,60,32,32,62,0,0,0,0,0,62,32,32,60,32,32,32,0,0,0,0,0,30,32,32,38,34,34,30,0,0,0,0,0,34,34,34,62,34,34,34,0,0,0,0,0,28,8,8,8,8,8,28,0,0,0,0,0,2,2,2,2,34,34,28,0,0,0,0,0,34,36,40,48,40,36,34,0,0,0,0,0,32,32,32,32,32,32,62,0,0,0,0,0,34,54,42,42,34,34,34,0,0,0,0,0,34,50,42,38,34,34,34,0,0,0,0,0,62,34,34,34,34,34,62,0,0,0,0,0,60,34,34,60,32,32,32,0,0,0,0,0,28,34,34,34,42,36,26,0,0,0,0,0,60,34,34,60,40,36,34,0,0,0,0,0,28,34,16,8,4,34,28,0,0,0,0,0,62,8,8,8,8,8,8,0,0,0,0,0,34,34,34,34,34,34,28,0,0,0,0,0,34,34,34,20,20,8,8,0,0,0,0,0,34,34,34,42,42,54,34,0,0,0,0,0,34,34,20,8,20,34,34,0,0,0,0,0,34,34,20,8,8,8,8,0,0,0,0,0,62,2,4,8,16,32,62,0,0,0,0,0,56,32,32,32,32,32,56,0,0,0,0,0,32,32,16,8,4,2,2,0,0,0,0,0,14,2,2,2,2,2,14,0,0,0,0,0,8,28,42,8,8,8,8,0,0,0,0,0,0,8,16,62,16,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,8,8,8,8,0,8,0,0,0,0,0,20,20,20,0,0,0,0,0,0,0,0,0,20,20,54,0,54,20,20,0,0,0,0,0,8,30,32,28,2,60,8,0,0,0,0,0,50,50,4,8,16,38,38,0,0,0,0,0,16,40,40,16,42,36,26,0,0,0,0,0,24,24,24,0,0,0,0,0,0,0,0,0,8,16,32,32,32,16,8,0,0,0,0,0,8,4,2,2,2,4,8,0,0,0,0,0,0,8,28,62,28,8,0,0,0,0,0,0,0,8,8,62,8,8,0,0,0,0,0,0,0,0,0,48,48,16,32,0,0,0,0,0,0,0,0,62,0,0,0,0,0,0,0,0,0,0,0,0,0,48,48,0,0,0,0,0,2,2,4,8,16,32,32,0,0,0,0,0,24,36,36,36,36,36,24,0,0,0,0,0,8,24,8,8,8,8,28,0,0,0,0,0,28,34,2,28,32,32,62,0,0,0,0,0,28,34,2,12,2,34,28,0,0,0,0,0,4,12,20,62,4,4,4,0,0,0,0,0,62,32,60,2,2,34,28,0,0,0,0,0,28,32,32,60,34,34,28,0,0,0,0,0,62,2,4,8,16,32,32,0,0,0,0,0,28,34,34,28,34,34,28,0,0,0,0,0,28,34,34,30,2,2,28,0,0,0,0,0,0,24,24,0,24,24,0,0,0,0,0,0,24,24,0,24,24,8,16,0,0,0,0,0,4,8,16,32,16,8,4,0,0,0,0,0,0,0,62,0,62,0,0,0,0,0,0,0,16,8,4,2,4,8,16,0,0,0,0,0,24,36,4,8,8,0,8,0,0];
+	
+
+	// VDG's 8 semigraphics/text colors. Real hardware colors come from
+	// measured NTSC composite-video voltages (see vdg_palette.c) --
+	// deliberately NOT replicating that whole color-science pipeline
+	// here, just using standard, commonly-cited approximate RGB values.
+	// Order confirmed directly against mc6847.h's actual enum
+	// (VDG_GREEN, VDG_YELLOW, VDG_BLUE, VDG_RED, VDG_WHITE, VDG_CYAN,
+	// VDG_MAGENTA, VDG_ORANGE), not guessed.
+	var VDG_COLORS = ['#00c000', '#ffff00', '#0000ff', '#ff0000', '#ffffff', '#00ffff', '#ff00ff', '#ff8000'];
 
 	window.wasm_debug_open_hexdump = function() {
 		document.getElementById('hexdump-wrapper').style.display = 'flex';
@@ -1503,19 +1529,106 @@ var Module = {
 		document.getElementById('hexdump-wrapper').style.display = 'none';
 	};
 
+	window.wasm_hexdump_view_changed = function() {
+		var radios = document.getElementsByName('hexdump-view');
+		for (var i = 0; i < radios.length; i++) {
+			if (radios[i].checked) hexdumpView = radios[i].value;
+		}
+		document.getElementById('hexdump-output').style.display = (hexdumpView === 'hex') ? 'block' : 'none';
+		document.getElementById('hexdump-canvas').style.display = (hexdumpView === 'char') ? 'block' : 'none';
+		window.wasm_hexdump_refresh();
+	};
+
 	window.wasm_hexdump_refresh = function() {
 		var addr = parseInt(document.getElementById('hexdump-addr').value, 16);
 		var len = parseInt(document.getElementById('hexdump-len').value, 10);
-		var out = document.getElementById('hexdump-output');
 		if (isNaN(addr) || addr < 0 || addr > 0xffff) {
-			out.textContent = 'ERROR: address out of range (must be $0000-$FFFF)';
+			document.getElementById('hexdump-output').textContent = 'ERROR: address out of range (must be $0000-$FFFF)';
 			return;
 		}
 		if (isNaN(len) || len <= 0 || len > 4096) {
-			out.textContent = 'ERROR: length out of range (must be 1-4096)';
+			document.getElementById('hexdump-output').textContent = 'ERROR: length out of range (must be 1-4096)';
 			return;
 		}
-		out.textContent = window.wasm_hex_dump(addr, len);
+		if (hexdumpView === 'hex') {
+			document.getElementById('hexdump-output').textContent = window.wasm_hex_dump(addr, len);
+		} else {
+			window.wasm_char_dump(addr, len);
+		}
+	};
+
+	// Renders addr..addr+len as a VDG screen would: bit 7 of each byte
+	// selects alpha vs semigraphics (confirmed directly in
+	// mc6847.c -- nA_S = vdata & 0x80). Alpha bytes look up a real
+	// glyph; semigraphics bytes decode color + a 2x2 block pattern
+	// straight from the bit layout traced through mc6847.c's actual
+	// render loop, not a separate lookup, since there's no font data
+	// for semigraphics at all -- there's nothing to look up.
+	window.wasm_char_dump = function(addr, len) {
+		if (typeof Module === 'undefined' || !Module.ccall) return;
+		var canvas = document.getElementById('hexdump-canvas');
+		var cols = 32;
+		var rows = Math.ceil(len / cols);
+		var SCALE = 2, CHAR_W = 8, CHAR_H = 12;
+		canvas.width = cols * CHAR_W * SCALE;
+		canvas.height = rows * CHAR_H * SCALE;
+		var ctx = canvas.getContext('2d');
+		ctx.fillStyle = '#000';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		// EXT (lowercase/extended charset) is a single global hardware
+		// state on non-GIME machines -- driven by one PIA1 bit ($FF22
+		// bit 4, confirmed directly against both XRoar's source and
+		// real ROM disassembly earlier tonight), not a per-byte
+		// attribute. Reading it once and applying it uniformly across
+		// the whole dump is the correct model for this hardware, not a
+		// simplification -- GIME-based (CoCo 3) per-character
+		// attributes would need different handling, not implemented
+		// here.
+		var ff22 = Module.ccall('wasm_read_byte', 'number', ['number'], [0xff22]);
+		var extMode = (ff22 & 0x10) !== 0;
+
+		for (var i = 0; i < len; i++) {
+			var b = Module.ccall('wasm_read_byte', 'number', ['number'], [(addr + i) & 0xffff]);
+			var col = i % cols, row = Math.floor(i / cols);
+			var px = col * CHAR_W * SCALE, py = row * CHAR_H * SCALE;
+
+			if ((b & 0x80) === 0) {
+				// Alpha: same c-code masking mc6847.c applies
+				// (font_6847t1[(vdata&0x7f)*12+row], forced into
+				// the upper half via |=0x40 when EXT isn't active).
+				var c = b & 0x7f;
+				if (!extMode) c |= 0x40;
+				ctx.fillStyle = '#00c000';
+				for (var r = 0; r < CHAR_H; r++) {
+					var rowByte = FONT_6847T1[c * 12 + r];
+					for (var bit = 0; bit < 8; bit++) {
+						if (rowByte & (0x80 >> bit)) {
+							ctx.fillRect(px + bit * SCALE, py + r * SCALE, SCALE, SCALE);
+						}
+					}
+				}
+			} else {
+				// Semigraphics: color from bits 4-6, quadrant pattern
+				// from bits 0-3. Bit mapping (top-left=bit3,
+				// top-right=bit2, bottom-left=bit1, bottom-right=bit0)
+				// derived directly from mc6847.c's row-dependent shift
+				// (rows 0-5 use original bits 2-3, rows 6-11 use
+				// original bits 0-1) -- not guessed, traced from the
+				// actual render loop.
+				var fg = VDG_COLORS[(b >> 4) & 7];
+				var topLeft  = (b & 0x08) !== 0;
+				var topRight = (b & 0x04) !== 0;
+				var botLeft  = (b & 0x02) !== 0;
+				var botRight = (b & 0x01) !== 0;
+				var halfW = (CHAR_W / 2) * SCALE, halfH = (CHAR_H / 2) * SCALE;
+				ctx.fillStyle = fg;
+				if (topLeft)  ctx.fillRect(px, py, halfW, halfH);
+				if (topRight) ctx.fillRect(px + halfW, py, halfW, halfH);
+				if (botLeft)  ctx.fillRect(px, py + halfH, halfW, halfH);
+				if (botRight) ctx.fillRect(px + halfW, py + halfH, halfW, halfH);
+			}
+		}
 	};
 
 	window.wasm_hexdump_toggle_live = function() {
