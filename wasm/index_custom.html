@@ -1373,7 +1373,7 @@ var Module = {
      see the discussion this was built from) and a hex dump genuinely
      needs more room than that to read a 16-byte row without wrapping.
      Same drag/resize technique as every other floating panel tonight. -->
-<div id="hexdump-wrapper" style="display:none; position:fixed; top:2.5rem; left:340px; z-index:100; flex-direction:column; box-shadow:0 4px 16px rgba(0,0,0,0.5); background:#c8c8c8; border-top:2px solid #ffffff; border-left:2px solid #ffffff; border-bottom:2px solid #808080; border-right:2px solid #808080; resize:both; overflow:hidden; min-width:420px; min-height:200px; width:560px; height:400px;">
+<div id="hexdump-wrapper" style="display:none; position:fixed; top:2.5rem; right:16px; z-index:100; flex-direction:column; box-shadow:0 4px 16px rgba(0,0,0,0.5); background:#c8c8c8; border-top:2px solid #ffffff; border-left:2px solid #ffffff; border-bottom:2px solid #808080; border-right:2px solid #808080; resize:both; overflow:hidden; min-width:420px; min-height:200px; width:560px; height:400px;">
 	<div id="hexdump-drag-handle" style="background:#404040; color:#ccc; font:bold 11px sans-serif; padding:4px 8px; cursor:grab; user-select:none; -webkit-user-select:none; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #222; touch-action:none; flex-shrink:0;">
 		<span>Hex Dump</span>
 		<span onmousedown="event.stopPropagation()" onclick="window.wasm_debug_close_hexdump()" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Close">&times;</span>
@@ -1718,6 +1718,19 @@ var Module = {
 		var rect = wrapper.getBoundingClientRect();
 		startX = x; startY = y;
 		origLeft = rect.left; origTop = rect.top;
+		// Was positioned via right:16px, not left, to keep it clear of
+		// the canvas (see the discussion this was built from -- the
+		// panel was overlapping the canvas horizontally, which is very
+		// likely why dragging never worked at all: a stacking-context
+		// issue meant the canvas underneath it could still be capturing
+		// the mouse events, despite this panel's higher z-index). Once
+		// a drag actually starts, switch fully to left-based
+		// positioning -- leaving both left and right set on a
+		// fixed-position element with an explicit width is an
+		// over-constrained case browsers resolve in ways that aren't
+		// worth relying on being consistent everywhere.
+		wrapper.style.right = 'auto';
+		wrapper.style.left = origLeft + 'px';
 		handle.style.cursor = 'grabbing';
 		window._topDraggableZ = (window._topDraggableZ || 100) + 1;
 		wrapper.style.zIndex = window._topDraggableZ;
@@ -1748,7 +1761,8 @@ var Module = {
 
 	handle.addEventListener('contextmenu', function(e) {
 		e.preventDefault();
-		wrapper.style.left = '340px';
+		wrapper.style.left = 'auto';
+		wrapper.style.right = '16px';
 		wrapper.style.top = '2.5rem';
 		wrapper.style.width = '560px';
 		wrapper.style.height = '400px';
