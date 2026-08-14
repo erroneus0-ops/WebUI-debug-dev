@@ -1641,7 +1641,7 @@ var Module = {
 			var paused = Module.ccall('wasm_is_paused', 'number', [], []);
 			var statusEl = document.getElementById('dbg2-status');
 			if (statusEl) {
-				var bpText = (lastBreakpointAddr !== null)
+				var bpText = (typeof lastBreakpointAddr === 'number')
 					? (' [BP $' + lastBreakpointAddr.toString(16).toUpperCase().padStart(4, '0') + ']')
 					: '';
 				if (paused) {
