@@ -1719,15 +1719,12 @@ var Module = {
 		handle.style.cursor = 'grabbing';
 		window._topDraggableZ = (window._topDraggableZ || 100) + 1;
 		wrapper.style.zIndex = window._topDraggableZ;
-		console.log('TEMPDIAG dragStart ran, dragging=', dragging, 'origLeft=', origLeft, 'origTop=', origTop);
 	}
 	function dragMove(e, x, y) {
-		console.log('TEMPDIAG dragMove called, dragging=', dragging, 'x=', x, 'startX=', startX);
 		if (!dragging) return;
 		e.preventDefault();
 		wrapper.style.left = Math.max(0, origLeft + (x - startX)) + 'px';
 		wrapper.style.top  = Math.max(0, origTop  + (y - startY)) + 'px';
-		console.log('TEMPDIAG dragMove set left to', wrapper.style.left);
 	}
 	function dragEnd() {
 		dragging = false;
