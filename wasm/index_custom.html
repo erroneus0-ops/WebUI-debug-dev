@@ -1589,8 +1589,6 @@ var Module = {
 		});
 	}
 	protectInputFromSDL2(document.getElementById('dbg2-bp-addr'));
-	protectInputFromSDL2(document.getElementById('dbg2-dump-addr'));
-	protectInputFromSDL2(document.getElementById('dbg2-dump-len'));
 
 	function buildRegisterGrid() {
 		var count = Module.ccall('wasm_register_count', 'number', [], []);
