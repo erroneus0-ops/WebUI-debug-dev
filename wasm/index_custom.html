@@ -1339,7 +1339,8 @@ var Module = {
      out of sync with it if he adds more registers later. -->
 <div id="debugger-wrapper" style="display:none; position:fixed; top:2.5rem; left:16px; z-index:100; flex-direction:column; box-shadow:0 4px 16px rgba(0,0,0,0.5); background:#c8c8c8; border-top:2px solid #ffffff; border-left:2px solid #ffffff; border-bottom:2px solid #808080; border-right:2px solid #808080; resize:both; overflow:hidden; min-width:260px; min-height:160px; width:300px;">
 	<div id="debugger-drag-handle" style="background:#404040; color:#ccc; font:bold 11px sans-serif; padding:4px 8px; cursor:grab; user-select:none; -webkit-user-select:none; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #222; touch-action:none; flex-shrink:0;">
-		<span>Debugger</span><span style="letter-spacing:2px;opacity:0.5">&#8801;</span>
+		<span>Debugger</span>
+		<span onmousedown="event.stopPropagation()" onclick="window._toggleDebuggerPanel()" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Close">&times;</span>
 	</div>
 	<div style="padding:6px; overflow-y:auto; flex:1 1 auto; min-height:0; font-family:monospace; font-size:11px;">
 		<p style="margin:0 0 6px 0;">
@@ -1374,7 +1375,8 @@ var Module = {
      Same drag/resize technique as every other floating panel tonight. -->
 <div id="hexdump-wrapper" style="display:none; position:fixed; top:2.5rem; left:340px; z-index:100; flex-direction:column; box-shadow:0 4px 16px rgba(0,0,0,0.5); background:#c8c8c8; border-top:2px solid #ffffff; border-left:2px solid #ffffff; border-bottom:2px solid #808080; border-right:2px solid #808080; resize:both; overflow:hidden; min-width:420px; min-height:200px; width:560px; height:400px;">
 	<div id="hexdump-drag-handle" style="background:#404040; color:#ccc; font:bold 11px sans-serif; padding:4px 8px; cursor:grab; user-select:none; -webkit-user-select:none; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #222; touch-action:none; flex-shrink:0;">
-		<span>Hex Dump</span><span style="letter-spacing:2px;opacity:0.5">&#8801;</span>
+		<span>Hex Dump</span>
+		<span onmousedown="event.stopPropagation()" onclick="window.wasm_debug_close_hexdump()" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Close">&times;</span>
 	</div>
 	<div style="padding:6px; display:flex; flex-direction:column; flex:1 1 auto; min-height:0;">
 		<p style="margin:0 0 6px 0; flex-shrink:0;">
@@ -1495,6 +1497,10 @@ var Module = {
 
 	window.wasm_debug_open_hexdump = function() {
 		document.getElementById('hexdump-wrapper').style.display = 'flex';
+	};
+
+	window.wasm_debug_close_hexdump = function() {
+		document.getElementById('hexdump-wrapper').style.display = 'none';
 	};
 
 	window.wasm_hexdump_refresh = function() {
