@@ -1394,7 +1394,7 @@ var Module = {
 			<label style="cursor:pointer;"><input type="radio" name="hexdump-view" value="char" onchange="wasm_hexdump_view_changed()">Characters</label>
 		</p>
 		<pre id="hexdump-output" style="flex:1 1 auto; min-height:0; overflow:auto; margin:0; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px;">(no dump yet)</pre>
-		<canvas id="hexdump-canvas" style="display:none; flex:1 1 auto; min-height:0; overflow:auto; margin:0; background:#000; image-rendering:pixelated;"></canvas>
+		<canvas id="hexdump-canvas" style="display:none; flex:1 1 auto; min-height:0; overflow:auto; margin:0; background:#000; image-rendering:pixelated; object-fit:contain;"></canvas>
 	</div>
 </div>
 <script>
