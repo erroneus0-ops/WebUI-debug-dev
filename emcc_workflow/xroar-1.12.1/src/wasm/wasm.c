@@ -70,8 +70,9 @@ static int wasm_waiting_files = 0;
 
 // Debugger pause state, checked once per frame in wasm_ui_run() below.
 static int wasm_debug_paused = 0;
-static int wasm_debug_stop_reason = 0;   // 0 = running, 1 = breakpoint hit, 2 = user pause/step
+static int wasm_debug_stop_reason = 0;   // 0 = running, 1 = breakpoint hit, 2 = user pause/step, 3 = watchpoint hit
 static int wasm_debug_stop_address = -1; // address of last breakpoint hit, -1 if not applicable
+static int wasm_debug_watchpoint_was_read = -1; // -1 = n/a, 0 = write, 1 = read -- real value from bp_check_watchpoints, not a dummy
 
 // Whether wasm_step()/wasm_bp_hit() force a screen repaint. Defaults on
 // (matches the behavior added just before this), but toggleable --
@@ -1079,16 +1080,18 @@ void wasm_write_byte(int addr, int value) {
 // unconditionally compiled (confirmed directly in coco3.c -- no
 // WANT_GDB_TARGET guard on these two, unlike watchpoints below).
 //
-// WATCHPOINTS ARE DELIBERATELY NOT EXPOSED HERE. machine->debug.
-// add_watchpoint() itself is unconditionally compiled and will happily
-// register one, but the code that actually checks watchpoints against
-// memory accesses -- bp_check_watchpoints(), called from coco3.c's
-// cpu_cycle() -- is still wrapped in #ifdef WANT_GDB_TARGET, confirmed
-// directly in this 1.12.1 tree, same as 1.11. A watchpoint added via the
-// new API would register successfully and then silently never fire in
-// this build. Needs a small, separate patch to coco3.c's cpu_cycle()
-// (and cpu_cycle_noclock()) to check the watch lists unconditionally
-// before this is worth exposing.
+// Watchpoints: an earlier pass through this session concluded they
+// weren't usable, because bp_check_watchpoints()'s call site in
+// coco3.c's cpu_cycle() is wrapped in #ifdef WANT_GDB_TARGET. That
+// was checking the wrong file for this build's actual machine type --
+// the boot log says "[part:coco]", not "[part:coco3]", meaning this
+// build actually runs dragon.c's cpu_cycle() (coco.c is a thin
+// wrapper reusing it), where the equivalent call is completely
+// unconditional: "bp_check_watchpoints(&md->watchpoint_set, RnW, A);"
+// with no #ifdef around it at all, confirmed directly. Already running
+// every cycle in this build -- see wasm_set_watchpoint()/
+// wasm_clear_watchpoint() below, which expose it with no source patch
+// needed.
 
 // Look up a register's index by name ("pc", "cc", "a", "b", "dp", "x",
 // "y", "u", "s", or anything else Ciaran's debug_target defines). Returns
@@ -1299,4 +1302,88 @@ void wasm_clear_breakpoint(int addr) {
 	xroar.machine->debug.remove_breakpoint(
 		xroar.machine, (int32_t)((uint32_t)addr & 0xffff),
 		DELEGATE_AS2(void, bool, uint32, wasm_bp_hit, NULL));
+}
+
+// Watchpoints -- confirmed workable tonight after re-checking the
+// actual machine type this WASM build uses. The earlier conclusion
+// that watchpoints were blocked (bp_check_watchpoints's call site
+// wrapped in #ifdef WANT_GDB_TARGET) was checking coco3.c, the wrong
+// file -- this build's actual machine type ("[part:coco]" in the boot
+// log, not "[part:coco3]") runs dragon.c's cpu_cycle() instead, where
+// that same call is completely unconditional: "bp_check_watchpoints(
+// &md->watchpoint_set, RnW, A);" with no #ifdef around it at all.
+// Already running, every cycle, in the current build -- this just
+// exposes what's already there, no source patch needed, unlike the
+// SAM/PIA register work.
+//
+// Unlike breakpoints, the handler here receives a REAL, meaningful
+// RnW value (confirmed directly in breakpoint.h:
+// "DELEGATE_CALL(iter->handler, RnW, A);", not a dummy like
+// wasm_bp_hit's second parameter) -- worth actually exposing whether
+// a hit was a read or a write, not discarding it.
+
+static void wasm_wp_hit(void *sptr, _Bool RnW, uint32_t addr) {
+	(void)sptr;
+	if (xroar.machine && xroar.machine->signal) {
+		xroar.machine->signal(xroar.machine, 5);
+	}
+	wasm_debug_paused = 1;
+	wasm_debug_stop_reason = 3;
+	wasm_debug_stop_address = (int)addr;
+	wasm_debug_watchpoint_was_read = RnW ? 1 : 0;
+	if (wasm_debug_auto_refresh && xroar.vo_interface) {
+		vo_refresh(xroar.vo_interface);
+	}
+	EM_ASM({
+		if (typeof wasm_on_debug_stop === 'function') {
+			wasm_on_debug_stop($0, $1);
+		}
+	}, wasm_debug_stop_reason, (int)addr);
+}
+
+int wasm_get_watchpoint_was_read(void) {
+	return wasm_debug_watchpoint_was_read;
+}
+
+// Watchpoints are stored in two separate lists internally, one for
+// reads and one for writes (confirmed in breakpoint.h:
+// "set->list[RnW]") -- watching both directions on the same range
+// genuinely means registering twice, not a single call with a
+// combined flag. watch_reads/watch_writes are independent 0/1 flags
+// for exactly that reason, not an enum.
+
+void wasm_set_watchpoint(int addr_start, int addr_end, int watch_reads, int watch_writes) {
+	if (!xroar.machine || !xroar.machine->debug.add_watchpoint) {
+		return;
+	}
+	uint32_t as = (uint32_t)addr_start & 0xffff;
+	uint32_t ae = (uint32_t)addr_end & 0xffff;
+	if (watch_reads) {
+		xroar.machine->debug.add_watchpoint(
+			xroar.machine, 1, as, ae,
+			DELEGATE_AS2(void, bool, uint32, wasm_wp_hit, NULL));
+	}
+	if (watch_writes) {
+		xroar.machine->debug.add_watchpoint(
+			xroar.machine, 0, as, ae,
+			DELEGATE_AS2(void, bool, uint32, wasm_wp_hit, NULL));
+	}
+}
+
+void wasm_clear_watchpoint(int addr_start, int addr_end, int watch_reads, int watch_writes) {
+	if (!xroar.machine || !xroar.machine->debug.remove_watchpoint) {
+		return;
+	}
+	int32_t as = (int32_t)((uint32_t)addr_start & 0xffff);
+	uint32_t ae = (uint32_t)addr_end & 0xffff;
+	if (watch_reads) {
+		xroar.machine->debug.remove_watchpoint(
+			xroar.machine, 1, as, ae,
+			DELEGATE_AS2(void, bool, uint32, wasm_wp_hit, NULL));
+	}
+	if (watch_writes) {
+		xroar.machine->debug.remove_watchpoint(
+			xroar.machine, 0, as, ae,
+			DELEGATE_AS2(void, bool, uint32, wasm_wp_hit, NULL));
+	}
 }

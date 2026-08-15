@@ -112,6 +112,11 @@ void wasm_free_dump_buffer(void *buf);
 void wasm_set_breakpoint(int addr);
 void wasm_clear_breakpoint(int addr);
 
+// See the comments above these definitions in wasm.c.
+int wasm_get_watchpoint_was_read(void);
+void wasm_set_watchpoint(int addr_start, int addr_end, int watch_reads, int watch_writes);
+void wasm_clear_watchpoint(int addr_start, int addr_end, int watch_reads, int watch_writes);
+
 #endif
 
 #endif
