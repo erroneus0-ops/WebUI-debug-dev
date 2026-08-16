@@ -24,6 +24,8 @@ input[type="file"] { display: none; }
 	font-size: 0.8rem;
 	margin-top: 1px;
 	margin-bottom: 1px;
+	user-select: none;
+	-webkit-user-select: none;
 }
 .button:hover,select:hover { background-color: #ffffff; }
 

@@ -1341,14 +1341,16 @@ var Module = {
 <div id="debugger-wrapper" style="display:none; position:fixed; top:2.5rem; left:16px; z-index:100; flex-direction:column; box-shadow:0 4px 16px rgba(0,0,0,0.5); background:#c8c8c8; border-top:2px solid #ffffff; border-left:2px solid #ffffff; border-bottom:2px solid #808080; border-right:2px solid #808080; resize:both; overflow:hidden; min-width:260px; min-height:160px; width:300px;">
 	<div id="debugger-drag-handle" style="background:#404040; color:#ccc; font:bold 11px sans-serif; padding:4px 8px; cursor:grab; user-select:none; -webkit-user-select:none; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #222; touch-action:none; flex-shrink:0;">
 		<span>Debugger</span>
-		<span onmousedown="event.stopPropagation()" onclick="window._toggleDebuggerPanel()" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Close">&times;</span>
+		<span>
+			<span onmousedown="event.stopPropagation()" onclick="window.wasm_debug_toggle_dim('debugger-wrapper')" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Dim">&minus;</span>
+			<span onmousedown="event.stopPropagation()" onclick="window._toggleDebuggerPanel()" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Close">&times;</span>
+		</span>
 	</div>
 	<div style="padding:6px; overflow-y:auto; flex:1 1 auto; min-height:0; font-family:monospace; font-size:11px;">
 		<p style="margin:0 0 6px 0;">
 			<span class="button" id="dbg2-pause-btn" onclick="wasm_debug_pause()">Pause</span>
 			<span class="button" id="dbg2-resume-btn" onclick="wasm_debug_resume()">Resume</span>
 			<span class="button" onclick="wasm_debug_step()">Step</span>
-			<span id="dbg2-status" style="margin-left:6px;">running</span>
 		</p>
 		<table id="dbg2-registers" style="border-collapse:collapse; width:100%;"></table>
 		<p style="margin:8px 0 4px 0;">
@@ -1366,6 +1368,7 @@ var Module = {
 			<span class="button" onclick="wasm_debug_open_hexdump()">Hex Dump...</span>
 		</p>
 	</div>
+	<div id="dbg2-status" style="flex-shrink:0; padding:4px 8px; border-top:1px solid #999; background:#bbb; font-family:monospace; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">running</div>
 </div>
 
 <!-- Floating hex-dump popup -- its own top-level fixed-position panel,
@@ -1377,7 +1380,10 @@ var Module = {
 <div id="hexdump-wrapper" style="display:none; position:fixed; top:2.5rem; left:calc(100vw - 580px); z-index:100; flex-direction:column; box-shadow:0 4px 16px rgba(0,0,0,0.5); background:#c8c8c8; border-top:2px solid #ffffff; border-left:2px solid #ffffff; border-bottom:2px solid #808080; border-right:2px solid #808080; resize:both; overflow:hidden; min-width:420px; min-height:200px; width:560px; height:400px;">
 	<div id="hexdump-drag-handle" style="background:#404040; color:#ccc; font:bold 11px sans-serif; padding:4px 8px; cursor:grab; user-select:none; -webkit-user-select:none; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #222; touch-action:none; flex-shrink:0;">
 		<span>Hex Dump</span>
-		<span onmousedown="event.stopPropagation()" onclick="window.wasm_debug_close_hexdump()" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Close">&times;</span>
+		<span>
+			<span onmousedown="event.stopPropagation()" onclick="window.wasm_debug_toggle_dim('hexdump-wrapper')" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Dim">&minus;</span>
+			<span onmousedown="event.stopPropagation()" onclick="window.wasm_debug_close_hexdump()" style="cursor:pointer; padding:0 4px; font-size:14px; line-height:1;" title="Close">&times;</span>
+		</span>
 	</div>
 	<div style="padding:6px; display:flex; flex-direction:column; flex:1 1 auto; min-height:0;">
 		<p style="margin:0 0 6px 0; flex-shrink:0;">
@@ -1528,6 +1534,18 @@ var Module = {
 
 	window.wasm_debug_close_hexdump = function() {
 		document.getElementById('hexdump-wrapper').style.display = 'none';
+	};
+
+	// Dim level as one named constant, not repeated inline -- changing
+	// 50% to 75% later (mentioned as likely, pending eyeballing it) is
+	// then a one-line change here rather than hunting through markup.
+	var DIM_OPACITY = 0.5;
+
+	window.wasm_debug_toggle_dim = function(wrapperId) {
+		var el = document.getElementById(wrapperId);
+		if (!el) return;
+		var current = getComputedStyle(el).opacity;
+		el.style.opacity = (parseFloat(current) < 1) ? '1' : String(DIM_OPACITY);
 	};
 
 	window.wasm_hexdump_view_changed = function() {
@@ -1738,7 +1756,7 @@ var Module = {
 				input.type = 'text';
 				input.id = 'dbg2-reg-' + name;
 				input.size = size;
-				input.style.cssText = 'font-family:monospace; font-size:11px; width:100%; box-sizing:border-box;';
+				input.style.cssText = 'font-family:monospace; font-size:11px; box-sizing:border-box;';
 				protectInputFromSDL2(input);
 				input.addEventListener('change', function() {
 					if (this.id === 'dbg2-reg-d') {
