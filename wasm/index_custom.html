@@ -1782,6 +1782,24 @@ var Module = {
 	function whenModuleReady() {
 		if (typeof Module !== 'undefined' && Module.ccall) {
 			try {
+				// Module.ccall existing only means the WASM runtime itself
+				// has started -- it does NOT mean the actual machine/ROM
+				// has finished loading yet, and wasm_register_count() can
+				// genuinely return 0 in that in-between window (confirmed
+				// directly: a real screenshot showed every other control
+				// in this panel working -- Pause/Resume/Step, breakpoint
+				// status -- while the register grid stayed permanently
+				// empty for the whole session, with no console error at
+				// all, since regNames.forEach() on an empty array just
+				// does nothing rather than throwing). Since this whole
+				// block only runs once and success here means "never
+				// retry", silently accepting a 0 count here was the bug --
+				// it locked in a permanently-empty grid instead of trying
+				// again shortly after.
+				var count = Module.ccall('wasm_register_count', 'number', [], []);
+				if (count <= 0) {
+					throw new Error('wasm_register_count() returned ' + count + ' -- machine not fully loaded yet');
+				}
 				buildRegisterGrid();
 				setInterval(function() {
 					if (wrapper.style.display !== 'none') refresh();
