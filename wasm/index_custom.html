@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>XRoar Online</title>
+<link rel="icon" href="hamburger.svg">
 <!-- CoCo WASM emulator -->
 
 <style>
@@ -1703,39 +1704,77 @@ var Module = {
 	}
 	protectInputFromSDL2(document.getElementById('dbg2-bp-addr'));
 
+	// 6809 has exactly two register widths -- CC/A/B/DP are the real
+	// 8-bit registers, X/Y/U/S/PC are the real 16-bit ones. Checked
+	// against known register names rather than assuming positional
+	// order in whatever wasm_register_name() happens to report, so this
+	// stays correct even if that ordering ever changes.
+	var EIGHT_BIT_REGS = ['cc', 'a', 'b', 'dp'];
+
 	function buildRegisterGrid() {
 		var count = Module.ccall('wasm_register_count', 'number', [], []);
 		regNames = [];
-		var headRow = document.createElement('tr');
-		var valRow = document.createElement('tr');
+		var fetched = [];
 		for (var i = 0; i < count; i++) {
 			var name = Module.ccall('wasm_register_name', 'string', ['number'], [i]);
 			regNames.push(name);
-			var th = document.createElement('th');
-			th.textContent = name.toUpperCase();
-			th.style.cssText = 'font-size:10px; padding:1px 3px; text-align:center;';
-			headRow.appendChild(th);
-			var td = document.createElement('td');
-			var input = document.createElement('input');
-			input.type = 'text';
-			input.id = 'dbg2-reg-' + name;
-			input.size = 4;
-			input.style.cssText = 'font-family:monospace; font-size:11px; width:100%; box-sizing:border-box;';
-			protectInputFromSDL2(input);
-			input.addEventListener('change', function() {
-				var regno = regNames.indexOf(this.id.replace('dbg2-reg-', ''));
-				var v = parseInt(this.value, 16);
-				if (regno >= 0 && !isNaN(v)) {
-					Module.ccall('wasm_set_register', null, ['number', 'number'], [regno, v]);
-				}
-				refresh();
-			});
-			td.appendChild(input);
-			valRow.appendChild(td);
+			fetched.push(name);
 		}
+
+		var eightBit = fetched.filter(function(n) { return EIGHT_BIT_REGS.indexOf(n) >= 0; });
+		var sixteenBit = fetched.filter(function(n) { return EIGHT_BIT_REGS.indexOf(n) < 0; });
+
+		function buildRow(names, size, includeD) {
+			var headRow = document.createElement('tr');
+			var valRow = document.createElement('tr');
+			names.concat(includeD ? ['d'] : []).forEach(function(name) {
+				var th = document.createElement('th');
+				th.textContent = name.toUpperCase();
+				th.style.cssText = 'font-size:10px; padding:1px 3px; text-align:center;';
+				headRow.appendChild(th);
+
+				var td = document.createElement('td');
+				var input = document.createElement('input');
+				input.type = 'text';
+				input.id = 'dbg2-reg-' + name;
+				input.size = size;
+				input.style.cssText = 'font-family:monospace; font-size:11px; width:100%; box-sizing:border-box;';
+				protectInputFromSDL2(input);
+				input.addEventListener('change', function() {
+					if (this.id === 'dbg2-reg-d') {
+						// D is not a real register -- it's A and B
+						// concatenated, always. Editing it means
+						// splitting the entered 16-bit value back into
+						// the two real registers that actually store it.
+						var dv = parseInt(this.value, 16);
+						if (!isNaN(dv)) {
+							var aRegno = regNames.indexOf('a');
+							var bRegno = regNames.indexOf('b');
+							if (aRegno >= 0) Module.ccall('wasm_set_register', null, ['number', 'number'], [aRegno, (dv >> 8) & 0xff]);
+							if (bRegno >= 0) Module.ccall('wasm_set_register', null, ['number', 'number'], [bRegno, dv & 0xff]);
+						}
+					} else {
+						var regno = regNames.indexOf(this.id.replace('dbg2-reg-', ''));
+						var v = parseInt(this.value, 16);
+						if (regno >= 0 && !isNaN(v)) {
+							Module.ccall('wasm_set_register', null, ['number', 'number'], [regno, v]);
+						}
+					}
+					refresh();
+				});
+				td.appendChild(input);
+				valRow.appendChild(td);
+			});
+			return [headRow, valRow];
+		}
+
+		var row1 = buildRow(eightBit, 2, false);
+		var row2 = buildRow(sixteenBit, 4, true);   // D rides along here -- it's a 16-bit value, even though it's built from two 8-bit registers
 		regTable.innerHTML = '';
-		regTable.appendChild(headRow);
-		regTable.appendChild(valRow);
+		regTable.appendChild(row1[0]);
+		regTable.appendChild(row1[1]);
+		regTable.appendChild(row2[0]);
+		regTable.appendChild(row2[1]);
 	}
 
 	// Tracks the last address explicitly set/cleared via this panel, so
@@ -1767,8 +1806,22 @@ var Module = {
 				var input = document.getElementById('dbg2-reg-' + name);
 				if (!input || document.activeElement === input) return;   // don't clobber in-progress typing
 				var value = Module.ccall('wasm_get_register', 'number', ['number'], [regno]);
-				input.value = value.toString(16).toUpperCase().padStart(4, '0');
+				var digits = (EIGHT_BIT_REGS.indexOf(name) >= 0) ? 2 : 4;
+				input.value = value.toString(16).toUpperCase().padStart(digits, '0');
 			});
+			// D is not a real register -- always A concatenated with B.
+			// Computed here from the values just fetched above, not
+			// queried separately, so it can never disagree with them.
+			var dInput = document.getElementById('dbg2-reg-d');
+			if (dInput && document.activeElement !== dInput) {
+				var aRegno = regNames.indexOf('a'), bRegno = regNames.indexOf('b');
+				if (aRegno >= 0 && bRegno >= 0) {
+					var aVal = Module.ccall('wasm_get_register', 'number', ['number'], [aRegno]);
+					var bVal = Module.ccall('wasm_get_register', 'number', ['number'], [bRegno]);
+					var dVal = ((aVal & 0xff) << 8) | (bVal & 0xff);
+					dInput.value = dVal.toString(16).toUpperCase().padStart(4, '0');
+				}
+			}
 		} catch (e) {
 			// Was silent before -- a thrown exception here would leave
 			// the status text stuck at whatever it last said (or the
