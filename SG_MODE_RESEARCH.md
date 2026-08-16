@@ -47,12 +47,28 @@ mechanism behind the higher-resolution SG/PMODE variants -- there's no
 separate "SG8 register," it's this same 3-bit field with a smaller Y
 divisor.
 
-**Not yet verified:** which exact V2V1V0 value the community names "SG8"
-vs. "SG12" vs. specific PMODE numbers correspond to. I have the real
-divisor table; I do not yet have a confirmed source mapping those divisor
-values to the conventional mode names. Worth treating any specific
-"V=001 is SG8" claim (mine or anyone else's) as unverified until checked
-directly -- exactly the kind of detail that's easy to get subtly wrong.
+**Confirmed** (found in Tim Lindner's CoCo/GIME/GIME-X Memory Map Reference,
+which quotes the SAM's real register table at `$FFC0`-`$FFC5` directly --
+this is the mapping flagged as unverified above, now resolved from an
+actual source, not memory):
+
+```
+V2 V1 V0   Buffer size   Display modes
+ 0  0  0     512         AI, SG4, SG6
+ 0  0  1    1024         G1C, G1R
+ 0  1  0    2048         G2C, SG8
+ 0  1  1    1536         G2R
+ 1  0  0    3072         G3C, SG12
+ 1  0  1    3072         G3R
+ 1  1  0    6144         G6R, G6C, SG24
+ 1  1  1    Not used
+```
+
+Worth noting directly: SG4 and SG6 share the *same* SAM V-value (000).
+The SAM's divisor table only distinguishes address-timing; the SG4 vs. SG6
+difference must come from elsewhere -- almost certainly the VDG's own GM
+bits (see above), not the SAM. Consistent with everything traced already:
+two separate chips, two separate jobs.
 
 ## Why text characters can show ANY row, not just the top (confirmed by
 tracing the actual render loop)
@@ -112,16 +128,72 @@ gime->LPR = val & 7;        // Lines Per Row, written directly
 LPR_rowmask[8] = { 0, 1, 2, 8, 9, 10, 11, 16 };
 ```
 
+**Now fully cross-confirmed** against Tim Lindner's reference, register
+`$FF98` (Video mode register), bits 2-0 -- and it turns out text and
+graphics modes get genuinely *different* row-count tables, not one shared
+table:
+
+```
+        Text mode              Graphics mode
+000       1                      1
+010       2                      2
+011       8                      7
+100       9                      8
+101      10                      9
+110      11                     10
+111       infinite               infinite
+```
+
+XRoar's `LPR_rowmask` array (`{0,1,2,8,9,10,11,16}`) matches this closely
+-- the trailing `16` is almost certainly a sentinel standing in for
+"infinite" rather than a literal row count, since infinite isn't
+representable as a finite number directly.
+
 GIME's row-count is a **direct, deliberately-chosen value** written straight
 into a register -- not an emergent side effect of address-timing divisors
 the way the SAM produces it. This is a real, structural difference, not
-just GIME being "the same thing but nicer." **Not yet verified:** whether
+just GIME being "the same thing but nicer." **Still not verified:** whether
 GIME's own row-counter has the same "keeps running regardless of actual
 fetch timing" property that causes the SG8-style mid-character text
 slicing on CoCo 1/2. Given the mechanism looks more deliberate and direct
 here, my honest guess is that specific artifact may not reproduce the same
-way on CoCo 3 -- but that's a guess, not something traced yet, and worth
-checking before stating it as fact.
+way on CoCo 3 -- but that's a guess, not something traced yet.
+
+## GIME-X and GIME-Z: community FPGA replacements (confirmed real, both
+distinct projects)
+
+Both are real, physical, purchasable products -- not software emulation
+projects, actual FPGA-based chips that plug into a real CoCo 3's GIME
+socket:
+
+- **GIME-X** -- Gary Becker (Verilog/FPGA design, also behind the
+  CoCo3FPGA project) and "Zippster" (hardware/PCB), documented at
+  thezippsterzone.com. Confirmed additions beyond stock GIME: NTSC
+  encoder plus composite/s-video output, support for >512K memory, and
+  new video modes including 640x225-16 color, 320x225-256 color, and
+  640x112-256 color -- resolutions/depths the original GIME never
+  supported at all.
+- **GIME-Z** -- a separate project, "AC's 8-bit Zone" (sold via
+  cocobits.org). Confirmed to exist and be a real, distinct product;
+  have not yet found detailed technical documentation on its specific
+  feature set the way GIME-X's is documented.
+
+**Confirmed, real addition specific to GIME-X:** a new register at `$FFEF`
+("GIME-X information byte") that stock GIME never had -- major/minor
+version bits plus a memory-type flag (DDR vs. SDR). This is genuinely
+useful for the character-dump tool's mode-detection idea above: software
+can read this register to tell whether it's running on real/emulated
+stock GIME vs. GIME-X specifically, rather than guessing.
+
+**Not yet verified, and the actual open question this whole section was
+chasing:** the claim that GIME-X/GIME-Z do "a more complete job of
+simulating SG modes" specifically. What's confirmed so far is real, new
+*graphics* modes beyond stock GIME's repertoire (640x225-16, etc.) -- I
+have not yet found a source specifically describing improvements to SG4/
+SG6/SG8/SG12/SG24 fidelity, or fixes to known real-hardware GIME
+quirks/bugs in those modes. Worth a dedicated follow-up search rather than
+assuming the graphics-mode additions and the SG-mode improvements are the
+same thing.
 
 ## Toward simulating this in the character-dump tool
 
@@ -148,10 +220,19 @@ verified to exist:
 
 ## Open threads for next research pass
 
-- Confirm the actual V2V1V0-to-SGn name mapping from a source, not memory.
+- The actual open question from this session: does GIME-X/GIME-Z improve
+  SG-mode fidelity specifically, or just add new graphics modes/resolutions
+  beyond stock GIME's repertoire? Confirmed real new modes (640x225-16,
+  etc.); have not found a source specifically about SG4-24 improvements.
 - Find which PIA bits actually drive the VDG's GM register (same pattern
   as the confirmed `$FF22`/EXT discovery, not yet done for GM).
-- Check whether GIME's row-counter shares the SAM's free-running property.
+- Check whether GIME's own row-counter shares the SAM's free-running
+  property (the mechanism behind the mid-character text slicing) -- the
+  more direct, deliberate LPR register design suggests it might not, but
+  that's a guess, not confirmed.
+- Detailed GIME-Z technical documentation -- confirmed to exist as a real
+  product, haven't yet found a feature-by-feature reference the way
+  GIME-X's is documented at thezippsterzone.com.
 - The "undocumented/unsupported" SG variants mentioned (SG1 naming
   confusion, and others not yet identified) -- specific research target,
   not yet investigated at all.
