@@ -1,6 +1,6 @@
 # XRoar custom WASM Build Report
 
-**Built:** 2026-08-17 14:26 UTC
+**Built:** 2026-08-17 14:31 UTC
 **Source:** emcc_workflow/xroar-1.12.1/ -- patched, NOT pristine upstream (see build_xroar_stock_wasm.yml for the genuinely untouched copy)
 **Build tag:** debug-exports (reported version becomes e.g. "XRoar 1.12.1+debug-exports", SemVer build-metadata convention)
 **WASM size:** 1324983 bytes
@@ -15,6 +15,7 @@ wasm_get_auto_refresh
 wasm_get_register
 wasm_get_stop_address
 wasm_get_stop_reason
+wasm_get_tv_standard
 wasm_get_watchpoint_was_read
 wasm_is_paused
 wasm_pause
