@@ -1601,9 +1601,26 @@ var Module = {
 		// application. Back to uniform scale until that's actually
 		// understood, rather than pushing a plausible-sounding but
 		// unverified change.
+		//
+		// That further factor turned out to be TV standard, not pixel
+		// shape -- confirmed by directly measuring real NTSC vs PAL
+		// screenshots pixel by pixel: identical width (509px both),
+		// but NTSC's active area is a real, measured 6.82% taller
+		// than PAL's, vertically only. tv_standard is an
+		// emulator-level config choice, not a hardware register, so
+		// unlike EXT/CSS/GM it needs its own dedicated export
+		// (wasm_get_tv_standard) rather than being readable from
+		// memory. TV_PAL=0 needs no correction (matches the existing
+		// uniform scale, confirmed to already fit PAL near-perfectly);
+		// TV_NTSC=1 and TV_PAL_M=2 (which shares NTSC's 60Hz timing,
+		// per machine.h's own description, though not separately
+		// measured) get the confirmed correction applied.
+		var tvStandard = Module.ccall('wasm_get_tv_standard', 'number', [], []);
+		var vScale = (tvStandard === 1 || tvStandard === 2) ? 1.0682 : 1.0;
+
 		var SCALE = 2, CHAR_W = 8, CHAR_H = 12;
 		var activeW = cols * CHAR_W * SCALE;
-		var activeH = rows * CHAR_H * SCALE;
+		var activeH = rows * CHAR_H * SCALE * vScale;
 
 		// Real VDG surrounds the active text area with a border on all
 		// sides -- confirmed directly from mc6847.h's own timing
@@ -1631,7 +1648,7 @@ var Module = {
 		var bottomBorder = Math.round(activeH * (26 / 192) * BORDER_HINT_SCALE);
 
 		canvas.width = leftBorder + activeW + rightBorder;
-		canvas.height = topBorder + activeH + bottomBorder;
+		canvas.height = topBorder + Math.round(activeH) + bottomBorder;
 
 		// Confirmed the actual cause of the banding/texture artifact:
 		// it appeared uniformly through plain background areas with
@@ -1701,7 +1718,7 @@ var Module = {
 		for (var i = 0; i < len; i++) {
 			var b = Module.ccall('wasm_read_byte', 'number', ['number'], [(addr + i) & 0xffff]);
 			var col = i % cols, row = Math.floor(i / cols);
-			var px = offsetX + col * CHAR_W * SCALE, py = offsetY + row * CHAR_H * SCALE;
+			var px = offsetX + col * CHAR_W * SCALE, py = offsetY + row * CHAR_H * SCALE * vScale;
 
 			if ((b & 0x80) === 0) {
 				// Alpha: same c-code masking mc6847.c applies
@@ -1734,9 +1751,21 @@ var Module = {
 				for (var r = 0; r < CHAR_H; r++) {
 					var rowByte = FONT_6847T1[c * 12 + r];
 					if (doInvert) rowByte = (~rowByte) & 0xff;
+					// vScale can be fractional (1.0682 for NTSC) --
+					// rounding py+r*SCALE*vScale directly, independently
+					// per row, risks reintroducing the exact
+					// fractional-coordinate banding already fixed once
+					// this session. Rounding each row's start/end
+					// boundary and using the difference as the actual
+					// height guarantees adjacent rows always connect
+					// with no gap or overlap, even though individual
+					// row heights end up varying by a pixel here and
+					// there rather than all being identical.
+					var y0 = Math.round(py + r * SCALE * vScale);
+					var y1 = Math.round(py + (r + 1) * SCALE * vScale);
 					for (var bit = 0; bit < 8; bit++) {
 						if (rowByte & (0x80 >> bit)) {
-							ctx.fillRect(px + bit * SCALE, py + r * SCALE, SCALE, SCALE);
+							ctx.fillRect(px + bit * SCALE, y0, SCALE, y1 - y0);
 						}
 					}
 				}
@@ -1753,12 +1782,21 @@ var Module = {
 				var topRight = (b & 0x04) !== 0;
 				var botLeft  = (b & 0x02) !== 0;
 				var botRight = (b & 0x01) !== 0;
-				var halfW = (CHAR_W / 2) * SCALE, halfH = (CHAR_H / 2) * SCALE;
+				var halfW = (CHAR_W / 2) * SCALE;
+				// Same integer-boundary rounding as the alpha path
+				// above, and for the same reason -- vScale can be
+				// fractional, so round the three actual Y boundaries
+				// (top/middle/bottom of the cell) and use differences
+				// for height, rather than rounding py and halfH
+				// independently.
+				var yTop = Math.round(py);
+				var yMid = Math.round(py + (CHAR_H / 2) * SCALE * vScale);
+				var yBot = Math.round(py + CHAR_H * SCALE * vScale);
 				ctx.fillStyle = fg;
-				if (topLeft)  ctx.fillRect(px, py, halfW, halfH);
-				if (topRight) ctx.fillRect(px + halfW, py, halfW, halfH);
-				if (botLeft)  ctx.fillRect(px, py + halfH, halfW, halfH);
-				if (botRight) ctx.fillRect(px + halfW, py + halfH, halfW, halfH);
+				if (topLeft)  ctx.fillRect(px, yTop, halfW, yMid - yTop);
+				if (topRight) ctx.fillRect(px + halfW, yTop, halfW, yMid - yTop);
+				if (botLeft)  ctx.fillRect(px, yMid, halfW, yBot - yMid);
+				if (botRight) ctx.fillRect(px + halfW, yMid, halfW, yBot - yMid);
 			}
 		}
 	};

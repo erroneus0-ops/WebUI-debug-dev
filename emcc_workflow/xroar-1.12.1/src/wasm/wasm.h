@@ -117,6 +117,17 @@ int wasm_get_watchpoint_was_read(void);
 void wasm_set_watchpoint(int addr_start, int addr_end, int watch_reads, int watch_writes);
 void wasm_clear_watchpoint(int addr_start, int addr_end, int watch_reads, int watch_writes);
 
+// Returns the currently-configured machine's tv_standard
+// (TV_PAL=0, TV_NTSC=1, TV_PAL_M=2, per machine.h) -- this is an
+// emulator-level configuration choice, not a hardware register, so
+// unlike EXT/CSS/GM it can't be read via a memory-mapped address at
+// all. Confirmed directly (via measuring real screenshots pixel by
+// pixel) that NTSC and PAL render the active screen area at
+// genuinely different heights -- 6.82% taller for NTSC, width
+// unchanged -- so the character-dump tool needs this to render the
+// correct proportions for whichever standard is actually running.
+int wasm_get_tv_standard(void);
+
 #endif
 
 #endif

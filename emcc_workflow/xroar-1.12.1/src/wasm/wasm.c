@@ -1387,3 +1387,14 @@ void wasm_clear_watchpoint(int addr_start, int addr_end, int watch_reads, int wa
 			DELEGATE_AS2(void, bool, uint32, wasm_wp_hit, NULL));
 	}
 }
+
+// See the comment above the declaration in wasm.h. -1 if no machine
+// is currently configured at all, matching the defensive-check
+// pattern already used throughout this file rather than assuming
+// xroar.machine/->config are always non-NULL.
+int wasm_get_tv_standard(void) {
+	if (!xroar.machine || !xroar.machine->config) {
+		return -1;
+	}
+	return xroar.machine->config->tv_standard;
+}
