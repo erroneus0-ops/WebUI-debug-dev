@@ -1596,20 +1596,26 @@ var Module = {
 		// sides -- confirmed directly from mc6847.h's own timing
 		// constants (VDG_tLB/VDG_tAV/VDG_tRB horizontally,
 		// VDG_TOP_BORDER_START/VDG_ACTIVE_AREA_END/
-		// VDG_BOTTOM_BORDER_END vertically), not estimated. Without
-		// this, overlaying the character-dump canvas directly on the
-		// real one (using the dim-toggle feature) drifts further out
-		// of alignment row by row -- confirmed against a real
-		// screenshot showing exactly that. Vertical ratio checks out
-		// exactly (192 = 16 rows x 12px, matching the active-area
-		// constant precisely); horizontal is confirmed via the
-		// pixel-doubling in mc6847.c's VDG_RENDER_RG case (2 real
-		// pixels per bit, so tAV=512 is already real pixels, not
-		// clock units needing further conversion).
-		var leftBorder  = activeW * (120 / 512);
-		var rightBorder = activeW * (112 / 512);
-		var topBorder   = activeH * (25 / 192);
-		var bottomBorder = activeH * (26 / 192);
+		// VDG_BOTTOM_BORDER_END vertically). But that full timing-spec
+		// margin was never meant to be entirely visible on real
+		// hardware -- most of it was designed to accommodate variation
+		// in how individual CRTs were physically adjusted, hidden
+		// behind the actual bezel, not displayed. A modern emulator
+		// canvas crops most of that away; showing the full theoretical
+		// proportion here actively prevented lining this canvas up
+		// against the real one (confirmed directly -- too much border,
+		// not too little). BORDER_HINT_SCALE keeps the correct relative
+		// asymmetry (left slightly wider than right, bottom slightly
+		// taller than top, matching the real timing constants exactly)
+		// while showing only a small fraction of the full amount --
+		// deliberately a single, easily-tunable constant, since "how
+		// much to show" is a visual judgment call, not something
+		// derivable precisely from source.
+		var BORDER_HINT_SCALE = 0.15;
+		var leftBorder  = activeW * (120 / 512) * BORDER_HINT_SCALE;
+		var rightBorder = activeW * (112 / 512) * BORDER_HINT_SCALE;
+		var topBorder   = activeH * (25 / 192) * BORDER_HINT_SCALE;
+		var bottomBorder = activeH * (26 / 192) * BORDER_HINT_SCALE;
 
 		canvas.width = leftBorder + activeW + rightBorder;
 		canvas.height = topBorder + activeH + bottomBorder;
