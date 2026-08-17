@@ -1612,10 +1612,10 @@ var Module = {
 		// much to show" is a visual judgment call, not something
 		// derivable precisely from source.
 		var BORDER_HINT_SCALE = 0.05;
-		var leftBorder  = activeW * (120 / 512) * BORDER_HINT_SCALE;
-		var rightBorder = activeW * (112 / 512) * BORDER_HINT_SCALE;
-		var topBorder   = activeH * (25 / 192) * BORDER_HINT_SCALE;
-		var bottomBorder = activeH * (26 / 192) * BORDER_HINT_SCALE;
+		var leftBorder  = Math.round(activeW * (120 / 512) * BORDER_HINT_SCALE);
+		var rightBorder = Math.round(activeW * (112 / 512) * BORDER_HINT_SCALE);
+		var topBorder   = Math.round(activeH * (25 / 192) * BORDER_HINT_SCALE);
+		var bottomBorder = Math.round(activeH * (26 / 192) * BORDER_HINT_SCALE);
 
 		canvas.width = leftBorder + activeW + rightBorder;
 		canvas.height = topBorder + activeH + bottomBorder;
