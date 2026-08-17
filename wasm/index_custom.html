@@ -1388,7 +1388,7 @@ var Module = {
 	<div style="padding:6px; display:flex; flex-direction:column; flex:1 1 auto; min-height:0;">
 		<p style="margin:0 0 6px 0; flex-shrink:0;">
 			$<input type="text" size="4" id="hexdump-addr" placeholder="0400" value="0400" style="font-family:monospace;">
-			len <input type="text" size="4" id="hexdump-len" placeholder="256" value="256" style="font-family:monospace;">
+			len <input type="text" size="4" id="hexdump-len" placeholder="512" value="512" style="font-family:monospace;">
 			<span class="button" onclick="wasm_hexdump_refresh()">Dump</span>
 			<label style="cursor:pointer; margin-left:6px;">
 				<input type="checkbox" id="hexdump-live" onchange="wasm_hexdump_toggle_live()">
@@ -1401,7 +1401,7 @@ var Module = {
 			<label style="cursor:pointer;"><input type="radio" name="hexdump-view" value="char" onchange="wasm_hexdump_view_changed()">Characters</label>
 		</p>
 		<pre id="hexdump-output" style="flex:1 1 auto; min-height:0; overflow:auto; margin:0; background:#222; color:#ddd; font-family:monospace; font-size:11px; padding:4px;">(no dump yet)</pre>
-		<canvas id="hexdump-canvas" style="display:none; flex:1 1 auto; min-height:0; overflow:auto; margin:0; background:#000; image-rendering:pixelated; object-fit:contain;"></canvas>
+		<canvas id="hexdump-canvas" style="display:none; flex:0 0 auto; min-height:0; overflow:auto; margin:0; background:#000; image-rendering:pixelated;"></canvas>
 	</div>
 </div>
 <script>
