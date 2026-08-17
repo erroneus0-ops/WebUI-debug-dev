@@ -1619,6 +1619,23 @@ var Module = {
 
 		canvas.width = leftBorder + activeW + rightBorder;
 		canvas.height = topBorder + activeH + bottomBorder;
+
+		// Confirmed the actual cause of the banding/texture artifact:
+		// it appeared uniformly through plain background areas with
+		// no text at all, which rules out the glyph-drawing code
+		// (already confirmed to draw on whole-pixel coordinates) and
+		// points at a later stage instead -- object-fit:contain lets
+		// the browser stretch this fixed-size pixel buffer to fit
+		// whatever size the panel currently is. If that stretch isn't
+		// an exact whole-number ratio, some source rows get sampled
+		// once and others twice, unevenly -- exactly this kind of
+		// regular banding. Forcing the CSS display size to exactly
+		// equal the actual pixel buffer size eliminates the scaling
+		// step entirely, rather than trying to match a specific ratio
+		// that would just break again on the next resize.
+		canvas.style.width = canvas.width + 'px';
+		canvas.style.height = canvas.height + 'px';
+
 		var ctx = canvas.getContext('2d');
 
 		var offsetX = leftBorder, offsetY = topBorder;
