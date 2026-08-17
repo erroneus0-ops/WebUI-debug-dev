@@ -1588,6 +1588,19 @@ var Module = {
 		var canvas = document.getElementById('hexdump-canvas');
 		var cols = 32;
 		var rows = Math.ceil(len / cols);
+		// NOTE: previously split this into separate SCALE_X=2/SCALE_Y=1
+		// based on confirmed raw video-signal sample counts (2 real
+		// samples per font bit horizontally, 1 per font row
+		// vertically). Reverted -- that raw sample-count ratio isn't
+		// the same thing as the final displayed pixel shape. A real
+		// video signal gets stretched by the display device to fill a
+		// standard-shaped screen; the resulting active-area ratio from
+		// that split (2.667) was wildly off from a real 4:3 display,
+		// confirming the raw sample ratio needs a further stretch
+		// factor I haven't identified yet, not a direct 1:1
+		// application. Back to uniform scale until that's actually
+		// understood, rather than pushing a plausible-sounding but
+		// unverified change.
 		var SCALE = 2, CHAR_W = 8, CHAR_H = 12;
 		var activeW = cols * CHAR_W * SCALE;
 		var activeH = rows * CHAR_H * SCALE;
