@@ -1609,7 +1609,7 @@ var Module = {
 		var extMode = (ff22 & 0x10) !== 0;
 		var cssMode = (ff22 & 0x08) !== 0;
 		var gm = (ff22 >> 4) & 7;
-		var inverseText = (gm & 2) !== 0;
+		var inverseTextGM = (gm & 2) !== 0;
 		var nAG = (ff22 & 0x80) !== 0;
 
 		if (nAG) {
@@ -1639,9 +1639,30 @@ var Module = {
 				var c = b & 0x7f;
 				if (!extMode) c |= 0x40;
 				ctx.fillStyle = alphaFg;
+
+				// Inversion genuinely depends on the byte itself, not
+				// just global state -- confirmed directly in
+				// dragon.c's vdg_fetch_handler(): every fetched byte
+				// has its own bits 6-7 duplicated up into an internal
+				// 16-bit "attr" value (D |= (D&0xc0)<<2), and
+				// mc6847.c checks INV = vdata & 0x100 against that
+				// duplicated bit 6 for this rendering path. In
+				// practice this means standard uppercase ASCII
+				// ($40-$5F, which always has bit 6 set) inverts by
+				// default with no explicit inverse-video command at
+				// all -- confirmed against a real screenshot showing
+				// ordinary text as black-on-green, not green-on-black.
+				// (mc6847's own separate "inverted_text" flag is a
+				// pure XRoar UI preference toggle, not a hardware
+				// register -- nothing in this interface exposes a way
+				// to set it, so it's correctly omitted here as always
+				// false.)
+				var invRaw = extMode || ((b & 0x40) !== 0);
+				var doInvert = invRaw !== inverseTextGM;
+
 				for (var r = 0; r < CHAR_H; r++) {
 					var rowByte = FONT_6847T1[c * 12 + r];
-					if (inverseText) rowByte = (~rowByte) & 0xff;
+					if (doInvert) rowByte = (~rowByte) & 0xff;
 					for (var bit = 0; bit < 8; bit++) {
 						if (rowByte & (0x80 >> bit)) {
 							ctx.fillRect(px + bit * SCALE, py + r * SCALE, SCALE, SCALE);
