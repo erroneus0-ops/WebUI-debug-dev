@@ -1595,17 +1595,37 @@ var Module = {
 		ctx.fillStyle = '#000';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-		// EXT (lowercase/extended charset) is a single global hardware
-		// state on non-GIME machines -- driven by one PIA1 bit ($FF22
-		// bit 4, confirmed directly against both XRoar's source and
-		// real ROM disassembly earlier tonight), not a per-byte
-		// attribute. Reading it once and applying it uniformly across
-		// the whole dump is the correct model for this hardware, not a
-		// simplification -- GIME-based (CoCo 3) per-character
-		// attributes would need different handling, not implemented
-		// here.
+		// All four of these live in the exact same PIA1 "B side" byte
+		// ($FF22) -- confirmed directly in dragon.c's
+		// dragon_update_vdg_mode(), not assumed. One register read
+		// covers all of it:
+		//   bit 3 (0x08)    CSS   -- green/amber select
+		//   bit 4 (0x10)    EXT   -- character set selection (already
+		//                            used below, unchanged)
+		//   bits 4-6 (0x70) GM    -- GM & 2 specifically drives inverse_text
+		//   bit 7 (0x80)    nA_G  -- true bitmap graphics mode, not
+		//                            alpha/semigraphics at all
 		var ff22 = Module.ccall('wasm_read_byte', 'number', ['number'], [0xff22]);
 		var extMode = (ff22 & 0x10) !== 0;
+		var cssMode = (ff22 & 0x08) !== 0;
+		var gm = (ff22 >> 4) & 7;
+		var inverseText = (gm & 2) !== 0;
+		var nAG = (ff22 & 0x80) !== 0;
+
+		if (nAG) {
+			// True bitmap graphics (PMODE) -- not characters or
+			// semigraphics at all. Running this through the
+			// alpha/semigraphics decoder below would produce
+			// meaningless output, not just an inaccurate one, so
+			// don't try -- this is real, separate future work (see
+			// SG_MODE_RESEARCH.md).
+			ctx.fillStyle = '#888';
+			ctx.font = '11px monospace';
+			ctx.fillText('PMODE/graphics mode active -- not yet supported here', 4, 14);
+			return;
+		}
+
+		var alphaFg = cssMode ? '#ff8000' : '#00c000';   // amber/green approximation, same class as VDG_COLORS below
 
 		for (var i = 0; i < len; i++) {
 			var b = Module.ccall('wasm_read_byte', 'number', ['number'], [(addr + i) & 0xffff]);
@@ -1618,9 +1638,10 @@ var Module = {
 				// the upper half via |=0x40 when EXT isn't active).
 				var c = b & 0x7f;
 				if (!extMode) c |= 0x40;
-				ctx.fillStyle = '#00c000';
+				ctx.fillStyle = alphaFg;
 				for (var r = 0; r < CHAR_H; r++) {
 					var rowByte = FONT_6847T1[c * 12 + r];
+					if (inverseText) rowByte = (~rowByte) & 0xff;
 					for (var bit = 0; bit < 8; bit++) {
 						if (rowByte & (0x80 >> bit)) {
 							ctx.fillRect(px + bit * SCALE, py + r * SCALE, SCALE, SCALE);

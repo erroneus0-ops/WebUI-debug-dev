@@ -114,10 +114,36 @@ table for how many rows share one byte:
 GM_nLPR[8] = { 3, 3, 3, 2, 2, 1, 1, 1 };
 ```
 
-This is the register BASIC's `PMODE` command is presumably setting
-(likely via specific PIA bit writes, same general pattern as the `$FF22`
-EXT bit found earlier -- not yet directly confirmed which exact PIA
-bits map to GM, worth checking before building on this specifically).
+**Now fully confirmed** -- this closes the "which PIA bits drive GM"
+question left open above. All of CSS, GM, and nA_G turn out to live in
+the exact same register already used for EXT (`$FF22`, PIA1's "B side"),
+confirmed directly in `dragon.c`:
+
+```c
+void dragon_update_vdg_mode(struct dragon *md) {
+    unsigned vmode = (md->PIA1->b.out_source & md->PIA1->b.out_sink) & 0xf8;
+    vmode |= (vmode & 0x10) << 4;   // reuses the same EXT bit
+    mc6847_set_mode(md->VDG, vmode);
+}
+```
+
+Full bit mapping of `$FF22`, all one register:
+
+```
+bit 3 (0x08)   CSS   -- green/amber select (-> CSSb -> text_border_colour etc.)
+bit 4 (0x10)   EXT   -- character set selection (the bit already tested
+                         directly tonight, via POKE &HFF22)
+bits 4-6 (0x70) GM   -- 3-bit graphics mode; GM & 2 specifically drives
+                         inverse_text
+bit 7 (0x80)   nA_G  -- alpha/semigraphics mode vs. true bitmap graphics
+```
+
+Clean architectural split, confirmed rather than assumed: **PIA1
+controls how the VDG interprets whatever byte it's currently looking
+at** (palette, text-vs-graphics, inversion) -- entirely separate from
+**the SAM**, which only controls which byte gets fetched and when (the
+V2V1V0 addressing-timing mechanism above). Two chips, two genuinely
+distinct jobs.
 
 ## GIME (CoCo 3): confirmed to be a genuinely different mechanism, not
 just an extension
@@ -224,8 +250,6 @@ verified to exist:
   SG-mode fidelity specifically, or just add new graphics modes/resolutions
   beyond stock GIME's repertoire? Confirmed real new modes (640x225-16,
   etc.); have not found a source specifically about SG4-24 improvements.
-- Find which PIA bits actually drive the VDG's GM register (same pattern
-  as the confirmed `$FF22`/EXT discovery, not yet done for GM).
 - Check whether GIME's own row-counter shares the SAM's free-running
   property (the mechanism behind the mid-character text slicing) -- the
   more direct, deliberate LPR register design suggests it might not, but
