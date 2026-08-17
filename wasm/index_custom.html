@@ -1615,14 +1615,6 @@ var Module = {
 		canvas.height = topBorder + activeH + bottomBorder;
 		var ctx = canvas.getContext('2d');
 
-		// Border color fidelity (which depends on CSSb and the
-		// separate GM & 4 "text_border" bit) is a further refinement,
-		// not attempted here -- plain black border is the safe
-		// default (matching the common text_border=false case),
-		// correct alignment is the actual fix this addresses.
-		ctx.fillStyle = '#000';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-
 		var offsetX = leftBorder, offsetY = topBorder;
 
 		// All four of these live in the exact same PIA1 "B side" byte
@@ -1632,7 +1624,8 @@ var Module = {
 		//   bit 3 (0x08)    CSS   -- green/amber select
 		//   bit 4 (0x10)    EXT   -- character set selection (already
 		//                            used below, unchanged)
-		//   bits 4-6 (0x70) GM    -- GM & 2 specifically drives inverse_text
+		//   bits 4-6 (0x70) GM    -- GM & 2 specifically drives inverse_text,
+		//                            GM & 4 specifically drives text_border
 		//   bit 7 (0x80)    nA_G  -- true bitmap graphics mode, not
 		//                            alpha/semigraphics at all
 		var ff22 = Module.ccall('wasm_read_byte', 'number', ['number'], [0xff22]);
@@ -1654,6 +1647,18 @@ var Module = {
 			ctx.fillText('PMODE/graphics mode active -- not yet supported here', 4, 14);
 			return;
 		}
+
+		// Border color: confirmed directly in mc6847.c --
+		// text_border = is_t1 && !inverse_text && (GM & 4), and
+		// border_colour = text_border ? (CSSb ? bright_orange : GREEN)
+		// : BLACK. All the pieces needed (gm, inverseTextGM, cssMode)
+		// are already being read above for other purposes -- this was
+		// left out of the earlier alignment fix specifically as a
+		// follow-up, not forgotten.
+		var textBorder = !inverseTextGM && ((gm & 4) !== 0);
+		var borderColor = textBorder ? (cssMode ? '#ff9020' : '#00c000') : '#000';
+		ctx.fillStyle = borderColor;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 		var alphaFg = cssMode ? '#ff8000' : '#00c000';   // amber/green approximation, same class as VDG_COLORS below
 
