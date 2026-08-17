@@ -1606,17 +1606,37 @@ var Module = {
 		// shape -- confirmed by directly measuring real NTSC vs PAL
 		// screenshots pixel by pixel: identical width (509px both),
 		// but NTSC's active area is a real, measured 6.82% taller
-		// than PAL's, vertically only. tv_standard is an
-		// emulator-level config choice, not a hardware register, so
-		// unlike EXT/CSS/GM it needs its own dedicated export
-		// (wasm_get_tv_standard) rather than being readable from
-		// memory. TV_PAL=0 needs no correction (matches the existing
-		// uniform scale, confirmed to already fit PAL near-perfectly);
-		// TV_NTSC=1 and TV_PAL_M=2 (which shares NTSC's 60Hz timing,
-		// per machine.h's own description, though not separately
-		// measured) get the confirmed correction applied.
-		var tvStandard = Module.ccall('wasm_get_tv_standard', 'number', [], []);
-		var vScale = (tvStandard === 1 || tvStandard === 2) ? 1.0682 : 1.0;
+		// than PAL's, vertically only.
+		//
+		// tv_standard is an emulator-level config choice, not a
+		// hardware register, so it can't be read from memory the way
+		// EXT/CSS/GM can. Originally read via a dedicated
+		// wasm_get_tv_standard() export, but that's been superseded --
+		// the actual, complete tv-type for every registered machine
+		// was found directly in XRoar's own source (the
+		// default_config[] string-argument table listing every
+		// "-machine X"/"-tv-type Y" pairing XRoar ships with), which
+		// is more informative than reading the resolved value alone
+		// since it also confirms the two genuinely PAL-M machines
+		// (mx1600, cp400 -- both Brazilian: Dynacom MX-1600 and
+		// Prologica CP-400) share NTSC's 60Hz timing rather than
+		// PAL's 50Hz, same as tano (Tano Dragon) despite its name
+		// suggesting otherwise. This table is exhaustive -- every
+		// machine XRoar's part database actually registers, not a
+		// guessed subset.
+		var TV_TYPE_BY_MACHINE = {
+			'dragon32': 'pal', 'dragon64': 'pal', 'tano': 'ntsc',
+			'dragonpro': 'pal', 'dragon200e': 'pal', 'dragonx8': 'pal',
+			'coco': 'pal', 'cocous': 'ntsc',
+			'coco2b': 'pal', 'coco2bus': 'ntsc',
+			'deluxecoco': 'ntsc',
+			'coco3': 'ntsc', 'coco3h': 'ntsc', 'coco3p': 'pal', 'coco3ph': 'pal',
+			'mx1600': 'pal-m', 'cp400': 'pal-m',
+			'mc10': 'ntsc', 'alice': 'pal'
+		};
+		var machineName = Module.ccall('wasm_get_machine_config_string', 'string', ['string'], ['name']);
+		var tvType = TV_TYPE_BY_MACHINE[machineName] || 'pal';
+		var vScale = (tvType === 'ntsc' || tvType === 'pal-m') ? 1.0682 : 1.0;
 
 		var SCALE = 2, CHAR_W = 8, CHAR_H = 12;
 		var activeW = cols * CHAR_W * SCALE;

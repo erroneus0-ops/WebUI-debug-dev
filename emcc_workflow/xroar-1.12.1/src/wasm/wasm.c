@@ -1389,31 +1389,26 @@ void wasm_clear_watchpoint(int addr_start, int addr_end, int watch_reads, int wa
 	}
 }
 
-// See the comment above the declaration in wasm.h. -1 if no machine
-// is currently configured at all, matching the defensive-check
-// pattern already used throughout this file rather than assuming
-// xroar.machine/->config are always non-NULL.
-int wasm_get_tv_standard(void) {
-	if (!xroar.machine || !xroar.machine->config) {
-		return -1;
-	}
-	return xroar.machine->config->tv_standard;
-}
-
 // Generic name-based lookup into struct machine_config (machine.h),
 // covering every int/bool field -- same pattern already established
 // for registers (wasm_register_count/name/wasm_get_register) rather
 // than adding one narrow export per field every time scripting needs
-// a new piece of machine config. wasm_get_tv_standard() above is left
-// as-is rather than refactored to use this -- it's already built and
-// working, no reason to touch it.
+// a new piece of machine config.
+//
+// (An earlier, narrower wasm_get_tv_standard() export -- reading just
+// this one field -- was used to empirically discover the real
+// NTSC/PAL vertical scale difference, then removed once the actual,
+// complete per-machine tv-type table was found directly in XRoar's
+// own source and hardcoded in JS instead, which turned out to be more
+// informative than reading the resolved value alone, since it also
+// covers PAL-M machines XRoar doesn't otherwise flag distinctly on
+// its own.)
 //
 // Returns -1 if no machine/config is loaded, or if name isn't
-// recognised (matching the -1-means-unavailable convention already
-// used by wasm_get_tv_standard). Note this means -1 is ambiguous with
-// a field that could genuinely hold -1 (none currently do, but worth
-// knowing) -- acceptable for a debug-scripting convenience function,
-// not something safety-critical.
+// recognised. Note this means -1 is ambiguous with a field that could
+// genuinely hold -1 (none currently do, but worth knowing) --
+// acceptable for a debug-scripting convenience function, not
+// something safety-critical.
 int wasm_get_machine_config_int(const char *name) {
 	if (!xroar.machine || !xroar.machine->config || !name) {
 		return -1;
