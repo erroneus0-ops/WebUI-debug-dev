@@ -1,9 +1,9 @@
 # XRoar custom WASM Build Report
 
-**Built:** 2026-08-15 00:56 UTC
+**Built:** 2026-08-17 14:26 UTC
 **Source:** emcc_workflow/xroar-1.12.1/ -- patched, NOT pristine upstream (see build_xroar_stock_wasm.yml for the genuinely untouched copy)
 **Build tag:** debug-exports (reported version becomes e.g. "XRoar 1.12.1+debug-exports", SemVer build-metadata convention)
-**WASM size:** 1324933 bytes
+**WASM size:** 1324983 bytes
 
 ## Debug exports found in built JS glue
 ```
