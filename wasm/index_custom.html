@@ -1589,11 +1589,41 @@ var Module = {
 		var cols = 32;
 		var rows = Math.ceil(len / cols);
 		var SCALE = 2, CHAR_W = 8, CHAR_H = 12;
-		canvas.width = cols * CHAR_W * SCALE;
-		canvas.height = rows * CHAR_H * SCALE;
+		var activeW = cols * CHAR_W * SCALE;
+		var activeH = rows * CHAR_H * SCALE;
+
+		// Real VDG surrounds the active text area with a border on all
+		// sides -- confirmed directly from mc6847.h's own timing
+		// constants (VDG_tLB/VDG_tAV/VDG_tRB horizontally,
+		// VDG_TOP_BORDER_START/VDG_ACTIVE_AREA_END/
+		// VDG_BOTTOM_BORDER_END vertically), not estimated. Without
+		// this, overlaying the character-dump canvas directly on the
+		// real one (using the dim-toggle feature) drifts further out
+		// of alignment row by row -- confirmed against a real
+		// screenshot showing exactly that. Vertical ratio checks out
+		// exactly (192 = 16 rows x 12px, matching the active-area
+		// constant precisely); horizontal is confirmed via the
+		// pixel-doubling in mc6847.c's VDG_RENDER_RG case (2 real
+		// pixels per bit, so tAV=512 is already real pixels, not
+		// clock units needing further conversion).
+		var leftBorder  = activeW * (120 / 512);
+		var rightBorder = activeW * (112 / 512);
+		var topBorder   = activeH * (25 / 192);
+		var bottomBorder = activeH * (26 / 192);
+
+		canvas.width = leftBorder + activeW + rightBorder;
+		canvas.height = topBorder + activeH + bottomBorder;
 		var ctx = canvas.getContext('2d');
+
+		// Border color fidelity (which depends on CSSb and the
+		// separate GM & 4 "text_border" bit) is a further refinement,
+		// not attempted here -- plain black border is the safe
+		// default (matching the common text_border=false case),
+		// correct alignment is the actual fix this addresses.
 		ctx.fillStyle = '#000';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		var offsetX = leftBorder, offsetY = topBorder;
 
 		// All four of these live in the exact same PIA1 "B side" byte
 		// ($FF22) -- confirmed directly in dragon.c's
@@ -1630,7 +1660,7 @@ var Module = {
 		for (var i = 0; i < len; i++) {
 			var b = Module.ccall('wasm_read_byte', 'number', ['number'], [(addr + i) & 0xffff]);
 			var col = i % cols, row = Math.floor(i / cols);
-			var px = col * CHAR_W * SCALE, py = row * CHAR_H * SCALE;
+			var px = offsetX + col * CHAR_W * SCALE, py = offsetY + row * CHAR_H * SCALE;
 
 			if ((b & 0x80) === 0) {
 				// Alpha: same c-code masking mc6847.c applies
