@@ -37,6 +37,8 @@
 	'_wasm_clear_breakpoint',
 	'_wasm_get_watchpoint_was_read',
 	'_wasm_get_tv_standard',
+	'_wasm_get_machine_config_int',
+	'_wasm_get_machine_config_string',
 	'_wasm_set_watchpoint',
 	'_wasm_clear_watchpoint',
 	'_write_snapshot',

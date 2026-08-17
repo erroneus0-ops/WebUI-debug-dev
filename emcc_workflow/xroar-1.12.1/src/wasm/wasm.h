@@ -128,6 +128,14 @@ void wasm_clear_watchpoint(int addr_start, int addr_end, int watch_reads, int wa
 // correct proportions for whichever standard is actually running.
 int wasm_get_tv_standard(void);
 
+// Generic name-based access to struct machine_config (machine.h) --
+// see the comments above these definitions in wasm.c. Covers every
+// int/bool and char* field respectively, rather than adding a new
+// export each time scripting needs a different piece of machine
+// config.
+int wasm_get_machine_config_int(const char *name);
+const char *wasm_get_machine_config_string(const char *name);
+
 #endif
 
 #endif

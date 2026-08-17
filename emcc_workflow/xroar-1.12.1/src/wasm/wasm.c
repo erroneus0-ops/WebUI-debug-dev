@@ -24,6 +24,7 @@
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1397,4 +1398,66 @@ int wasm_get_tv_standard(void) {
 		return -1;
 	}
 	return xroar.machine->config->tv_standard;
+}
+
+// Generic name-based lookup into struct machine_config (machine.h),
+// covering every int/bool field -- same pattern already established
+// for registers (wasm_register_count/name/wasm_get_register) rather
+// than adding one narrow export per field every time scripting needs
+// a new piece of machine config. wasm_get_tv_standard() above is left
+// as-is rather than refactored to use this -- it's already built and
+// working, no reason to touch it.
+//
+// Returns -1 if no machine/config is loaded, or if name isn't
+// recognised (matching the -1-means-unavailable convention already
+// used by wasm_get_tv_standard). Note this means -1 is ambiguous with
+// a field that could genuinely hold -1 (none currently do, but worth
+// knowing) -- acceptable for a debug-scripting convenience function,
+// not something safety-critical.
+int wasm_get_machine_config_int(const char *name) {
+	if (!xroar.machine || !xroar.machine->config || !name) {
+		return -1;
+	}
+	struct machine_config *mc = xroar.machine->config;
+	if (strcmp(name, "id") == 0) return mc->id;
+	if (strcmp(name, "cpu") == 0) return mc->cpu;
+	if (strcmp(name, "keymap") == 0) return mc->keymap;
+	if (strcmp(name, "tv_standard") == 0) return mc->tv_standard;
+	if (strcmp(name, "tv_input") == 0) return mc->tv_input;
+	if (strcmp(name, "vdg_type") == 0) return mc->vdg_type;
+	if (strcmp(name, "ram_org") == 0) return mc->ram_org;
+	if (strcmp(name, "ram") == 0) return mc->ram;
+	if (strcmp(name, "ram_init") == 0) return mc->ram_init;
+	if (strcmp(name, "bas_dfn") == 0) return mc->bas_dfn ? 1 : 0;
+	if (strcmp(name, "extbas_dfn") == 0) return mc->extbas_dfn ? 1 : 0;
+	if (strcmp(name, "altbas_dfn") == 0) return mc->altbas_dfn ? 1 : 0;
+	if (strcmp(name, "default_cart_dfn") == 0) return mc->default_cart_dfn ? 1 : 0;
+	if (strcmp(name, "nodos") == 0) return mc->nodos ? 1 : 0;
+	if (strcmp(name, "cart_enabled") == 0) return mc->cart_enabled ? 1 : 0;
+	return -1;
+}
+
+// String-field counterpart to the above -- same struct, covering the
+// char* fields instead. Returns each field's own persistent pointer
+// directly (same convention as wasm_register_name -- these live for
+// the lifetime of the loaded machine config, no allocation/freeing
+// needed), or "" if name isn't recognised or the field itself is NULL
+// (several ROM-path fields are legitimately NULL when that ROM slot
+// isn't in use).
+const char *wasm_get_machine_config_string(const char *name) {
+	if (!xroar.machine || !xroar.machine->config || !name) {
+		return "";
+	}
+	struct machine_config *mc = xroar.machine->config;
+	const char *result = NULL;
+	if (strcmp(name, "name") == 0) result = mc->name;
+	else if (strcmp(name, "description") == 0) result = mc->description;
+	else if (strcmp(name, "architecture") == 0) result = mc->architecture;
+	else if (strcmp(name, "vdg_palette") == 0) result = mc->vdg_palette;
+	else if (strcmp(name, "bas_rom") == 0) result = mc->bas_rom;
+	else if (strcmp(name, "extbas_rom") == 0) result = mc->extbas_rom;
+	else if (strcmp(name, "altbas_rom") == 0) result = mc->altbas_rom;
+	else if (strcmp(name, "ext_charset_rom") == 0) result = mc->ext_charset_rom;
+	else if (strcmp(name, "default_cart") == 0) result = mc->default_cart;
+	return result ? result : "";
 }
