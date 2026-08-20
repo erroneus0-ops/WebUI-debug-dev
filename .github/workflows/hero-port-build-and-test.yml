@@ -146,7 +146,19 @@ jobs:
           # no Xvfb, no GDB, no networking).
           git apply "${GITHUB_WORKSPACE}/hero-port/patches/xroar-screenshot-on-exit.patch"
           ./autogen.sh
-          ./configure
+          # --without-gtk*: CI's runner has full GTK+3 dev libraries
+          # available, unlike my local sandbox (where that dependency
+          # chain was initially broken, so I was unknowingly only testing
+          # against a build with no GTK at all). XRoar auto-selects GTK+3
+          # for its file-requester subsystem whenever it's compiled in --
+          # completely independent of -ui sdl, which only controls the
+          # *main* video UI module -- and that file requester then tries
+          # to open a real X display and fails headlessly. Confirmed via
+          # real CI log ("cannot open display", "GTK+ 3 UI") and then
+          # reproduced + fixed locally: disabling GTK at configure time
+          # makes it correctly fall back to the "null" file requester,
+          # no display needed at all.
+          ./configure --without-gtk3 --without-gtk2 --without-gtkgl
           make -j"$(nproc)"
           sudo make install
           xroar --version
@@ -197,11 +209,20 @@ jobs:
           # deterministic. LOADER.BAS is the bootstrap filename ugbc.coco's
           # dsk output always uses (confirmed via our own rsdos_extract.py
           # against the compiled disk).
+          # -ui sdl: CI's runner successfully builds GTK+3 support (unlike
+          # my local sandbox, where that dependency chain was broken --
+          # meaning I was unknowingly only ever testing against SDL2
+          # there). XRoar defaults to GTK+3 when both are compiled in,
+          # which needs a real X display and ignores SDL_VIDEODRIVER
+          # entirely (that only affects SDL2) -- confirmed via the actual
+          # CI failure: "cannot open display" / "GTK+ 3 UI" in the log,
+          # immediate exit, no screenshot. Forcing -ui sdl sidesteps this
+          # regardless of what's compiled in.
           export SDL_VIDEODRIVER=dummy
           for dsk in /tmp/build-out/*.dsk; do
             name=$(basename "$dsk" .dsk)
             echo "=== Booting $dsk ==="
-            xroar -machine coco2b -cart rsdos \
+            xroar -ui sdl -machine coco2b -cart rsdos \
               -rompath "${GITHUB_WORKSPACE}/wasm" \
               -no-disk-write-back \
               -load-fd0 "$dsk" \
