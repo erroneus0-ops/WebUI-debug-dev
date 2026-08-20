@@ -51,14 +51,21 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/spotlessmind1975/ugbasic.git /tmp/ugbasic
           cd /tmp/ugbasic
-          git submodule update --init --depth 1 modules/asm6809 modules/toolshed
+          # asm6809 + toolshed: needed for the coco *target* specifically
+          #   (per makefile's `toolchain.coco: asm6809 decb` rule).
+          # libxml2: needed unconditionally by ugbc's own `compiler` build,
+          #   regardless of target -- confirmed via real CI run
+          #   (32380894113): toolchain.coco succeeded fully, then `compiler`
+          #   failed on `./autogen.sh: not found` because this submodule
+          #   was never checked out.
+          git submodule update --init --depth 1 modules/asm6809 modules/toolshed modules/libxml2
 
       - name: Install build prerequisites
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential bison flex libpng-dev \
             libgtk-3-dev libasound2-dev libsdl2-dev libx11-dev pkg-config zip \
-            markdown libfuse-dev
+            markdown libfuse-dev autoconf automake libtool
           # markdown: modules/toolshed's build/unix/doc target shells out to a
           #   binary literally named `markdown` to render ToolShed.md -> .html.
           #   Without it, `make target=coco toolchain` fails on exit code 127
@@ -70,6 +77,10 @@ jobs:
           # libfuse-dev: fixes a separate, non-fatal cocofuse.o failure in the
           #   same build (missing fuse.h). Not required for our two binaries,
           #   but there's no reason to leave a real error sitting in the log.
+          # autoconf/automake/libtool: modules/libxml2 runs its own
+          #   ./autogen.sh as part of ugbc's unconditional `compiler` build
+          #   dependency (see makefile: `$(LIBXML2): ... ./autogen.sh`).
+          #   Confirmed needed via real CI run (32380894113).
 
       - name: Build the coco toolchain (asm6809, decb) and ugbc.coco
         run: |
