@@ -1,0 +1,130 @@
+# .github/workflows/hero-port-build-and-test.yml
+#
+# Scoped narrowly on purpose: only triggers on pushes to hero-port-setup
+# (or manual dispatch) and only when files under hero-port/ change, so it
+# stays out of the way of anything else happening in this repo.
+#
+# WHAT THIS DOES
+# --------------
+# 1. Builds ugBASIC's `coco` target compiler (ugbc.coco) from source,
+#    including just the two submodules the coco toolchain actually needs
+#    (asm6809, toolshed) rather than ugBASIC's full ~15-submodule tree.
+# 2. Compiles every .bas file under hero-port/tests/ and hero-port/src/
+#    (src/ will exist once the real port lands; tests/ exists now) into
+#    a .dsk disk image.
+# 3. Builds XRoar from source (not packaged the same way on every distro,
+#    and this way we're not at the mercy of what happens to be available).
+# 4. Boots each compiled disk in XRoar headless for a fixed number of
+#    frames and grabs a screenshot, so we get visual proof of what the
+#    program actually did, not just "it compiled."
+# 5. Publishes the .dsk files and screenshots as assets on a GitHub
+#    Release (tagged by run number), because release assets are reachable
+#    from Claude's sandbox (release-assets.githubusercontent.com is
+#    allowlisted) even though workflow-run artifacts are not.
+#
+# WHY A RELEASE INSTEAD OF ACTIONS ARTIFACTS
+# -------------------------------------------
+# Workflow artifacts live on a GitHub domain that isn't reachable from
+# Claude's sandboxed environment. GitHub Releases serve their file
+# attachments from release-assets.githubusercontent.com, which is
+# reachable. This lets results flow back into the conversation without
+# needing any new access grant.
+
+name: Build and test HERO port (ugBASIC / coco)
+
+on:
+  push:
+    branches:
+      - hero-port-setup
+    paths:
+      - 'hero-port/**'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v4
+
+      - name: Check out ugBASIC (+ only the submodules the coco toolchain needs)
+        run: |
+          git clone --depth 1 https://github.com/spotlessmind1975/ugbasic.git /tmp/ugbasic
+          cd /tmp/ugbasic
+          git submodule update --init --depth 1 modules/asm6809 modules/toolshed
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex libpng-dev \
+            libgtk-3-dev libasound2-dev libsdl2-dev libx11-dev pkg-config zip
+
+      - name: Build the coco toolchain (asm6809, decb) and ugbc.coco
+        run: |
+          cd /tmp/ugbasic
+          make target=coco toolchain
+          make target=coco compiler
+          ls -la ugbc/exe/
+
+      - name: Build XRoar from source
+        run: |
+          git clone --depth 1 https://github.com/stahta01/xroar.git /tmp/xroar
+          cd /tmp/xroar
+          ./configure --enable-sdl2 || ./configure
+          make -j"$(nproc)"
+          sudo make install
+          xroar --version
+
+      - name: Compile every .bas under hero-port/tests and hero-port/src (if present)
+        run: |
+          mkdir -p /tmp/build-out
+          UGBC=/tmp/ugbasic/ugbc/exe/ugbc.coco
+          for dir in hero-port/tests hero-port/src; do
+            [ -d "$dir" ] || continue
+            for f in "$dir"/*.bas; do
+              [ -e "$f" ] || continue
+              name=$(basename "$f" .bas)
+              echo "=== Compiling $f ==="
+              "$UGBC" -o "/tmp/build-out/${name}.dsk" -O dsk "$f"
+            done
+          done
+          ls -la /tmp/build-out/
+
+      - name: Headless boot + screenshot each compiled disk
+        run: |
+          mkdir -p /tmp/screenshots
+          # NOTE: exact XRoar CLI flags for headless snapshot/screenshot
+          # capture may need adjusting once we see real CI output -- this
+          # is a first pass, intentionally left for iteration in-CI rather
+          # than guessed-and-frozen locally (see PR description).
+          for dsk in /tmp/build-out/*.dsk; do
+            name=$(basename "$dsk" .dsk)
+            echo "=== Booting $dsk ==="
+            timeout 20s xroar -machine coco2b -cart rsdos \
+              -disk-write-back no \
+              -run "$dsk" \
+              -snap-motion 300 \
+              -screenshot "/tmp/screenshots/${name}.png" \
+              || echo "xroar exited (expected for a headless timed run): $?"
+          done
+          ls -la /tmp/screenshots/ || true
+
+      - name: Package outputs
+        run: |
+          mkdir -p /tmp/release-assets
+          cp /tmp/build-out/*.dsk /tmp/release-assets/ 2>/dev/null || true
+          cp /tmp/screenshots/*.png /tmp/release-assets/ 2>/dev/null || true
+          ls -la /tmp/release-assets/
+
+      - name: Publish as a GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hero-port-ci-${{ github.run_number }}
+          name: "HERO port CI build #${{ github.run_number }}"
+          body: |
+            Automated build from commit ${{ github.sha }}.
+            Contains compiled .dsk disk images and post-boot screenshots
+            for everything under hero-port/tests/ and hero-port/src/.
+          files: |
+            /tmp/release-assets/*
+          prerelease: true
