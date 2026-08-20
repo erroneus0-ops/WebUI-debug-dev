@@ -109,6 +109,15 @@ jobs:
           sudo make target=coco toolchain
           make target=coco compiler
           ls -la ugbc/exe/
+          # asm6809 itself is built in place under modules/asm6809/src/ but
+          # never installed anywhere by ugBASIC's own build system (unlike
+          # toolshed's decb, which does get installed to /usr/local/bin
+          # above). ugbc.coco looks for it via a CWD-relative path or plain
+          # $PATH -- confirmed via `strings` on the binary locally, and
+          # confirmed installing it explicitly is required (not optional)
+          # via a real local build-and-test, not assumption.
+          sudo cp modules/asm6809/src/asm6809 /usr/local/bin/
+          asm6809 --version || true
 
       - name: Build XRoar from source (with headless-screenshot patch)
         run: |
@@ -137,13 +146,20 @@ jobs:
         run: |
           mkdir -p /tmp/build-out
           UGBC=/tmp/ugbasic/ugbc/exe/ugbc.coco
+          # -W: show real warnings/errors instead of nothing.
+          # -C / -b: explicit paths to asm6809 / decb -- ugbc.coco's default
+          #   discovery is a CWD-relative path trick that only works if you
+          #   happen to run it from ugBASIC's own repo root (confirmed via
+          #   `strings` on the binary + local testing, not assumed); passing
+          #   these explicitly makes it work from any working directory.
           for dir in hero-port/tests hero-port/src; do
             [ -d "$dir" ] || continue
             for f in "$dir"/*.bas; do
               [ -e "$f" ] || continue
               name=$(basename "$f" .bas)
               echo "=== Compiling $f ==="
-              "$UGBC" -o "/tmp/build-out/${name}.dsk" -O dsk "$f"
+              "$UGBC" -W -C /usr/local/bin/asm6809 -b /usr/local/bin/decb \
+                -o "/tmp/build-out/${name}.dsk" -O dsk "$f"
             done
           done
           ls -la /tmp/build-out/
@@ -151,19 +167,17 @@ jobs:
       - name: Headless boot + screenshot each compiled disk
         run: |
           mkdir -p /tmp/screenshots
-          # NOTE: no real Tandy Color BASIC / Disk Extended BASIC ROM images
-          # are provided here yet (that's a copyright question to resolve
-          # with the repo owner before committing or fetching any ROM dumps
-          # -- see PR discussion). Without them the machine boots into an
-          # uninitialized-VRAM pattern rather than actually running the
-          # disk -- still useful as a smoke test that the pipeline itself
-          # (compile -> boot -> patched headless screenshot) works, just not
-          # yet a real visual check of the compiled program's output.
+          # Real Tandy Colour BASIC / Extended Colour BASIC / Disk BASIC ROM
+          # images already live in this repo's wasm/ directory (bas13.rom,
+          # extbas11.rom, disk11.rom), already community-blessed for use --
+          # nothing new fetched or added here. -rompath points XRoar at
+          # them; it finds the right files by name via its own romlist.
           export SDL_VIDEODRIVER=dummy
           for dsk in /tmp/build-out/*.dsk; do
             name=$(basename "$dsk" .dsk)
             echo "=== Booting $dsk ==="
             xroar -machine coco2b -cart rsdos \
+              -rompath "${GITHUB_WORKSPACE}/wasm" \
               -disk-write-back no \
               -run "$dsk" \
               -timeout 5 \
