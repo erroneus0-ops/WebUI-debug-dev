@@ -12,11 +12,17 @@
 # 2. Compiles every .bas file under hero-port/tests/ and hero-port/src/
 #    (src/ will exist once the real port lands; tests/ exists now) into
 #    a .dsk disk image.
-# 3. Builds XRoar from source (not packaged the same way on every distro,
-#    and this way we're not at the mercy of what happens to be available).
+# 3. Builds XRoar from source, patched with hero-port/patches/
+#    xroar-screenshot-on-exit.patch: real XRoar has no CLI screenshot
+#    option at all (Ctrl+Shift+S / GUI menu only, verified by reading
+#    doc/xroar.texi), so this adds -screenshot-on-exit <file>, verified
+#    working via a real local sandbox build (not just written and hoped)
+#    -- produces a real PNG headlessly via SDL_VIDEODRIVER=dummy, no
+#    Xvfb, no GDB, no networking.
 # 4. Boots each compiled disk in XRoar headless for a fixed number of
-#    frames and grabs a screenshot, so we get visual proof of what the
-#    program actually did, not just "it compiled."
+#    seconds (-timeout) and grabs a screenshot via the patched flag, so
+#    we get visual proof of what the program actually did, not just
+#    "it compiled."
 # 5. Publishes the .dsk files and screenshots as assets on a GitHub
 #    Release (tagged by run number), because release assets are reachable
 #    from Claude's sandbox (release-assets.githubusercontent.com is
@@ -65,7 +71,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential bison flex libpng-dev \
             libgtk-3-dev libasound2-dev libsdl2-dev libx11-dev pkg-config zip \
-            markdown libfuse-dev autoconf automake libtool
+            markdown libfuse-dev autoconf automake libtool texinfo
           # markdown: modules/toolshed's build/unix/doc target shells out to a
           #   binary literally named `markdown` to render ToolShed.md -> .html.
           #   Without it, `make target=coco toolchain` fails on exit code 127
@@ -80,7 +86,14 @@ jobs:
           # autoconf/automake/libtool: modules/libxml2 runs its own
           #   ./autogen.sh as part of ugbc's unconditional `compiler` build
           #   dependency (see makefile: `$(LIBXML2): ... ./autogen.sh`).
-          #   Confirmed needed via real CI run (32380894113).
+          #   Confirmed needed via real CI run (32380894113). XRoar's own
+          #   checkout also needs these (no pre-generated ./configure ships
+          #   in the repo -- confirmed via real CI run 32381281914).
+          # texinfo: XRoar's `make` also builds its info-manual docs
+          #   unconditionally, needing `makeinfo`. Caught via a *local*
+          #   sandbox build-and-verify before pushing, not another failed
+          #   CI round trip -- see hero-port/patches/ for why we started
+          #   testing locally at this point in the pipeline.
 
       - name: Build the coco toolchain (asm6809, decb) and ugbc.coco
         run: |
@@ -97,16 +110,25 @@ jobs:
           make target=coco compiler
           ls -la ugbc/exe/
 
-      - name: Build XRoar from source
+      - name: Build XRoar from source (with headless-screenshot patch)
         run: |
           git clone --depth 1 https://github.com/stahta01/xroar.git /tmp/xroar
           cd /tmp/xroar
-          # No pre-generated ./configure ships in this checkout -- confirmed
-          # via real CI run (32381281914): "./configure: No such file or
-          # directory". autogen.sh just runs autoreconf -fi, covered by the
-          # autoconf/automake/libtool we already installed for libxml2.
+          # Real XRoar has NO command-line screenshot option -- verified by
+          # reading doc/xroar.texi directly: it's Ctrl+Shift+S or a GUI menu
+          # item, calling xroar_screenshot() -> an interactive file-save
+          # dialog. Not usable headlessly. So: a small patch (verified by an
+          # actual local sandbox build, not just written and hoped) adds
+          # -screenshot-on-exit <file>, which calls the same underlying
+          # screenshot_write_png() directly via an atexit() handler --
+          # fires regardless of *why* the process exits (trap-timeout, etc).
+          # See hero-port/patches/xroar-screenshot-on-exit.patch for the
+          # verified diff (confirmed: applies cleanly, compiles, and
+          # produces a real PNG headlessly via SDL_VIDEODRIVER=dummy --
+          # no Xvfb, no GDB, no networking).
+          git apply "${GITHUB_WORKSPACE}/hero-port/patches/xroar-screenshot-on-exit.patch"
           ./autogen.sh
-          ./configure --enable-sdl2 || ./configure
+          ./configure
           make -j"$(nproc)"
           sudo make install
           xroar --version
@@ -129,19 +151,24 @@ jobs:
       - name: Headless boot + screenshot each compiled disk
         run: |
           mkdir -p /tmp/screenshots
-          # NOTE: exact XRoar CLI flags for headless snapshot/screenshot
-          # capture may need adjusting once we see real CI output -- this
-          # is a first pass, intentionally left for iteration in-CI rather
-          # than guessed-and-frozen locally (see PR description).
+          # NOTE: no real Tandy Color BASIC / Disk Extended BASIC ROM images
+          # are provided here yet (that's a copyright question to resolve
+          # with the repo owner before committing or fetching any ROM dumps
+          # -- see PR discussion). Without them the machine boots into an
+          # uninitialized-VRAM pattern rather than actually running the
+          # disk -- still useful as a smoke test that the pipeline itself
+          # (compile -> boot -> patched headless screenshot) works, just not
+          # yet a real visual check of the compiled program's output.
+          export SDL_VIDEODRIVER=dummy
           for dsk in /tmp/build-out/*.dsk; do
             name=$(basename "$dsk" .dsk)
             echo "=== Booting $dsk ==="
-            timeout 20s xroar -machine coco2b -cart rsdos \
+            xroar -machine coco2b -cart rsdos \
               -disk-write-back no \
               -run "$dsk" \
-              -snap-motion 300 \
-              -screenshot "/tmp/screenshots/${name}.png" \
-              || echo "xroar exited (expected for a headless timed run): $?"
+              -timeout 5 \
+              -screenshot-on-exit "/tmp/screenshots/${name}.png" \
+              || echo "xroar exited: $?"
           done
           ls -la /tmp/screenshots/ || true
 

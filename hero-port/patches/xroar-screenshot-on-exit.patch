@@ -1,0 +1,47 @@
+--- a/src/xroar.c	2026-08-20 15:02:32.776580070 +0000
++++ b/src/xroar.c	2026-08-20 15:05:16.535245337 +0000
+@@ -877,9 +877,35 @@
+  * Returns the UI interface to the caller (probably main()).
+  */
+ 
++// Headless screenshot automation: set via -screenshot-on-exit <file>.
++// Filename to write a PNG to right before the process actually exits, via
++// the atexit() handler below -- registered so it runs regardless of *why*
++// xroar_quit() (== exit()) was called (trap-timeout, GUI close, etc).
++// Deliberately NOT hooked into the existing screenshot_write_png() call
++// path used by Ctrl+Shift+S / File > Screenshot, which goes through an
++// interactive file-save dialog (xroar_screenshot() in this same file) --
++// that path needs a UI file requester and isn't usable headlessly. This
++// calls screenshot_write_png() directly with a fixed filename instead.
++static char *xroar_cfg_screenshot_on_exit = NULL;
++
++static void xroar_screenshot_on_exit_handler(void) {
++	if (xroar_cfg_screenshot_on_exit) {
++		screenshot_write_png(xroar_cfg_screenshot_on_exit, xroar.vo_interface);
++	}
++}
++
+ struct ui_interface *xroar_init(int argc, char **argv) {
+ 	int argn = 1, ret;
+ 	char *conffile = NULL;
++
++	// Registered here (before option parsing) rather than in main_unix.c
++	// so this stays a single-file change. atexit() handlers run in LIFO
++	// order, so as long as this is registered before xroar_shutdown's
++	// atexit() call in main() would tear down vo_interface, we're fine --
++	// and since this fires at the moment options are parsed, well before
++	// main()'s own atexit(xroar_shutdown), this handler runs *first* at
++	// exit time (LIFO), while vo_interface is still valid.
++	atexit(xroar_screenshot_on_exit_handler);
+ 	bool no_conffile = 0;
+ 	bool no_builtin = 0;
+ #ifdef WINDOWS32
+@@ -3181,6 +3207,8 @@
+ /* Configuration directives */
+ 
+ static struct xconfig_option const xroar_options[] = {
++	/* Screenshots (headless automation): */
++	{ XC_SET_STRING("screenshot-on-exit", &xroar_cfg_screenshot_on_exit) },
+ 	/* Machines: */
+ 	{ XC_CALL_STRING("default-machine", &set_default_machine) },
+ 	{ XC_CALL_STRING("m", &set_machine) },
