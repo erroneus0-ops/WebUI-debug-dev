@@ -1,0 +1,256 @@
+# .github/workflows/hero-port-build-and-test.yml
+#
+# Scoped narrowly on purpose: only triggers on pushes to hero-port-setup
+# (or manual dispatch) and only when files under hero-port/ change, so it
+# stays out of the way of anything else happening in this repo.
+#
+# WHAT THIS DOES
+# --------------
+# 1. Builds ugBASIC's `coco` target compiler (ugbc.coco) from source,
+#    including just the two submodules the coco toolchain actually needs
+#    (asm6809, toolshed) rather than ugBASIC's full ~15-submodule tree.
+# 2. Compiles every .bas file under hero-port/tests/ and hero-port/src/
+#    (src/ will exist once the real port lands; tests/ exists now) into
+#    a .dsk disk image.
+# 3. Builds XRoar from source, patched with hero-port/patches/
+#    xroar-screenshot-on-exit.patch (touches src/xroar.c, src/xroar.h, and
+#    src/sdl2/ui_sdl2.c): real XRoar has no CLI screenshot option at all
+#    (Ctrl+Shift+S / GUI menu only, verified by reading doc/xroar.texi),
+#    so this adds -screenshot-on-exit <file>. The mechanism is a wall-clock
+#    SIGALRM (not XRoar's own -timeout, which fires on *emulated* CPU time
+#    and was confirmed hanging indefinitely under a headless dummy video
+#    driver) whose handler only sets a flag; the actual PNG write happens
+#    from the real SDL2 UI main loop (src/sdl2/ui_sdl2.c's ui_sdl_run),
+#    not from inside the signal handler itself -- confirmed via direct
+#    local testing that calling libpng/stdio directly from the handler
+#    works against an idle machine but silently fails once the CPU
+#    emulation loop is genuinely busy (a real disk/ROM loaded and running,
+#    exactly the case this exists for).
+# 4. Boots each compiled disk in XRoar headless, explicitly typing the
+#    RUN command via -type (not -run's "intelligent autorun", which never
+#    actually triggered in direct local testing even after 15+ seconds),
+#    waits, then sends SIGALRM and grabs the screenshot -- real visual
+#    proof of what the program actually did, not just "it compiled."
+# 5. Publishes the .dsk files and screenshots as assets on a GitHub
+#    Release (tagged by run number), because release assets are reachable
+#    from Claude's sandbox (release-assets.githubusercontent.com is
+#    allowlisted) even though workflow-run artifacts are not.
+#
+# WHY A RELEASE INSTEAD OF ACTIONS ARTIFACTS
+# -------------------------------------------
+# Workflow artifacts live on a GitHub domain that isn't reachable from
+# Claude's sandboxed environment. GitHub Releases serve their file
+# attachments from release-assets.githubusercontent.com, which is
+# reachable. This lets results flow back into the conversation without
+# needing any new access grant.
+
+name: Build and test HERO port (ugBASIC / coco)
+
+on:
+  push:
+    branches:
+      - hero-port-setup
+    paths:
+      - 'hero-port/**'
+      - '.github/workflows/hero-port-build-and-test.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v4
+
+      - name: Check out ugBASIC (+ only the submodules the coco toolchain needs)
+        run: |
+          git clone --depth 1 https://github.com/spotlessmind1975/ugbasic.git /tmp/ugbasic
+          cd /tmp/ugbasic
+          # asm6809 + toolshed: needed for the coco *target* specifically
+          #   (per makefile's `toolchain.coco: asm6809 decb` rule).
+          # libxml2: needed unconditionally by ugbc's own `compiler` build,
+          #   regardless of target -- confirmed via real CI run
+          #   (32380894113): toolchain.coco succeeded fully, then `compiler`
+          #   failed on `./autogen.sh: not found` because this submodule
+          #   was never checked out.
+          git submodule update --init --depth 1 modules/asm6809 modules/toolshed modules/libxml2
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex libpng-dev \
+            libgtk-3-dev libasound2-dev libsdl2-dev libx11-dev pkg-config zip \
+            markdown libfuse-dev autoconf automake libtool texinfo
+          # markdown: modules/toolshed's build/unix/doc target shells out to a
+          #   binary literally named `markdown` to render ToolShed.md -> .html.
+          #   Without it, `make target=coco toolchain` fails on exit code 127
+          #   from the *last* command in a `;`-separated chain of subdirectory
+          #   builds, which is what make actually checks -- even though decb
+          #   and asm6809 (the two binaries we actually need) had already built
+          #   successfully earlier in that same chain. Confirmed via a real CI
+          #   run on 2026-08-20 (see PR discussion) -- not guessed.
+          # libfuse-dev: fixes a separate, non-fatal cocofuse.o failure in the
+          #   same build (missing fuse.h). Not required for our two binaries,
+          #   but there's no reason to leave a real error sitting in the log.
+          # autoconf/automake/libtool: modules/libxml2 runs its own
+          #   ./autogen.sh as part of ugbc's unconditional `compiler` build
+          #   dependency (see makefile: `$(LIBXML2): ... ./autogen.sh`).
+          #   Confirmed needed via real CI run (32380894113). XRoar's own
+          #   checkout also needs these (no pre-generated ./configure ships
+          #   in the repo -- confirmed via real CI run 32381281914).
+          # texinfo: XRoar's `make` also builds its info-manual docs
+          #   unconditionally, needing `makeinfo`. Caught via a *local*
+          #   sandbox build-and-verify before pushing, not another failed
+          #   CI round trip -- see hero-port/patches/ for why we started
+          #   testing locally at this point in the pipeline.
+
+      - name: Build the coco toolchain (asm6809, decb) and ugbc.coco
+        run: |
+          cd /tmp/ugbasic
+          # `toolchain` ends up running `make -C build/unix install` inside
+          # the toolshed submodule, which installs decb/etc. to
+          # /usr/local/{bin,share} -- root-owned on a fresh runner, and
+          # ugBASIC's own makefile doesn't sudo that itself. Confirmed via
+          # a real CI run (32380118373) that this is the only remaining
+          # permission issue once markdown/libfuse-dev were fixed; `sudo`
+          # here is a workaround for that one install step, not a general
+          # "run everything as root" choice.
+          sudo make target=coco toolchain
+          make target=coco compiler
+          ls -la ugbc/exe/
+          # asm6809 itself is built in place under modules/asm6809/src/ but
+          # never installed anywhere by ugBASIC's own build system (unlike
+          # toolshed's decb, which does get installed to /usr/local/bin
+          # above). ugbc.coco looks for it via a CWD-relative path or plain
+          # $PATH -- confirmed via `strings` on the binary locally, and
+          # confirmed installing it explicitly is required (not optional)
+          # via a real local build-and-test, not assumption.
+          sudo cp modules/asm6809/src/asm6809 /usr/local/bin/
+          asm6809 --version || true
+
+      - name: Build XRoar from source (with headless-screenshot patch)
+        run: |
+          git clone --depth 1 https://github.com/stahta01/xroar.git /tmp/xroar
+          cd /tmp/xroar
+          # Real XRoar has NO command-line screenshot option -- verified by
+          # reading doc/xroar.texi directly: it's Ctrl+Shift+S or a GUI menu
+          # item, calling xroar_screenshot() -> an interactive file-save
+          # dialog. Not usable headlessly. So: a small patch (verified by an
+          # actual local sandbox build, not just written and hoped) adds
+          # -screenshot-on-exit <file>, which calls the same underlying
+          # screenshot_write_png() directly via an atexit() handler --
+          # fires regardless of *why* the process exits (trap-timeout, etc).
+          # See hero-port/patches/xroar-screenshot-on-exit.patch for the
+          # verified diff (confirmed: applies cleanly, compiles, and
+          # produces a real PNG headlessly via SDL_VIDEODRIVER=dummy --
+          # no Xvfb, no GDB, no networking).
+          git apply "${GITHUB_WORKSPACE}/hero-port/patches/xroar-screenshot-on-exit.patch"
+          ./autogen.sh
+          # --without-gtk*: CI's runner has full GTK+3 dev libraries
+          # available, unlike my local sandbox (where that dependency
+          # chain was initially broken, so I was unknowingly only testing
+          # against a build with no GTK at all). XRoar auto-selects GTK+3
+          # for its file-requester subsystem whenever it's compiled in --
+          # completely independent of -ui sdl, which only controls the
+          # *main* video UI module -- and that file requester then tries
+          # to open a real X display and fails headlessly. Confirmed via
+          # real CI log ("cannot open display", "GTK+ 3 UI") and then
+          # reproduced + fixed locally: disabling GTK at configure time
+          # makes it correctly fall back to the "null" file requester,
+          # no display needed at all.
+          ./configure --without-gtk3 --without-gtk2 --without-gtkgl
+          make -j"$(nproc)"
+          sudo make install
+          xroar --version
+
+      - name: Compile every .bas under hero-port/tests and hero-port/src (if present)
+        run: |
+          mkdir -p /tmp/build-out
+          UGBC=/tmp/ugbasic/ugbc/exe/ugbc.coco
+          # -W: show real warnings/errors instead of nothing.
+          # -C / -b: explicit paths to asm6809 / decb -- ugbc.coco's default
+          #   discovery is a CWD-relative path trick that only works if you
+          #   happen to run it from ugBASIC's own repo root (confirmed via
+          #   `strings` on the binary + local testing, not assumed); passing
+          #   these explicitly makes it work from any working directory.
+          for dir in hero-port/tests hero-port/src; do
+            [ -d "$dir" ] || continue
+            for f in "$dir"/*.bas; do
+              [ -e "$f" ] || continue
+              name=$(basename "$f" .bas)
+              echo "=== Compiling $f ==="
+              "$UGBC" -W -C /usr/local/bin/asm6809 -b /usr/local/bin/decb \
+                -o "/tmp/build-out/${name}.dsk" -O dsk "$f"
+            done
+          done
+          ls -la /tmp/build-out/
+
+      - name: Headless boot + screenshot each compiled disk
+        run: |
+          mkdir -p /tmp/screenshots
+          # Real Tandy Colour BASIC / Extended Colour BASIC / Disk BASIC ROM
+          # images already live in this repo's wasm/ directory (bas13.rom,
+          # extbas11.rom, disk11.rom), already community-blessed for use --
+          # nothing new fetched or added here. -rompath points XRoar at
+          # them; it finds the right files by name via its own romlist.
+          #
+          # -no-disk-write-back, NOT "-disk-write-back no": this is a plain
+          # boolean toggle flag (XC_SET_BOOL in xroar.c), it does not take a
+          # trailing value. Passing "no" as a separate argument silently
+          # broke ALL subsequent option parsing on the command line
+          # (confirmed via direct local isolation testing -- burned real
+          # time on this).
+          #
+          # -type instead of -run: -run's "intelligently autorun" heuristic
+          # never actually triggered for this disk in direct local testing,
+          # even after 15+ seconds -- confirmed by screenshotting mid-wait
+          # and seeing it still sitting at the bare "OK" prompt. -type
+          # explicitly injects the exact keystrokes instead, which is
+          # deterministic. LOADER.BAS is the bootstrap filename ugbc.coco's
+          # dsk output always uses (confirmed via our own rsdos_extract.py
+          # against the compiled disk).
+          # -ui sdl: CI's runner successfully builds GTK+3 support (unlike
+          # my local sandbox, where that dependency chain was broken --
+          # meaning I was unknowingly only ever testing against SDL2
+          # there). XRoar defaults to GTK+3 when both are compiled in,
+          # which needs a real X display and ignores SDL_VIDEODRIVER
+          # entirely (that only affects SDL2) -- confirmed via the actual
+          # CI failure: "cannot open display" / "GTK+ 3 UI" in the log,
+          # immediate exit, no screenshot. Forcing -ui sdl sidesteps this
+          # regardless of what's compiled in.
+          export SDL_VIDEODRIVER=dummy
+          for dsk in /tmp/build-out/*.dsk; do
+            name=$(basename "$dsk" .dsk)
+            echo "=== Booting $dsk ==="
+            xroar -ui sdl -machine coco2b -cart rsdos \
+              -rompath "${GITHUB_WORKSPACE}/wasm" \
+              -no-disk-write-back \
+              -load-fd0 "$dsk" \
+              -type 'RUN"LOADER"\r' \
+              -screenshot-on-exit "/tmp/screenshots/${name}.png" &
+            XROAR_PID=$!
+            sleep 15
+            kill -ALRM "$XROAR_PID" 2>/dev/null || true
+            wait "$XROAR_PID" 2>/dev/null || echo "xroar exited: $?"
+          done
+          ls -la /tmp/screenshots/ || true
+
+      - name: Package outputs
+        run: |
+          mkdir -p /tmp/release-assets
+          cp /tmp/build-out/*.dsk /tmp/release-assets/ 2>/dev/null || true
+          cp /tmp/screenshots/*.png /tmp/release-assets/ 2>/dev/null || true
+          ls -la /tmp/release-assets/
+
+      - name: Publish as a GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hero-port-ci-${{ github.run_number }}
+          name: "HERO port CI build #${{ github.run_number }}"
+          body: |
+            Automated build from commit ${{ github.sha }}.
+            Contains compiled .dsk disk images and post-boot screenshots
+            for everything under hero-port/tests/ and hero-port/src/.
+          files: |
+            /tmp/release-assets/*
+          prerelease: true
