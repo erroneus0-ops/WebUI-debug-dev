@@ -14,7 +14,13 @@ without a human actually reading and posting it themselves).
 - `ugbasic-peephole-autoincrement-bug.md` -- **not yet filed upstream**.
   The peephole optimizer silently deletes non-redundant `STA ,X+`
   (auto-increment) stores, plus a related feature request for a
-  block-scoped "don't optimize this" directive for inline assembly.
+  block-scoped "don't optimize this" directive for inline assembly, and
+  a documented STRPTR()-based workaround that sidesteps the bug entirely
+  (rather than just disabling optimization globally).
+- `ugbasic-string-concat-chain-limit.md` -- **not yet filed upstream**.
+  A separate bug found while building the STRPTR workaround above:
+  chaining more than ~15 string concatenations in one expression
+  silently corrupts the result, with zero error at compile or run time.
 
 Update this file (or just delete the relevant entry) once either of these
 has actually been posted to https://github.com/spotlessmind1975/ugbasic/issues.

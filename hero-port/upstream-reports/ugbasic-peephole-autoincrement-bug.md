@@ -76,6 +76,60 @@ that flag. Obviously not a real fix since it disables optimization
 project-wide, but confirms the peephole pass specifically is where this
 goes wrong.
 
+## A better workaround (found via direct testing, not just theorised)
+
+Instead of hand-unrolling repeated `STA ,X+` instructions, store the
+byte pattern as an ordinary BASIC string and get its address with
+`STRPTR()`, then copy it with a loop that **alternates** `LDA` (read
+source) / `STA` (write dest):
+
+```basic
+rowdata$ = CHR$(159) + CHR$(159) + CHR$(159) + CHR$(159) + CHR$(159)
+srcaddr = STRPTR(rowdata$)
+
+BEGIN ASM
+    LDX BITMAPADDRESS
+    LDU _srcaddr
+    LDB #5
+copyloop
+    LDA ,U+
+    STA ,X+
+    DECB
+    BNE copyloop
+END ASM
+```
+
+Since there's only one `STA` per loop iteration in the actual source
+text (the loop body executes multiple times at runtime, but the peephole
+pass only ever sees the single static instruction), the `(STORE*,STORE*)`
+pattern never has anything consecutive to match against -- confirmed via
+the generated `.asm`: zero peephole interference near the loop, and the
+resulting byte pattern renders correctly. This works regardless of `-p`,
+and doesn't need optimization disabled project-wide.
+
+Two things worth flagging about this workaround itself, found while
+using it for a real test case, in case they're relevant to whoever
+looks at the peephole issue:
+
+1. `STRPTR()` (and presumably `VARPTR()`) must be resolved into a plain
+   BASIC variable *before* the `ASM` block -- calling it directly inside
+   `BEGIN ASM...END ASM` fails with `error: symbol 'STRPTR' not defined`,
+   since inline assembly is passed straight through to `asm6809` without
+   evaluating BASIC function calls inside it. Not a bug, just non-obvious
+   until you hit it -- the manual's own `VARPTR` examples do resolve it
+   into a variable first, this just wasn't obvious was a hard requirement
+   until direct testing confirmed it.
+2. A separate, real bug turned up building this same test: chaining more
+   than ~15 string concatenation (`+`) operations in one expression
+   silently corrupts something (confirmed via bisection: 15 chained
+   `CHR$()` terms works, 16 breaks completely and totally silently --
+   and it's specifically about *chained operation count*, not final
+   string length, since a 20-character string built from only 3
+   concatenations of literal substrings works fine). Filed separately as
+   its own issue rather than bundled here since it's unrelated to
+   peephole/auto-increment, but flagging the connection since I found it
+   while working around *this* bug.
+
 ## Suggested direction (not a demand, just what stood out reading the diff)
 
 The peephole rule matching `(STORE*,STORE*)->(STORE*)` looks like it's
