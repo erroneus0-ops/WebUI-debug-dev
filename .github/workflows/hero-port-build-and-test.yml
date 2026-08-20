@@ -13,16 +13,24 @@
 #    (src/ will exist once the real port lands; tests/ exists now) into
 #    a .dsk disk image.
 # 3. Builds XRoar from source, patched with hero-port/patches/
-#    xroar-screenshot-on-exit.patch: real XRoar has no CLI screenshot
-#    option at all (Ctrl+Shift+S / GUI menu only, verified by reading
-#    doc/xroar.texi), so this adds -screenshot-on-exit <file>, verified
-#    working via a real local sandbox build (not just written and hoped)
-#    -- produces a real PNG headlessly via SDL_VIDEODRIVER=dummy, no
-#    Xvfb, no GDB, no networking.
-# 4. Boots each compiled disk in XRoar headless for a fixed number of
-#    seconds (-timeout) and grabs a screenshot via the patched flag, so
-#    we get visual proof of what the program actually did, not just
-#    "it compiled."
+#    xroar-screenshot-on-exit.patch (touches src/xroar.c, src/xroar.h, and
+#    src/sdl2/ui_sdl2.c): real XRoar has no CLI screenshot option at all
+#    (Ctrl+Shift+S / GUI menu only, verified by reading doc/xroar.texi),
+#    so this adds -screenshot-on-exit <file>. The mechanism is a wall-clock
+#    SIGALRM (not XRoar's own -timeout, which fires on *emulated* CPU time
+#    and was confirmed hanging indefinitely under a headless dummy video
+#    driver) whose handler only sets a flag; the actual PNG write happens
+#    from the real SDL2 UI main loop (src/sdl2/ui_sdl2.c's ui_sdl_run),
+#    not from inside the signal handler itself -- confirmed via direct
+#    local testing that calling libpng/stdio directly from the handler
+#    works against an idle machine but silently fails once the CPU
+#    emulation loop is genuinely busy (a real disk/ROM loaded and running,
+#    exactly the case this exists for).
+# 4. Boots each compiled disk in XRoar headless, explicitly typing the
+#    RUN command via -type (not -run's "intelligent autorun", which never
+#    actually triggered in direct local testing even after 15+ seconds),
+#    waits, then sends SIGALRM and grabs the screenshot -- real visual
+#    proof of what the program actually did, not just "it compiled."
 # 5. Publishes the .dsk files and screenshots as assets on a GitHub
 #    Release (tagged by run number), because release assets are reachable
 #    from Claude's sandbox (release-assets.githubusercontent.com is
@@ -44,6 +52,7 @@ on:
       - hero-port-setup
     paths:
       - 'hero-port/**'
+      - '.github/workflows/hero-port-build-and-test.yml'
   workflow_dispatch: {}
 
 jobs:
@@ -172,17 +181,36 @@ jobs:
           # extbas11.rom, disk11.rom), already community-blessed for use --
           # nothing new fetched or added here. -rompath points XRoar at
           # them; it finds the right files by name via its own romlist.
+          #
+          # -no-disk-write-back, NOT "-disk-write-back no": this is a plain
+          # boolean toggle flag (XC_SET_BOOL in xroar.c), it does not take a
+          # trailing value. Passing "no" as a separate argument silently
+          # broke ALL subsequent option parsing on the command line
+          # (confirmed via direct local isolation testing -- burned real
+          # time on this).
+          #
+          # -type instead of -run: -run's "intelligently autorun" heuristic
+          # never actually triggered for this disk in direct local testing,
+          # even after 15+ seconds -- confirmed by screenshotting mid-wait
+          # and seeing it still sitting at the bare "OK" prompt. -type
+          # explicitly injects the exact keystrokes instead, which is
+          # deterministic. LOADER.BAS is the bootstrap filename ugbc.coco's
+          # dsk output always uses (confirmed via our own rsdos_extract.py
+          # against the compiled disk).
           export SDL_VIDEODRIVER=dummy
           for dsk in /tmp/build-out/*.dsk; do
             name=$(basename "$dsk" .dsk)
             echo "=== Booting $dsk ==="
             xroar -machine coco2b -cart rsdos \
               -rompath "${GITHUB_WORKSPACE}/wasm" \
-              -disk-write-back no \
-              -run "$dsk" \
-              -timeout 5 \
-              -screenshot-on-exit "/tmp/screenshots/${name}.png" \
-              || echo "xroar exited: $?"
+              -no-disk-write-back \
+              -load-fd0 "$dsk" \
+              -type 'RUN"LOADER"\r' \
+              -screenshot-on-exit "/tmp/screenshots/${name}.png" &
+            XROAR_PID=$!
+            sleep 15
+            kill -ALRM "$XROAR_PID" 2>/dev/null || true
+            wait "$XROAR_PID" 2>/dev/null || echo "xroar exited: $?"
           done
           ls -la /tmp/screenshots/ || true
 

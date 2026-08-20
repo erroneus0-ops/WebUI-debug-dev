@@ -1,9 +1,11 @@
---- a/src/xroar.c	2026-08-20 15:02:32.776580070 +0000
-+++ b/src/xroar.c	2026-08-20 15:05:16.535245337 +0000
-@@ -877,9 +877,35 @@
+--- a/src/xroar.c	2026-08-20 16:00:46.136772525 +0000
++++ b/src/xroar.c	2026-08-20 15:54:48.228946019 +0000
+@@ -877,9 +877,73 @@
   * Returns the UI interface to the caller (probably main()).
   */
  
++#include <signal.h>
++
 +// Headless screenshot automation: set via -screenshot-on-exit <file>.
 +// Filename to write a PNG to right before the process actually exits, via
 +// the atexit() handler below -- registered so it runs regardless of *why*
@@ -21,6 +23,41 @@
 +	}
 +}
 +
++// -timeout's own trap-based exit fires on *emulated* CPU time, not real
++// wall-clock time -- confirmed via direct local testing that it can fail
++// to fire at all (process hangs indefinitely under a headless dummy video
++// driver, likely because whatever event/vsync-driven scheduling normally
++// advances that emulated clock isn't ticking the way it would with a real
++// display backend). A wall-clock SIGALRM, sent externally (e.g. via
++// `timeout --signal=ALRM Ns xroar ...` or a delayed `kill -ALRM`), sidesteps
++// that dependency entirely -- fires purely on real elapsed time, regardless
++// of what the emulated CPU is doing.
++//
++// The handler ONLY sets a flag (sig_atomic_t, async-signal-safe). The
++// actual screenshot write + exit happens in xroar_check_pending_screenshot()
++// below, called from the normal main loop -- NOT from inside the handler
++// itself. Confirmed via direct local testing: calling screenshot_write_png()
++// (libpng + stdio, not async-signal-safe) directly from the handler works
++// fine against an idle/no-disk machine, but silently fails once the CPU
++// emulation loop is actually busy (e.g. a real disk/ROM loaded and
++// running) -- exactly the case we actually need this for.
++static volatile sig_atomic_t xroar_screenshot_sigalrm_pending = 0;
++
++static void xroar_screenshot_sigalrm_handler(int signum) {
++	(void)signum;
++	xroar_screenshot_sigalrm_pending = 1;
++}
++
++void xroar_check_pending_screenshot(void) {
++	if (xroar_screenshot_sigalrm_pending) {
++		xroar_screenshot_sigalrm_pending = 0;
++		if (xroar_cfg_screenshot_on_exit) {
++			screenshot_write_png(xroar_cfg_screenshot_on_exit, xroar.vo_interface);
++		}
++		exit(0);
++	}
++}
++
  struct ui_interface *xroar_init(int argc, char **argv) {
  	int argn = 1, ret;
  	char *conffile = NULL;
@@ -33,10 +70,11 @@
 +	// main()'s own atexit(xroar_shutdown), this handler runs *first* at
 +	// exit time (LIFO), while vo_interface is still valid.
 +	atexit(xroar_screenshot_on_exit_handler);
++	signal(SIGALRM, xroar_screenshot_sigalrm_handler);
  	bool no_conffile = 0;
  	bool no_builtin = 0;
  #ifdef WINDOWS32
-@@ -3181,6 +3207,8 @@
+@@ -3181,6 +3245,8 @@
  /* Configuration directives */
  
  static struct xconfig_option const xroar_options[] = {
@@ -45,3 +83,40 @@
  	/* Machines: */
  	{ XC_CALL_STRING("default-machine", &set_default_machine) },
  	{ XC_CALL_STRING("m", &set_machine) },
+--- a/src/xroar.h	2026-08-20 16:00:46.136772525 +0000
++++ b/src/xroar.h	2026-08-20 15:50:58.741275601 +0000
+@@ -206,6 +206,17 @@
+ /// Process UI event queue and run emulated machine.
+ void xroar_run(int ncycles);
+ 
++/// Headless screenshot automation: if a -screenshot-on-exit SIGALRM is
++/// pending, take the screenshot and exit *from normal program flow*
++/// (called once per main-loop iteration), not from inside the signal
++/// handler itself. Writing a PNG (libpng + stdio) isn't async-signal-safe,
++/// and calling it directly from the handler was confirmed (via direct
++/// local testing) to silently fail once the CPU emulation loop is
++/// actually busy (e.g. with a real disk/ROM loaded and running) even
++/// though it worked fine against an idle/no-disk machine. The handler
++/// itself only sets a flag; this function does the real work safely.
++void xroar_check_pending_screenshot(void);
++
+ int xroar_filetype_by_ext(const char *filename);
+ void xroar_load_file_by_type(const char *filename, int autorun);
+ void xroar_load_disk(const char *filename, int drive, bool autorun);
+--- a/src/sdl2/ui_sdl2.c	2026-08-20 16:00:46.129383008 +0000
++++ b/src/sdl2/ui_sdl2.c	2026-08-20 15:51:45.647972291 +0000
+@@ -101,6 +101,14 @@
+ 	for (;;) {
+ 		run_sdl_event_loop(uisdl2);
+ 		xroar_run(EVENT_MS(10));
++		// Headless screenshot automation (-screenshot-on-exit): this is
++		// the actual main loop the SDL2 UI uses (it defines its own
++		// ui->run delegate, bypassing main_unix.c's generic for(;;)
++		// fallback entirely) -- confirmed via grep on ui->run before
++		// patching the wrong loop. Safe/no-op unless a pending SIGALRM
++		// flag was actually set; see xroar.c for why the real work
++		// can't happen directly inside the signal handler.
++		xroar_check_pending_screenshot();
+ 	}
+ }
+ 
