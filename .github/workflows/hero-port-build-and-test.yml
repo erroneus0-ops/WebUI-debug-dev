@@ -101,6 +101,11 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/stahta01/xroar.git /tmp/xroar
           cd /tmp/xroar
+          # No pre-generated ./configure ships in this checkout -- confirmed
+          # via real CI run (32381281914): "./configure: No such file or
+          # directory". autogen.sh just runs autoreconf -fi, covered by the
+          # autoconf/automake/libtool we already installed for libxml2.
+          ./autogen.sh
           ./configure --enable-sdl2 || ./configure
           make -j"$(nproc)"
           sudo make install
