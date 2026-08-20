@@ -61,11 +61,29 @@ WAIT VBL
 ' If ugbc's PMODE 4 buffer is byte-for-byte real 6847 layout, this should
 ' recolour the box (into SG12's 8-colour palette) without corrupting its
 ' shape. If not, expect visual noise/garbage in the same screen region.
-POKE &HFF9C, 9
-POKE &HFF22, 0
-POKE &HFFC5, 1
-POKE &HFFC2, 1
-POKE &HFFC0, 1
+'
+' NOTE ON THIS BLOCK (v3): POKE is broken for the coco target in this
+' ugBASIC release (1.18.1) -- confirmed via minimal repro: even a single
+' bare `POKE 4096, 9` as the entire program fails to compile (silent
+' internal failure, only a spurious "WARNING W001 - Multiplication could
+' loose precision" printed, no real error, zero output). Verified locally
+' across several isolation steps, not guessed. Filed upstream; in the
+' meantime, using inline 6809 assembly instead of POKE sidesteps whatever
+' BASIC-level code-generation path is broken, since assembly text is
+' passed straight through to asm6809 untouched (per ugBASIC's own manual:
+' "the assembly language is not interpreted by the compiler but passed
+' 'as is' to the assembler"). Real 6809/asm6809 syntax: $ for hex, # for
+' immediate -- not BASIC's &H.
+BEGIN ASM
+    LDA #9
+    STA $FF9C
+    CLRA
+    STA $FF22
+    LDA #1
+    STA $FFC5
+    STA $FFC2
+    STA $FFC0
+END ASM
 
 WAIT VBL
 
