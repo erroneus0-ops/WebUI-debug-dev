@@ -74,7 +74,15 @@ jobs:
       - name: Build the coco toolchain (asm6809, decb) and ugbc.coco
         run: |
           cd /tmp/ugbasic
-          make target=coco toolchain
+          # `toolchain` ends up running `make -C build/unix install` inside
+          # the toolshed submodule, which installs decb/etc. to
+          # /usr/local/{bin,share} -- root-owned on a fresh runner, and
+          # ugBASIC's own makefile doesn't sudo that itself. Confirmed via
+          # a real CI run (32380118373) that this is the only remaining
+          # permission issue once markdown/libfuse-dev were fixed; `sudo`
+          # here is a workaround for that one install step, not a general
+          # "run everything as root" choice.
+          sudo make target=coco toolchain
           make target=coco compiler
           ls -la ugbc/exe/
 
