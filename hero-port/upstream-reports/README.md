@@ -8,7 +8,8 @@ without a human actually reading and posting it themselves).
 
 ## Status
 
-All three filed and confirmed live on GitHub as of 2026-08-20:
+Three filed and confirmed live on GitHub as of 2026-08-20, three more
+drafted and pending:
 
 - `ugbasic-poke-broken.md` -- filed as
   [issue #1248](https://github.com/spotlessmind1975/ugbasic/issues/1248).
@@ -26,6 +27,24 @@ All three filed and confirmed live on GitHub as of 2026-08-20:
   A separate bug found while building the STRPTR workaround above:
   chaining more than ~15 string concatenations in one expression
   silently corrupts the result, with zero error at compile or run time.
+- `ugbasic-uppercase-identifier-bug.md` -- **not yet filed upstream**.
+  Any identifier starting with an uppercase letter fails to parse at
+  all, regardless of whether it resembles a keyword.
+- `ugbasic-get-put-image-valuebuffer-gap.md` -- **not yet filed
+  upstream**. Classic `GET(x,y)-(x2,y2),name` doesn't set the image's
+  `valueBuffer`, so `PUT` always reports "uninitialized image
+  variable" immediately after a successful `GET`.
+- `ugbasic-peephole-forces-immediate-on-procedure-locals.md` -- **not
+  yet filed upstream**. A procedure-local value computed from a
+  parameter (e.g. `addr = STRPTR(data$)`) gets its *read* silently
+  replaced with a hardcoded immediate placeholder by the peephole
+  optimizer, disconnected from the real per-call computation --
+  confirmed fixed by `-p 0`, not fixed by pre-declaring the local with
+  `DIM`. Also documents a related but distinct bug found in the same
+  investigation: untyped procedure parameters default to a 16-bit
+  word, and reading them with an 8-bit register load silently reads
+  the wrong byte -- fixed by declaring the parameter `AS BYTE`, not by
+  `-p 0`.
 
 Update this file (or just delete the relevant entry) once either of these
 has actually been posted to https://github.com/spotlessmind1975/ugbasic/issues.
