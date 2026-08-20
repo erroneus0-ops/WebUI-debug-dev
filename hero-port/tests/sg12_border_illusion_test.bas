@@ -1,100 +1,118 @@
 ' ============================================================================
-' sg12_border_illusion_test.bas  (v2 -- STRPTR-based, not hand-unrolled ASM)
+' sg12_border_illusion_test.bas  (v3 -- thin borders, matching corners)
 '
-' Same visual goal as the original version of this file: a coloured border
-' hugging a line of text, something literally impossible in plain 32x16
-' VDG text mode. This version fixes a real bug discovered while building
-' the first one -- see hero-port/upstream-reports/
-' ugbasic-peephole-autoincrement-bug.md for the full writeup.
+' Goal: a coloured border hugging a line of text -- something literally
+' impossible in plain 32x16 VDG text mode, since real text mode has
+' exactly one byte per character cell and no way to give a cell a partial
+' colour fringe. Built entirely on real, verified hardware/software
+' behaviour, not guesswork -- see the git history of this file and
+' hero-port/upstream-reports/ for the investigation that got here,
+' including three separate real ugBASIC bugs found and worked around
+' along the way.
 '
-' THE BUG (found the hard way): ugBASIC's peephole optimizer's dead-store
-' elimination pass doesn't understand that ,X+ auto-increments the address
-' on every store -- it silently comments out most repeated "STA ,X+"
-' instructions in a row, thinking they're redundant writes to the same
-' address. A hand-unrolled loop like:
-'   LDA #$9F
-'   STA ,X+
-'   STA ,X+
-'   STA ,X+   <- these get silently deleted
-'   ...
-' only actually writes 1 byte where N were intended, with no warning.
+' THE SEMIGRAPHICS BYTE FORMAT (verified against a real, cycle-accurate
+' MC6847 emulator implementation -- github.com/floooh/chips,
+' chips/mc6847.h, _mc6847_decode_scanline()):
+'   bit 7    = 1 for a semigraphics character (0 = ordinary ASCII/alnum)
+'   bits 6-4 = colour: 0=green 1=yellow 2=blue 3=red 4=buff 5=cyan
+'              6=magenta 7=orange
+'   bits 3-0 = four quadrants, each independently "coloured" (1) or
+'              black (0): bit3=top-left bit2=top-right bit1=bottom-left
+'              bit0=bottom-right
+'   solid yellow block          (all 4 quadrants on)   = $9F
+'   black-left / yellow-right   (bits 3,1 off; 2,0 on) = $95
+'   yellow-left / black-right   (bits 3,1 on; 2,0 off) = $9A
 '
-' THE FIX (suggested directly in conversation): store the byte pattern as
-' an ordinary BASIC string, get its real memory address with STRPTR(),
-' and copy it with a loop that ALTERNATES between LDA (read source) and
-' STA (write dest) -- since there's only one STA per loop iteration in
-' the actual source text, the peephole rule (which matches consecutive
-' STORE,STORE pairs) never has anything to match against. Not a
-' workaround via a flag (-p 0) -- the bug structurally cannot trigger
-' with this pattern, confirmed via direct testing (grepped the generated
-' .asm: zero peephole interference near the copy loop, and the resulting
-' byte pattern renders correctly in XRoar).
+' "MOD GROUP" (person's term, and a good one): confirmed empirically that
+' 6 identical rows of screen memory render as one complete, solid visual
+' line under this SG12 configuration -- not the MC6847 datasheet's usual
+' "12 scanlines per character cell" figure. A 12-row block gave a clean
+' but genuinely doubled result; 6 gave one clean line. Row alignment
+' matters: every block's start row needs to be a multiple of 6, or the
+' next block inherits a bad phase.
 '
-' Important syntax note (also found the hard way): STRPTR() must be
-' resolved into a plain BASIC variable *before* the ASM block -- calling
-' STRPTR(x$) directly inside BEGIN ASM...END ASM fails, because ugBASIC
-' passes inline assembly straight through to asm6809 without evaluating
-' BASIC function calls inside it ("error: symbol 'STRPTR' not defined").
-' Referencing an already-resolved BASIC variable by its underscore-
-' prefixed name (_srcaddr) inside the ASM block is the correct pattern,
-' matching how VARPTR is used in ugBASIC's own manual examples.
+' TWO REFINEMENTS IN THIS VERSION, both suggested directly in
+' conversation and both confirmed working on the first real try:
 '
-' A THIRD bug found while building this file: chaining more than ~15
-' string concatenation ("+") operations in one expression silently
-' corrupts something (confirmed via direct bisection: 15 chained CHR$()
-' terms works, 16 breaks completely -- and it's specifically about
-' *chained operation count*, not final string length, since a 20-char
-' string built from only 3 concatenations of literal substrings works
-' fine). The practical fix used below: since all bytes in a solid-colour
-' row are identical anyway, there's no need for a long source string at
-' all -- read a single byte repeatedly via LDA ,U (no auto-increment on
-' the *source*) while only the destination (,X+) advances. This sidesteps
-' the concatenation-length bug entirely rather than working around it.
+' 1. PARTIAL MOD-GROUP ILLUMINATION. Earlier versions lit the *entire*
+'    6-row group solid yellow for the top/bottom borders, making them
+'    look like thick bars rather than thin lines. Since each border sits
+'    right next to the text block, only the rows of its group nearest
+'    the text actually need to be lit -- the top border lights its
+'    *last* 3 rows (closest to the text below it), the bottom border
+'    lights its *first* 3 rows (closest to the text above it). The other
+'    3 rows in each group are left completely untouched, so they show
+'    whatever's already there (the CLS background) rather than being
+'    explicitly blanked -- confirmed this blends seamlessly, no visible
+'    seam between the border and the surrounding background.
+'
+' 2. MATCHING CORNER BYTES. The middle text row's left/right edges use
+'    half-coloured stripe bytes ($95, $9A), not solid blocks -- so a
+'    solid $9F block at the same columns in the top/bottom border rows
+'    looked visually inconsistent with the thin stripe descending from
+'    it (a "fat corner meeting a thin edge" mismatch). Fixed by using
+'    the *same* $95/$9A bytes as the first/last byte of every top/bottom
+'    row too, with solid $9F only in the columns between them -- this
+'    makes the whole frame read as one continuous, deliberate shape.
+'
+' THE STRPTR()-BASED COPY MECHANISM (see git history / upstream-reports
+' for the two bugs this works around): store byte patterns as ordinary
+' BASIC strings, get their address with STRPTR(), and copy with a loop
+' alternating LDA (read) / STA (write) so there's never more than one
+' STA per loop iteration in the source text -- immune to the peephole
+' optimizer's auto-increment bug. For the solid-fill portions, a single
+' byte is read repeatedly via LDA ,U (no auto-increment on the *source*)
+' while only the destination (,X+) advances -- sidesteps a second bug
+' (string concatenation chains longer than ~15 operations silently
+' corrupt the result) by never needing a long source string at all.
 ' ============================================================================
 
 PMODE 4, 1
 CLS
 
-' Solid yellow row (semigraphics byte $9F = %10011111: flag set, colour=
-' yellow, all 4 quadrants on). Only ONE byte is needed as a source -- all
-' 21 destination bytes are identical, so the source pointer is read
-' repeatedly WITHOUT auto-increment (LDA ,U not LDA ,U+) while only the
-' destination advances. This also sidesteps a second real bug found
-' while building this test (see the note below) rather than needing a
-' long source string at all.
-yellowbyte$ = CHR$(159)
-yellowaddr = STRPTR(yellowbyte$)
+' Corner/stripe bytes, matching the ones used in the text row below.
+leftstripe$ = CHR$(149)
+fillbyte$ = CHR$(159)
+rightstripe$ = CHR$(154)
+leftaddr = STRPTR(leftstripe$)
+filladdr = STRPTR(fillbyte$)
+rightaddr = STRPTR(rightstripe$)
 
-' Text flanked by thin colour stripes: $95 (black-left/yellow-right) then
-' ordinary ASCII text (renders as real alphanumeric characters, not
-' semigraphics -- bit 7 is clear on printable ASCII), then $9A
-' (yellow-left/black-right). Only 2 concatenation operations here, well
-' clear of the threshold below.
+' Text flanked by thin colour stripes. Ordinary ASCII text renders as
+' real alphanumeric characters (bit 7 clear), not semigraphics. Only 2
+' concatenation operations here, well clear of the chain-length bug.
 middata$ = CHR$(149) + "HIGH SCORE: 8675309" + CHR$(154)
 midaddr = STRPTR(middata$)
 
 BEGIN ASM
     LDX BITMAPADDRESS
 
-    ; --- top border: 6 rows (confirmed empirically as the real repeat
-    ; unit for this rendering -- see the file this replaces for the "why
-    ; 6, not the datasheet's usual 12" investigation notes) ---
-    LDY #6
+    ; --- top border: skip the first 3 rows of this 6-row group (left as
+    ; background), then light the last 3 with matching corner bytes ---
+    LEAX 96,X
+    LDY #3
 topborder
     PSHS X,Y
-    LDU _yellowaddr
-    LDB #21
-tbcopy1
+    LDU _leftaddr
+    LDA ,U
+    STA ,X+
+    LDU _filladdr
+    LDB #19
+tbfill1
     LDA ,U
     STA ,X+
     DECB
-    BNE tbcopy1
+    BNE tbfill1
+    LDU _rightaddr
+    LDA ,U
+    STA ,X+
     PULS X,Y
     LEAX 32,X
     LEAY -1,Y
     BNE topborder
 
-    ; --- middle: text + side stripes, 6 rows ---
+    ; --- middle: text + side stripes, full 6-row group (text needs the
+    ; whole group to render as legible characters, unlike a solid fill) ---
     LDY #6
 midrow
     PSHS X,Y
@@ -110,21 +128,29 @@ midcopy
     LEAY -1,Y
     BNE midrow
 
-    ; --- bottom border: 6 rows, same source string reused ---
-    LDY #6
+    ; --- bottom border: light the first 3 rows, then skip the remaining
+    ; 3 (left as background) ---
+    LDY #3
 botborder
     PSHS X,Y
-    LDU _yellowaddr
-    LDB #21
-tbcopy2
+    LDU _leftaddr
+    LDA ,U
+    STA ,X+
+    LDU _filladdr
+    LDB #19
+tbfill2
     LDA ,U
     STA ,X+
     DECB
-    BNE tbcopy2
+    BNE tbfill2
+    LDU _rightaddr
+    LDA ,U
+    STA ,X+
     PULS X,Y
     LEAX 32,X
     LEAY -1,Y
     BNE botborder
+    LEAX 96,X
 END ASM
 
 WAIT VBL
