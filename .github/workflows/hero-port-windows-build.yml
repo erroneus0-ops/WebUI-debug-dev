@@ -194,12 +194,16 @@ jobs:
           echo "GITHUB_WORKSPACE (raw): $GITHUB_WORKSPACE"
           echo "WORKSPACE (posix):      $WORKSPACE"
           mkdir -p "${WORKSPACE}/build-output/win-toolchain"
-          cp /tmp/ugbasic-win/ugbc/exe/ugbc.coco* "${WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
-          cp /tmp/ugbasic-win/modules/asm6809/src/asm6809* "${WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
+          cp /tmp/ugbasic-win/ugbc/exe/ugbc.coco.exe "${WORKSPACE}/build-output/win-toolchain/"
+          cp /tmp/ugbasic-win/modules/asm6809/src/asm6809.exe "${WORKSPACE}/build-output/win-toolchain/"
           # decb is grabbed straight from its own build directory now,
           # not from an "installed" location -- we deliberately never run
           # toolshed's own `make install` (see the previous step for why).
-          find /tmp/ugbasic-win/modules/toolshed/build/unix/decb -maxdepth 1 -iname "decb*" -type f -exec cp {} "${WORKSPACE}/build-output/win-toolchain/" \; 2>/dev/null || true
+          # Narrowed to decb.exe specifically -- the earlier iname
+          # "decb*" pattern also picked up a stray extensionless "decb"
+          # artifact and various decb*.o intermediate object files,
+          # confirmed via a real CI run's file listing.
+          cp /tmp/ugbasic-win/modules/toolshed/build/unix/decb/decb.exe "${WORKSPACE}/build-output/win-toolchain/"
           ls -la "${WORKSPACE}/build-output/win-toolchain/"
           # Bundle whatever MinGW runtime DLLs the built .exe(s) actually
           # depend on, so this is genuinely standalone -- not yet fully
@@ -211,9 +215,19 @@ jobs:
             [ -e "$exe" ] || continue
             echo "=== ldd $exe ==="
             ldd "$exe" || echo "ldd failed or unavailable for $exe"
+            # `|| true` here is not optional: when an exe has no MinGW
+            # DLL dependencies at all (confirmed for asm6809.exe --
+            # fully statically linked, only core Windows system DLLs),
+            # grep finds zero matches and exits non-zero, which
+            # propagates through the pipe into the while loop's own
+            # exit status. Under bash's implicit set -e, that alone
+            # was enough to kill this entire script instantly, before
+            # ever reaching decb.exe, ugbc.coco.exe, the README, or the
+            # zip step -- confirmed via a real CI run showing exactly
+            # that truncation point.
             ldd "$exe" 2>/dev/null | grep -i mingw | awk '{print $3}' | while read -r dll; do
               [ -e "$dll" ] && cp -n "$dll" "${WORKSPACE}/build-output/win-toolchain/"
-            done
+            done || true
           done
           ls -la "${WORKSPACE}/build-output/win-toolchain/"
           cat > "${WORKSPACE}/build-output/win-toolchain/README.txt" << 'EOF'
