@@ -74,14 +74,35 @@ jobs:
           cd /tmp/ugbasic-win
           git submodule update --init --depth 1 modules/asm6809 modules/toolshed
 
-      - name: Build the coco toolchain (asm6809, decb)
+      - name: Build asm6809
         run: |
           cd /tmp/ugbasic-win
-          # No sudo/elevated-permissions step needed here the way the
-          # Linux CI workflow needed one -- MSYS2's /usr/local is just
-          # a directory inside its own install tree, writable by the
-          # current user, not a real system path requiring root.
-          make target=coco toolchain
+          make target=coco asm6809
+
+      - name: Build only the toolshed pieces decb actually needs
+        run: |
+          # ugBASIC's own `make target=coco toolchain` rule triggers
+          # toolshed's *entire* `make install`, which builds ar2, os9,
+          # mamou, decb, tocgen, cocofuse, makewav, cecb, and its docs --
+          # confirmed by reading modules/toolshed/build/unix/Makefile's
+          # own DIRS list directly. We only ever need decb (confirmed via
+          # its actual link line: -ltoolshed -lcoco -lnative -lcecb -lrbf
+          # -ldecb -lmisc -lsys, no dependency on any of the other tools).
+          # On Windows this matters, not just for build time: cecb
+          # specifically fails to link under MinGW (undefined references
+          # to readdir64/__errno_location -- glibc-specific symbol names
+          # toolshed's own code calls directly rather than through the
+          # portable readdir()/errno mechanisms MinGW provides instead).
+          # decb itself never needed those functions in the first place,
+          # so building only what decb actually requires sidesteps the
+          # problem entirely rather than needing to patch toolshed's
+          # source for MinGW compatibility.
+          cd /tmp/ugbasic-win/modules/toolshed/build/unix
+          for dir in libtoolshed libnative libcecb librbf libcoco libdecb libmisc libsys decb; do
+            echo "=== building $dir ==="
+            (cd "$dir" && make)
+          done
+          ls -la decb/decb*
 
       - name: Build ugbc.coco
         run: |
@@ -112,7 +133,10 @@ jobs:
           mkdir -p "${GITHUB_WORKSPACE}/build-output/win-toolchain"
           cp /tmp/ugbasic-win/ugbc/exe/ugbc.coco* "${GITHUB_WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
           cp /tmp/ugbasic-win/modules/asm6809/src/asm6809* "${GITHUB_WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
-          find /tmp/ugbasic-win -iname "decb*" -type f -exec cp {} "${GITHUB_WORKSPACE}/build-output/win-toolchain/" \; 2>/dev/null || true
+          # decb is grabbed straight from its own build directory now,
+          # not from an "installed" location -- we deliberately never run
+          # toolshed's own `make install` (see the previous step for why).
+          find /tmp/ugbasic-win/modules/toolshed/build/unix/decb -maxdepth 1 -iname "decb*" -type f -exec cp {} "${GITHUB_WORKSPACE}/build-output/win-toolchain/" \; 2>/dev/null || true
           # Bundle whatever MinGW runtime DLLs the built .exe(s) actually
           # depend on, so this is genuinely standalone -- not yet fully
           # verified which specific DLLs are needed; ldd's output here
@@ -125,11 +149,20 @@ jobs:
             done
           done
           ls -la "${GITHUB_WORKSPACE}/build-output/win-toolchain/"
-          # Written under $GITHUB_WORKSPACE specifically (not MSYS2's own
-          # /tmp) because that path resolves identically from both this
-          # MSYS2 shell and the plain-Windows/Node.js context the
-          # publish-release step below runs in -- a Unix-style /tmp/...
-          # path here would not be visible to that step at all.
+          cat > "${GITHUB_WORKSPACE}/build-output/win-toolchain/README.txt" << 'EOF'
+ugBASIC coco toolchain -- portable Windows build
+
+Usage (explicit -C/-b needed -- ugbc.coco's default auto-discovery of
+asm6809/decb relies on a relative-path convention that only applies
+when running from inside a full ugBASIC source checkout, not this
+flat, standalone folder):
+
+  ugbc.coco.exe -W -C asm6809.exe -b decb.exe -o output.dsk -O dsk source.bas
+
+See hero-port/upstream-reports/ in erroneus0-ops/WebUI-debug-dev for a
+running list of known compiler bugs/quirks to watch for, and
+hero-port/WINDOWS-BUILD.md for the full build workflow this came from.
+EOF
           cd "${GITHUB_WORKSPACE}/build-output/win-toolchain"
           zip -r "${GITHUB_WORKSPACE}/build-output/ugbasic-coco-windows.zip" .
 
