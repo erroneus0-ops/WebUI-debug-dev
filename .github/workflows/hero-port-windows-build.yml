@@ -182,26 +182,41 @@ jobs:
 
       - name: Package the toolchain + required runtime DLLs
         run: |
-          mkdir -p "${GITHUB_WORKSPACE}/build-output/win-toolchain"
-          cp /tmp/ugbasic-win/ugbc/exe/ugbc.coco* "${GITHUB_WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
-          cp /tmp/ugbasic-win/modules/asm6809/src/asm6809* "${GITHUB_WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
+          set -x
+          # $GITHUB_WORKSPACE is a Windows-style path (drive letter,
+          # backslashes) even inside this MSYS2 shell -- a well-known
+          # trap. cygpath converts it to the POSIX-style path MSYS2's
+          # own tools (mkdir, cp, zip, ldd) actually expect. Confirmed
+          # necessary via a real CI run: the previous version of this
+          # step failed instantly with no output at all, consistent
+          # with the very first command choking on an unconverted path.
+          WORKSPACE=$(cygpath -u "$GITHUB_WORKSPACE")
+          echo "GITHUB_WORKSPACE (raw): $GITHUB_WORKSPACE"
+          echo "WORKSPACE (posix):      $WORKSPACE"
+          mkdir -p "${WORKSPACE}/build-output/win-toolchain"
+          cp /tmp/ugbasic-win/ugbc/exe/ugbc.coco* "${WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
+          cp /tmp/ugbasic-win/modules/asm6809/src/asm6809* "${WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
           # decb is grabbed straight from its own build directory now,
           # not from an "installed" location -- we deliberately never run
           # toolshed's own `make install` (see the previous step for why).
-          find /tmp/ugbasic-win/modules/toolshed/build/unix/decb -maxdepth 1 -iname "decb*" -type f -exec cp {} "${GITHUB_WORKSPACE}/build-output/win-toolchain/" \; 2>/dev/null || true
+          find /tmp/ugbasic-win/modules/toolshed/build/unix/decb -maxdepth 1 -iname "decb*" -type f -exec cp {} "${WORKSPACE}/build-output/win-toolchain/" \; 2>/dev/null || true
+          ls -la "${WORKSPACE}/build-output/win-toolchain/"
           # Bundle whatever MinGW runtime DLLs the built .exe(s) actually
           # depend on, so this is genuinely standalone -- not yet fully
-          # verified which specific DLLs are needed; ldd's output here
-          # drives what actually gets copied, rather than guessing a
-          # fixed list up front.
-          for exe in "${GITHUB_WORKSPACE}/build-output/win-toolchain"/*.exe; do
+          # verified which specific DLLs are needed, or whether MSYS2's
+          # own ldd correctly analyzes native MinGW .exe files the way
+          # real Linux ldd does; if this section itself turns out to be
+          # the problem, that's the next thing to check.
+          for exe in "${WORKSPACE}/build-output/win-toolchain"/*.exe; do
             [ -e "$exe" ] || continue
-            ldd "$exe" | grep -i mingw | awk '{print $3}' | while read -r dll; do
-              [ -e "$dll" ] && cp -n "$dll" "${GITHUB_WORKSPACE}/build-output/win-toolchain/"
+            echo "=== ldd $exe ==="
+            ldd "$exe" || echo "ldd failed or unavailable for $exe"
+            ldd "$exe" 2>/dev/null | grep -i mingw | awk '{print $3}' | while read -r dll; do
+              [ -e "$dll" ] && cp -n "$dll" "${WORKSPACE}/build-output/win-toolchain/"
             done
           done
-          ls -la "${GITHUB_WORKSPACE}/build-output/win-toolchain/"
-          cat > "${GITHUB_WORKSPACE}/build-output/win-toolchain/README.txt" << 'EOF'
+          ls -la "${WORKSPACE}/build-output/win-toolchain/"
+          cat > "${WORKSPACE}/build-output/win-toolchain/README.txt" << 'EOF'
           ugBASIC coco toolchain -- portable Windows build
 
           Usage (explicit -C/-b needed -- ugbc.coco's default auto-discovery of
@@ -215,8 +230,8 @@ jobs:
           running list of known compiler bugs/quirks to watch for, and
           hero-port/WINDOWS-BUILD.md for the full build workflow this came from.
           EOF
-          cd "${GITHUB_WORKSPACE}/build-output/win-toolchain"
-          zip -r "${GITHUB_WORKSPACE}/build-output/ugbasic-coco-windows.zip" .
+          cd "${WORKSPACE}/build-output/win-toolchain"
+          zip -r "${WORKSPACE}/build-output/ugbasic-coco-windows.zip" .
 
       - name: Publish as a GitHub Release
         uses: softprops/action-gh-release@v2
