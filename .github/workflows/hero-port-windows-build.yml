@@ -64,6 +64,7 @@ jobs:
             libtool
             bison
             flex
+            vim
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-libpng
             mingw-w64-x86_64-libtool
@@ -97,6 +98,12 @@ jobs:
         run: |
           cd /tmp/ugbasic-win
           make target=coco asm6809
+          # (vim, added above, provides xxd -- ugbc's own build needs it
+          # to generate src-generated/6809_bits_to_string.c. Confirmed
+          # via a real CI run: GitHub's ubuntu-latest runners happen to
+          # have xxd preinstalled already, which is why the Linux CI
+          # workflow never needed to add it explicitly, but MSYS2 does
+          # not include it by default.)
 
       - name: Build only the toolshed pieces decb actually needs
         run: |
