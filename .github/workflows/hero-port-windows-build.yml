@@ -1,0 +1,151 @@
+# .github/workflows/hero-port-windows-build.yml
+#
+# WHAT THIS DOES
+# ---------------
+# Builds a portable, standalone Windows toolchain for ugBASIC's coco
+# target -- ugbc.coco.exe, asm6809.exe, decb.exe -- on a real GitHub-
+# hosted Windows runner, and publishes the result as a GitHub Release
+# asset (a zip you can download and unzip on any Windows machine, no
+# WSL, no MSYS2 install, no dev environment setup required on the
+# machine that actually uses it).
+#
+# WHY MSYS2/MINGW64
+# -------------------
+# ugBASIC's own build system (Makefiles, autotools for the asm6809
+# submodule) assumes a POSIX-like environment -- it doesn't work with
+# plain MSVC/cl.exe. MSYS2 provides that POSIX layer on Windows, and
+# specifically targeting its MINGW64 subsystem (rather than the base
+# MSYS environment) produces genuinely native Windows .exe files whose
+# only runtime dependencies are a handful of common MinGW runtime DLLs
+# (bundled alongside in the output zip) -- not something that requires
+# MSYS2 itself to be installed on the machine that runs it.
+#
+# WHY A RELEASE, NOT A WORKFLOW ARTIFACT
+# -----------------------------------------
+# Same reasoning as the Linux CI workflow in this same repo: workflow
+# artifacts live on a GitHub domain that isn't reachable from outside
+# a browser session; Release assets are served from
+# release-assets.githubusercontent.com, which is reachable more
+# broadly (and is just a normal clickable download link for a human
+# anyway).
+
+name: Build Windows toolchain (ugBASIC coco, MSYS2/MinGW64)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/hero-port-windows-build.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 (MINGW64)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            make
+            zip
+            unzip
+            autoconf
+            automake
+            libtool
+            bison
+            flex
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-libtool
+
+      - name: Check out ugBASIC (+ only the submodules the coco toolchain needs)
+        run: |
+          git clone --depth 1 https://github.com/spotlessmind1975/ugbasic.git /tmp/ugbasic-win
+          cd /tmp/ugbasic-win
+          git submodule update --init --depth 1 modules/asm6809 modules/toolshed
+
+      - name: Build the coco toolchain (asm6809, decb)
+        run: |
+          cd /tmp/ugbasic-win
+          # No sudo/elevated-permissions step needed here the way the
+          # Linux CI workflow needed one -- MSYS2's /usr/local is just
+          # a directory inside its own install tree, writable by the
+          # current user, not a real system path requiring root.
+          make target=coco toolchain
+
+      - name: Build ugbc.coco
+        run: |
+          cd /tmp/ugbasic-win
+          make target=coco compiler
+          ls -la ugbc/exe/
+
+      - name: Confirm the build actually works
+        run: |
+          cd /tmp/ugbasic-win
+          ./ugbc/exe/ugbc.coco -V
+          # Real smoke test, not just "the binary exists": compile a
+          # trivial program all the way through to a .dsk, using the
+          # asm6809 built in this same job (not the -C/-b path-finding
+          # workaround the Linux CI needed -- confirm first whether
+          # this Windows build needs the same explicit flags).
+          cat > /tmp/smoketest.bas << 'EOF'
+          PMODE 4, 1
+          CLS
+          DO
+          LOOP
+          EOF
+          ./ugbc/exe/ugbc.coco -W -o /tmp/smoketest.dsk -O dsk /tmp/smoketest.bas
+          ls -la /tmp/smoketest.dsk
+
+      - name: Package the toolchain + required runtime DLLs
+        run: |
+          mkdir -p "${GITHUB_WORKSPACE}/build-output/win-toolchain"
+          cp /tmp/ugbasic-win/ugbc/exe/ugbc.coco* "${GITHUB_WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
+          cp /tmp/ugbasic-win/modules/asm6809/src/asm6809* "${GITHUB_WORKSPACE}/build-output/win-toolchain/" 2>/dev/null || true
+          find /tmp/ugbasic-win -iname "decb*" -type f -exec cp {} "${GITHUB_WORKSPACE}/build-output/win-toolchain/" \; 2>/dev/null || true
+          # Bundle whatever MinGW runtime DLLs the built .exe(s) actually
+          # depend on, so this is genuinely standalone -- not yet fully
+          # verified which specific DLLs are needed; ldd's output here
+          # drives what actually gets copied, rather than guessing a
+          # fixed list up front.
+          for exe in "${GITHUB_WORKSPACE}/build-output/win-toolchain"/*.exe; do
+            [ -e "$exe" ] || continue
+            ldd "$exe" | grep -i mingw | awk '{print $3}' | while read -r dll; do
+              [ -e "$dll" ] && cp -n "$dll" "${GITHUB_WORKSPACE}/build-output/win-toolchain/"
+            done
+          done
+          ls -la "${GITHUB_WORKSPACE}/build-output/win-toolchain/"
+          # Written under $GITHUB_WORKSPACE specifically (not MSYS2's own
+          # /tmp) because that path resolves identically from both this
+          # MSYS2 shell and the plain-Windows/Node.js context the
+          # publish-release step below runs in -- a Unix-style /tmp/...
+          # path here would not be visible to that step at all.
+          cd "${GITHUB_WORKSPACE}/build-output/win-toolchain"
+          zip -r "${GITHUB_WORKSPACE}/build-output/ugbasic-coco-windows.zip" .
+
+      - name: Publish as a GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ugbasic-windows-${{ github.run_number }}
+          name: "ugBASIC coco Windows toolchain build #${{ github.run_number }}"
+          body: |
+            Portable Windows build of ugBASIC's coco toolchain (ugbc.coco.exe,
+            asm6809.exe, decb.exe), built from spotlessmind1975/ugbasic main
+            branch at the commit checked out during this run. Unzip and use
+            directly -- no MSYS2/WSL install needed on the machine that runs it
+            (this first version of the workflow hasn't yet had its DLL bundling
+            fully verified against a real, separate Windows machine -- treat
+            this initial release as provisional until confirmed).
+          files: |
+            build-output/ugbasic-coco-windows.zip
+          prerelease: true
