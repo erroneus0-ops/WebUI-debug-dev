@@ -150,19 +150,19 @@ jobs:
           done
           ls -la "${GITHUB_WORKSPACE}/build-output/win-toolchain/"
           cat > "${GITHUB_WORKSPACE}/build-output/win-toolchain/README.txt" << 'EOF'
-ugBASIC coco toolchain -- portable Windows build
+          ugBASIC coco toolchain -- portable Windows build
 
-Usage (explicit -C/-b needed -- ugbc.coco's default auto-discovery of
-asm6809/decb relies on a relative-path convention that only applies
-when running from inside a full ugBASIC source checkout, not this
-flat, standalone folder):
+          Usage (explicit -C/-b needed -- ugbc.coco's default auto-discovery of
+          asm6809/decb relies on a relative-path convention that only applies
+          when running from inside a full ugBASIC source checkout, not this
+          flat, standalone folder):
 
-  ugbc.coco.exe -W -C asm6809.exe -b decb.exe -o output.dsk -O dsk source.bas
+            ugbc.coco.exe -W -C asm6809.exe -b decb.exe -o output.dsk -O dsk source.bas
 
-See hero-port/upstream-reports/ in erroneus0-ops/WebUI-debug-dev for a
-running list of known compiler bugs/quirks to watch for, and
-hero-port/WINDOWS-BUILD.md for the full build workflow this came from.
-EOF
+          See hero-port/upstream-reports/ in erroneus0-ops/WebUI-debug-dev for a
+          running list of known compiler bugs/quirks to watch for, and
+          hero-port/WINDOWS-BUILD.md for the full build workflow this came from.
+          EOF
           cd "${GITHUB_WORKSPACE}/build-output/win-toolchain"
           zip -r "${GITHUB_WORKSPACE}/build-output/ugbasic-coco-windows.zip" .
 
