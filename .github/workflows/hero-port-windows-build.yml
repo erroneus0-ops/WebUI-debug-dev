@@ -72,7 +72,15 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/spotlessmind1975/ugbasic.git /tmp/ugbasic-win
           cd /tmp/ugbasic-win
-          git submodule update --init --depth 1 modules/asm6809 modules/toolshed
+          git submodule update --init --depth 1 modules/asm6809 modules/toolshed modules/libxml2
+          # libxml2 is needed unconditionally by ugbc's own `compiler`
+          # build target, regardless of platform target -- the exact
+          # same gap found and fixed for the Linux CI workflow earlier
+          # in this project, just forgotten when writing this Windows
+          # workflow from scratch. Confirmed via a real CI run:
+          # "./autogen.sh: No such file or directory" trying to build
+          # ../modules/libxml2/.libs/libxml2.a, because that submodule
+          # was never checked out at all.
           # Real MinGW compat bug found via an actual CI run: toolshed's
           # libnativemakdir.c checks #ifdef WIN32 (defined by MinGW64,
           # confirmed) and calls _mkdir() in that branch, but never
