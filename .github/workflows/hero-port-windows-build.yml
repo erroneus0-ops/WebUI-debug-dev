@@ -88,6 +88,18 @@ jobs:
           git clone --depth 1 https://github.com/spotlessmind1975/ugbasic.git /tmp/ugbasic-win
           cd /tmp/ugbasic-win
           git submodule update --init --depth 1 modules/asm6809 modules/toolshed modules/libxml2
+          # Belt-and-braces fix for the same symlink issue described
+          # above: core.symlinks=true tells git to *try* creating a
+          # real symlink, but actually succeeding also requires an
+          # OS-level privilege that isn't guaranteed on every Windows
+          # runner/account, even one with admin rights in a general
+          # sense -- confirmed via a real CI run that core.symlinks
+          # alone was NOT sufficient (identical failure persisted).
+          # This replaces the placeholder text file with a real copy
+          # of the actual target's content directly, which works
+          # regardless of any symlink permission quirk.
+          rm -f ugbc/src/targets/coco/_optimizer.c
+          cp ugbc/src/targets/d32/_optimizer.c ugbc/src/targets/coco/_optimizer.c
           # libxml2 is needed unconditionally by ugbc's own `compiler`
           # build target, regardless of platform target -- the exact
           # same gap found and fixed for the Linux CI workflow earlier
