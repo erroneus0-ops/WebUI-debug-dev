@@ -1,4 +1,46 @@
-# Windows build workflow (via WSL2)
+# Windows build workflow
+
+Two ways to get a working ugBASIC coco toolchain on Windows, depending
+on your situation.
+
+## Option A — just download the prebuilt zip (simplest, no setup at all)
+
+A GitHub Actions workflow in this repo
+(`.github/workflows/hero-port-windows-build.yml`) builds a genuinely
+standalone Windows toolchain -- `ugbc.coco.exe`, `asm6809.exe`,
+`decb.exe` -- on every push to it, and publishes the result as a
+Release. Latest one as of this writing:
+https://github.com/erroneus0-ops/WebUI-debug-dev/releases/tag/ugbasic-windows-10
+
+Download `ugbasic-coco-windows.zip`, unzip it anywhere, and use
+directly -- no MSYS2, no WSL, nothing else to install. All three
+binaries turned out to be fully statically linked (confirmed via
+`ldd`: only core Windows system DLLs, nothing MinGW-specific needed),
+so this really is just "unzip and run":
+
+```
+ugbc.coco.exe -W -C asm6809.exe -b decb.exe -o output.dsk -O dsk source.bas
+```
+
+The `-C`/`-b` flags are required here (not optional) -- `ugbc.coco`'s
+default auto-discovery of `asm6809`/`decb` relies on a relative-path
+convention that only applies inside a full ugBASIC source checkout,
+not this flat, standalone folder.
+
+**Tradeoff to know about:** this zip reflects whatever commit was on
+`spotlessmind1975/ugbasic`'s `main` branch the last time that workflow
+ran -- check the release notes/date if you need to know exactly how
+fresh it is. Trigger a fresh run yourself (Actions tab → that workflow
+→ "Run workflow") any time you want the very latest source rebuilt.
+
+Getting there wasn't trivial -- eight distinct, real build bugs (most
+of them Windows/MinGW-specific compatibility issues, found and fixed
+purely by iterating on actual CI failures) stood between "should work"
+and "actually works." See the workflow file's own comments, and this
+repo's commit history around it, for the full story of each one --
+worth reading if you ever need to touch that workflow yourself.
+
+## Option B — build it yourself via WSL2
 
 A from-source build of ugBASIC's `coco` toolchain plus real XRoar, on
 Windows, using the exact same commands verified against a real Linux
@@ -7,7 +49,7 @@ latest source (including any fix not yet in an official IDE release),
 rather than whatever the last packaged Windows release happened to
 include.
 
-## Why WSL2 rather than a native Windows build
+### Why WSL2 rather than a native Windows build
 
 ugBASIC's build system (Makefiles, autotools for `asm6809`) and its
 dependencies (`bison`, `flex`, `libpng`, `libgtk-3`, `libsdl2`, ...) are
@@ -16,7 +58,7 @@ inside Windows -- not an emulation layer -- so every command below is
 literally the same one used (and verified) on a real Linux box, not a
 Windows-specific reinterpretation that might behave differently.
 
-## 1. Install WSL2 + Ubuntu
+### 1. Install WSL2 + Ubuntu
 
 In an elevated (Administrator) PowerShell or Command Prompt:
 
@@ -32,7 +74,7 @@ separate from your Windows login).
 All the commands below run *inside* that Ubuntu window, not in
 PowerShell/CMD.
 
-## 2. Install build dependencies
+### 2. Install build dependencies
 
 ```bash
 sudo apt-get update
@@ -47,7 +89,7 @@ project's own CI -- see `.github/workflows/hero-port-build-and-test.yml`
 and this project's commit history for the specifics of why each one is
 needed.)
 
-## 3. Clone ugBASIC + the two submodules the coco toolchain needs
+### 3. Clone ugBASIC + the two submodules the coco toolchain needs
 
 ```bash
 git clone https://github.com/spotlessmind1975/ugbasic.git
@@ -55,7 +97,7 @@ cd ugbasic
 git submodule update --init --depth 1 modules/asm6809 modules/toolshed
 ```
 
-## 4. Build
+### 4. Build
 
 ```bash
 make target=coco toolchain
@@ -74,7 +116,7 @@ sudo cp modules/asm6809/src/asm6809 /usr/local/bin/
 get installed automatically to `/usr/local/bin` as part of the
 `toolchain` build step above.
 
-## 5. Verify
+### 5. Verify
 
 ```bash
 ./ugbc/exe/ugbc.coco -V
@@ -87,7 +129,7 @@ you build). To check which exact source revision you're on:
 git log -1 --format="%H %ad" --date=short
 ```
 
-## 6. Compiling a program
+### 6. Compiling a program
 
 ```bash
 ./ugbc/exe/ugbc.coco -W -C /usr/local/bin/asm6809 -b /usr/local/bin/decb \
@@ -121,7 +163,7 @@ files** (all found and reported during this project, see
   still need `-p 0` as a workaround -- check the upstream-reports
   folder for the current state before assuming either way.
 
-## 7. Getting files back out to Windows
+### 7. Getting files back out to Windows
 
 WSL2's Linux filesystem is reachable from Windows Explorer at
 `\\wsl$\Ubuntu\home\<your-linux-username>\...`, or from inside WSL,
@@ -130,7 +172,7 @@ round-trip: compile inside WSL, then copy the output `.dsk` to
 somewhere under `/mnt/c/Users/<you>/...` so it shows up directly in
 your normal Windows folders for use with an emulator.
 
-## 8. Running the result: XRoar
+### 8. Running the result: XRoar
 
 Real XRoar ships an official prebuilt Windows package --
 https://www.6809.org.uk/xroar/ -- no WSL involvement needed for this
@@ -152,7 +194,7 @@ iterations. VCC's accuracy for this particular undocumented hardware
 quirk hasn't been checked the same way -- worth confirming before
 trusting VCC for anything SG12-specific, rather than assuming parity.
 
-## 9. Staying up to date
+### 9. Staying up to date
 
 Since this pulls directly from ugBASIC's `main` branch rather than a
 tagged release, re-running `git pull` (or a fresh `git clone`) inside
