@@ -1,0 +1,13 @@
+--- a/libnative/libnativemakdir.c	2026-08-21 14:08:56.293620665 +0000
++++ b/libnative/libnativemakdir.c	2026-08-21 14:09:05.139372018 +0000
+@@ -10,6 +10,10 @@
+ #include <sys/stat.h>
+ #include <errno.h>
+ 
++#ifdef WIN32
++#include <direct.h>
++#endif
++
+ #include "cocotypes.h"
+ #include "cococonv.h"
+ #include "nativepath.h"
