@@ -71,6 +71,20 @@ jobs:
 
       - name: Check out ugBASIC (+ only the submodules the coco toolchain needs)
         run: |
+          # core.symlinks=true is NOT optional here: several target
+          # source files (confirmed: targets/coco/_optimizer.c) are
+          # real symlinks in the actual repo (coco's optimizer is
+          # literally the same file as d32's, via symlink -- this also
+          # retroactively confirms the #1247 fix, which touched
+          # d32/_optimizer.c specifically, really does apply to coco
+          # too). Without this, git-for-windows checks symlinks out as
+          # plain text files *containing the target path string*
+          # instead of creating a real symlink, which GCC then tries
+          # (and fails) to parse as C source -- confirmed via a real
+          # CI run: "error: expected identifier or '(' before '.' token"
+          # on a file whose entire content was the literal text
+          # "../d32/_optimizer.c".
+          git config --global core.symlinks true
           git clone --depth 1 https://github.com/spotlessmind1975/ugbasic.git /tmp/ugbasic-win
           cd /tmp/ugbasic-win
           git submodule update --init --depth 1 modules/asm6809 modules/toolshed modules/libxml2
