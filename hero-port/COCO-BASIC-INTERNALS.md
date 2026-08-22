@@ -1,0 +1,308 @@
+# CoCo hardware & Color BASIC internals -- verified reference
+
+A collection of real, empirically-verified CoCo/6809 findings that came out of
+a detour from the HERO port work, kept here because none of it was
+documented in one place anywhere, and all of it was confirmed directly
+(real disassembly, real assembled test routines run in XRoar) rather than
+taken on faith from any single source.
+
+## 1. The T1 lowercase hack -- the real pokes, and why the "classic" address didn't work
+
+**The two pokes that actually work, confirmed directly by Ciaran Anscomb
+(author of XRoar) and independently verified here:**
+
+```basic
+POKE 359,57
+POKE &HFF22,16
+```
+
+- `POKE &HFF22,16` sets bit 4 of PIA1 Port B, switching the 6847T1 VDG into
+  its alternate/lowercase character set. Confirmed via direct pixel-level
+  screenshot comparison: raw `POKE`d values 0-31 render as genuine,
+  correctly-shaped lowercase letters (visible descenders on `g`/`j`), not
+  just inverted uppercase.
+- `POKE 359,57` writes `$39` (the 6809 `RTS` opcode) over the first byte of
+  a documented RAM hook. This is the piece that stops the mode from
+  reverting the instant anything gets printed.
+
+### Why `359` and not the address a well-known blog post uses (`&H95AC`)
+
+An older, widely-circulated hack pokes `&H95AC` directly. That address is
+real -- it's the exact routine that resets the display mode -- but it has
+two independent reasons it can fail:
+
+1. **It's a specific byte offset inside one ROM revision's own code.**
+   `359` is a documented, stable structural entry point (see below); `$95AC`
+   is wherever one specific compile of Extended Color BASIC happened to
+   place that logic. A different ROM revision can shift this by even one
+   byte and silently miss.
+2. **It requires "64K/all-RAM mode" to even be possible.** Confirmed
+   directly: `PEEK(38316)` (= `$95AC`) returned `52` both before and after
+   `POKE 38316,255` -- the write silently did nothing, because in normal
+   operation `$95AC` is genuine, read-only ROM. `52` decimal is `$34` hex,
+   which matches the disassembly's own first byte at that address exactly
+   (`PSHS X,B,A`), cross-validating the disassembly, the live `PEEK`, and
+   the explanation all at once.
+
+### The full, real call chain (confirmed via direct disassembly)
+
+Traced through an actual "Color BASIC Unravelled"-style disassembly
+spreadsheet (34 tabs covering CB/ECB/SECB/DECB across multiple versions --
+see the repo root, `Unravelled II.xls`):
+
+```
+$167 (359)   CONSOLE OUT RAM hook -- one of 25 documented 3-byte JMP
+             vectors starting at $15E, designed specifically so
+             Extended/Disk BASIC ROMs can redirect Color BASIC's own
+             behaviour without patching the base ROM. Confirmed via
+             direct PEEK: originally holds JMP $CC1C ($7E,$CC,$1C).
+    |
+    v
+$CC1C  DVEC3 (Disk Extended Color BASIC 1.1)
+       TST DEVNUM
+       LBLE XVEC3          ; branch onward if not a disk file
+       [... else: write byte to a disk FCB, unrelated to screen output]
+    |
+    v
+$8273  XVEC3 (Extended Color BASIC 1.1)
+       TST DEVNUM
+       LBEQ L95AC          ; BRANCH IF SCREEN
+       [... else: check DLOAD/cassette special cases]
+    |
+    v
+$95AC  L95AC
+       PSHS X,B,A
+       LDX #SAM+8
+       STA 10,X / STA $08,X / ... (reset SAM display page to $400)
+       STA $-02,X / ... (reset SAM's VDG to alpha-numeric mode)
+       LDA PIA1+2
+       ANDA #$07           ; <-- clears bits 3-7, INCLUDING our T1 bit
+       STA PIA1+2
+       PULS A,B,X,PC
+```
+
+`POKE 359,57` overwrites the very first byte of the very first link in
+this chain with `RTS`, so nothing downstream -- including the `ANDA #$07`
+that stomps the T1 mode bit -- ever runs again, for any character output,
+regardless of which ROM revision put what at which address further down.
+
+This also explains why ordinary text still displays correctly even
+though this whole chain never runs: the chain is purely a *defensive
+reset* ("make sure text mode is standard before this next character"),
+not the actual character-drawing logic -- that lives elsewhere,
+untouched by this patch.
+
+## 2. 64K / "all-RAM" mode
+
+Confirmed directly from the disassembly's own memory-map documentation:
+
+| Address | Name | Effect |
+|---|---|---|
+| `$FFDE` (65502) | `ROMCLR` | disables ROM (all-RAM mode) |
+| `$FFDF` (65503) | `ROMSET` | enables ROM (normal mode) |
+
+These are address-triggered SAM registers -- the value written doesn't
+matter, only the act of accessing that address.
+
+**Important, and easy to get wrong: you cannot just flip this bit once.**
+The RAM sitting "underneath" the ROM mapping starts out as genuine
+uninitialized garbage. If the CPU is actively executing code from that
+same address range (which, if you've just switched ROM off, it now
+reads as garbage) it crashes on the very next instruction fetch.
+
+The real, documented technique (found in a period-accurate CoCo hacking
+resource, for transferring cartridge software to disk) copies the ROM
+into the underlying RAM one word at a time, toggling modes for each
+individual word:
+
+```asm
+        ORG $7000
+START   ORCC  #$50      ; interrupts OFF -- critical, an interrupt firing
+                         ; mid-toggle could hit a handler expecting a
+                         ; consistent memory state
+        LDX   #$8000    ; start of ROM
+LOOP    STA   $FFDF     ; force ROM mode
+        LDD   ,X        ; read from ROM
+        STA   $FFDE     ; force RAM mode
+        STD   ,X++      ; write the same data back to the same address
+        CMPX  #$E000    ; end of CoCo 1/2 ROM space
+        BNE   LOOP
+```
+
+The copy routine itself runs from `$7000`, deliberately *outside* the
+range being toggled, so the CPU is always executing stable, unaffected
+code -- it never executes instructions *from* the region being flipped
+back and forth, only reads/writes data there.
+
+**Note on our own testing:** a plain `POKE &HFFDE,0` in this specific
+XRoar `coco2bus` build did *not* actually switch modes (confirmed via a
+before/after `PEEK`/`POKE` write-test showing no change at all). Real,
+open, unresolved question -- worth checking whether this is an XRoar
+`coco2bus` emulation gap (similar to the T1-font `EXT`-signal gap found
+elsewhere in this project) or something else, before relying on
+`$FFDE`/`$FFDF` in any XRoar-based work.
+
+## 3. Stack blasting -- fast 6809 memory copy, and its real gotchas
+
+A real, historically-used technique (the article citing it specifically
+mentions *Defender*, a 1Mhz-6809-based arcade game, using this for
+drawing all on-screen sprites) for moving memory faster than
+`LD?`/`ST?` with auto-increment allows -- `PULS`/`PSHS` (or the `U`-stack
+equivalents) with a large register list move up to 9 bytes in one
+instruction instead of 2 bytes per LD/ST pair.
+
+### The core mechanic: same-address round trip needs no correction at all
+
+For the specific case this project actually needed -- reading ROM and
+writing RAM at the *same* address -- the naive-looking approach is
+already exactly correct, with no compensating adjustment:
+
+```asm
+LDS   #addr
+PULS  <reglist>     ; reads `reglist`'s total byte count from addr;
+                     ; S advances forward by that same amount
+PSHS  <reglist>     ; writes the SAME data back; S returns to EXACTLY
+                     ; its starting value
+```
+
+This works because `PULS` and `PSHS` process a given register list in
+*exactly opposite, fixed hardware order* (`PULS`: `CC,A,B,DP,X,Y,U,PC`
+low-to-high; `PSHS`: the reverse, high-to-low), and because source and
+destination are numerically identical here, the two reversals -- the
+pointer's direction, and the register-processing order -- cancel each
+other out perfectly. Confirmed directly via a real assembled test
+routine and a live before/after byte comparison in XRoar:
+
+```
+BEFORE: 11 22 33 44
+AFTER:  11 22 33 44
+FINALS: 28928  EXPECT: 28928   (S returned to exactly its starting address)
+```
+
+**This is a special case, not the general rule.** If source and
+destination are genuinely *different*, independently-advancing regions
+(e.g. copying a background image to the screen), the mirroring does
+*not* cancel out on its own, and naively advancing both pointers the
+same direction at the same rate scrambles the data (documented
+independently: "Even with interrupts masked, this does not do the
+trick... look at what happens when you repeat!"). The real fix for that
+case sets the *destination* pointer to the **far end** of its range
+(since `PSHS` walks backward), so its reverse-order writes and the
+loop's forward progress cancel out correctly across the whole copy:
+
+```asm
+STS  TempMem
+LDS  #$5C3F      ; destination: bottom-right of the screen (far end!)
+LDU  #$C000      ; source: start of the data
+Copy_bg1:
+    PULU D,X,Y,DP   ; source advances forward
+    PSHS D,X,Y,DP   ; destination advances backward
+    CMPU #$DC35
+    BLO  Copy_bg1
+LDS  TempMem
+PULS D,X,Y,DP,PC
+```
+
+### Real gotchas found by actually testing this, not just reading about it
+
+- **You must save and restore the real stack pointer around the hijacked
+  `S` usage.** If code reached via `EXEC`/`JSR`/`BSR` repurposes `S`
+  without first saving it, the return address that was pushed there
+  automatically gets abandoned -- the final `RTS` pops garbage and
+  crashes. Confirmed the hard way: the very first version of this test
+  crashed the emulator into a garbled semigraphics display; adding
+  `STS REALS` at entry and `LDS REALS` before the final `RTS` fixed it
+  completely.
+- **Code/data placement matters when using `EXEC`.** Placing a data value
+  (like a persistent position counter) *before* the actual entry point in
+  memory, then `EXEC`ing the very start of that block, makes the CPU try
+  to execute the data as instructions. Data belongs *after* all code, or
+  `EXEC` needs to target the real entry point specifically past it.
+- **A register used as part of the blasted payload can't simultaneously
+  track loop position.** Once `PULS D,X,Y,U` runs, `X` holds ROM *data*,
+  not an address anymore. A multi-chunk copy loop needs a separate,
+  persistent tracker (untouched by the blast) to remember "where am I,"
+  reloaded fresh each iteration:
+
+  ```asm
+  LOOP1   LDS   CURPOS      ; S = current address (source AND dest)
+          PULS  <reglist>   ; registers now hold DATA, not position
+          PSHS  <reglist>   ; S returns to CURPOS exactly
+          LDX   CURPOS      ; reload position from the untouched tracker
+          LEAX  chunksize,X
+          STX   CURPOS
+          CMPX  #ENDADDR
+          BNE   LOOP1
+  ```
+
+  Confirmed via a real 3-chunk (24-byte) loop test: all 24 bytes
+  preserved exactly, and the tracker landed precisely on the expected
+  end address after all iterations.
+- **`PULS ...,PC` at the end of a subroutine replaces a separate `RTS`.**
+  Since `JSR`/`BSR` push a return address before entry, and `PSHS`/`PULS`
+  process their list in a fixed order with `PC` last, including `PC` in
+  the final `PULS` list both restores the last register *and* performs
+  the return in one instruction -- no separate `RTS` needed.
+- **Direct Page (`,DP`) addressing for a position tracker is a speed
+  optimization, not a correctness requirement.** It costs one address
+  byte instead of two per access (extended addressing), which matters
+  because a position tracker like `CURPOS` gets touched on every single
+  loop iteration -- for a real 24K ROM copy at 8 bytes/chunk, that's
+  ~3000 iterations, each saving a byte and a cycle. A variable touched
+  once wouldn't be worth arranging DP for; a hot-loop variable touched
+  thousands of times clearly is.
+
+### A reusable technique: testing real machine code from BASIC via DATA/POKE/EXEC
+
+Every stack-blast test above (and the T1-lowercase pokes) was verified
+using the same reliable pattern -- real 6809 assembly, assembled with a
+real assembler (`asm6809`) to get exact, correct opcodes rather than
+hand-encoding them, then injected into real Color BASIC running in
+XRoar:
+
+```basic
+10 DATA <byte>,<byte>,<byte>,...        ' exact assembled object code
+20 FOR I=0 TO N: READ B: POKE &H7000+I,B: NEXT
+30 <set up test data, PEEK "before" state>
+40 EXEC &H7000
+50 <PEEK "after" state, compare>
+```
+
+This sidesteps ugBASIC's various inline-assembly quirks entirely (see
+`hero-port/upstream-reports/`) by testing real 6809 semantics directly
+against real Color BASIC, with nothing else in between.
+
+## 4. Classic Color BASIC tokenizer quirks
+
+Found and precisely isolated while writing test harnesses for the above:
+
+- **No `ELSE` support at all.** `IF cond THEN stmt ELSE stmt` produces a
+  flat `?SN ERROR` (Syntax error) in this ROM (Disk Extended Color BASIC
+  1.1) -- confirmed with the simplest possible case
+  (`IFA=BTHENC=5ELSEC=6`). Use two separate `IF` statements instead
+  (`IF cond THEN stmt` / `IF NOT-cond THEN stmt`).
+- **A variable name directly touching a following keyword, with no
+  space, gets swallowed whole.** `IFX=YTHEN...` fails; `IFX=Y THEN...`
+  works. The mechanism, precisely isolated by testing several variations
+  (a literal number before `THEN` works fine; a single-letter variable
+  fails; a full two-letter variable *also* fails, ruling out a simpler
+  "variables only reserve 2 significant characters" theory):
+
+  **The tokenizer reads an entire unbroken run of letters as one
+  candidate word first, and only afterward checks whether that whole
+  word matches a keyword.** `CDTHEN` gets read straight through as one
+  six-letter run; since `CDTHEN` isn't itself a recognized keyword, the
+  *entire run* falls back to being treated as one variable name (with
+  only the first couple of characters actually mattering for storage/
+  lookup -- a separate, later concern). The parser never reconsiders
+  splitting the tail of what it already consumed off as a separate
+  keyword -- by the time `THEN` would need to be recognized, its letters
+  are already inside the variable name token. A digit immediately before
+  a keyword never has this problem, since digits and letters are
+  unambiguously different token classes -- the run simply stops the
+  moment the character class changes.
+  - Practical rule: always leave a space between a variable reference and
+    a following keyword. Doesn't matter for keywords following a
+    *number*, or following an *operator* directly (like `=`, `<`, `>`)
+    on their own -- only matters when a run of letters (a variable name)
+    would otherwise run directly into a run of letters (a keyword).
