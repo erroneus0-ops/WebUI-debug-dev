@@ -1,20 +1,20 @@
 7000                          ORG $7000
-7000  10FF701E        START   STS   REALS        ; save BASIC's real stack pointer first
-7004  10FE7020        LOOP1   LDS   CURPOS       ; S = current position -- this IS both source and dest
-                              ; [switch to ROM mode would go here]
-7008  3576                    PULS  D,X,Y,U      ; read 8 bytes; S advances forward by 8; X now holds DATA, not position!
-                              ; [switch to RAM mode would go here]
-700A  3476                    PSHS  D,X,Y,U      ; write same 8 bytes back; S returns to CURPOS's value exactly
-700C  BE7020                  LDX   CURPOS       ; reload X from the SEPARATE tracker (untouched by the blast)
-700F  3008                    LEAX  8,X          ; advance to next chunk
-7011  BF7020                  STX   CURPOS       ; save new position
-7014  8C7118                  CMPX  #ENDPOS
-7017  26EB                    BNE   LOOP1
-7019  10FE701E                LDS   REALS        ; restore BASIC's real stack pointer
-701D  39                      RTS
+7000  10FF7024        START   STS   REALS        ; save BASIC's real stack pointer first
+7004  10FE7026        LOOP1   LDS   CURPOS       ; S = current position -- this IS both source and dest
+7008  B7FFDF                  STA   $FFDF        ; force ROM mode
+700B  3576                    PULS  D,X,Y,U      ; read 8 bytes; S advances forward by 8; X now holds DATA, not position!
+700D  B7FFDE                  STA   $FFDE        ; force RAM mode
+7010  3476                    PSHS  D,X,Y,U      ; write same 8 bytes back; S returns to CURPOS's value exactly
+7012  BE7026                  LDX   CURPOS       ; reload X from the SEPARATE tracker (untouched by the blast)
+7015  3008                    LEAX  8,X          ; advance to next chunk
+7017  BF7026                  STX   CURPOS       ; save new position
+701A  8C7118                  CMPX  #ENDPOS
+701D  26E5                    BNE   LOOP1
+701F  10FE7024                LDS   REALS        ; restore BASIC's real stack pointer
+7023  39                      RTS
                       
-701E  0000            REALS   FDB   0
-7020  7100            CURPOS  FDB   $7100
+7024  0000            REALS   FDB   0
+7026  7100            CURPOS  FDB   $7100
 7118                  ENDPOS  EQU   $7118        ; test range: 3 chunks of 8 bytes = 24 bytes, $7100 to $7118
                       
 7100                          ORG $7100
