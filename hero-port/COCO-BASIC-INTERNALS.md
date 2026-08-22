@@ -225,14 +225,16 @@ PULS D,X,Y,DP,PC
   reloaded fresh each iteration:
 
   ```asm
-  LOOP1   LDS   CURPOS      ; S = current address (source AND dest)
-          PULS  <reglist>   ; registers now hold DATA, not position
-          PSHS  <reglist>   ; S returns to CURPOS exactly
-          LDX   CURPOS      ; reload position from the untouched tracker
-          LEAX  chunksize,X
-          STX   CURPOS
-          CMPX  #ENDADDR
-          BNE   LOOP1
+    LOOP1   LDS   CURPOS      ; S = current address (source AND dest)
+            [ROM mode]
+            PULS  <reglist>   ; read chunk; S advances; registers now hold DATA
+            [RAM mode]
+            PSHS  <reglist>   ; write chunk back; S returns to CURPOS exactly
+            LDX   CURPOS      ; reload position from the untouched tracker
+            LEAX  chunksize,X
+            STX   CURPOS
+            CMPX  #ENDADDR
+            BNE   LOOP1
   ```
 
   Confirmed via a real 3-chunk (24-byte) loop test: all 24 bytes
