@@ -142,7 +142,70 @@ open, unresolved question -- worth checking whether this is an XRoar
 elsewhere in this project) or something else, before relying on
 `$FFDE`/`$FFDF` in any XRoar-based work.
 
-## 3. Stack blasting -- fast 6809 memory copy, and its real gotchas
+## 3. The SAM chip -- the complete register map, and how it all connects
+
+Confirmed directly from the same disassembly source as the ROM/RAM
+registers above. The SAM (Synchronous Address Multiplexer) exposes its
+entire configuration through one contiguous block, `$FFC0`-`$FFDF`,
+following the identical address-triggered latch pattern throughout: each
+adjacent pair of addresses is "clear this one bit" / "set this one bit"
+-- the value written doesn't matter, only which of the two addresses
+gets touched.
+
+```
+$FFC0/C1   V0CLR/V0SET   -- video mode bit 0  |
+$FFC2/C3   V1CLR/V1SET   -- video mode bit 1  |- 3-bit "V" field (8 modes)
+$FFC4/C5   V2CLR/V2SET   -- video mode bit 2  |
+
+$FFC6/C7   F0CLR/F0SET   -- display-offset bit 0  |
+$FFC8/C9   F1CLR/F1SET   -- bit 1                  |
+$FFCA/CB   F2CLR/F2SET   -- bit 2                  |- 7-bit "F" field
+$FFCC/CD   F3CLR/F3SET   -- bit 3                  |  (display start page)
+$FFCE/CF   F4CLR/F4SET   -- bit 4                  |
+$FFD0/D1   F5CLR/F5SET   -- bit 5                  |
+$FFD2/D3   F6CLR/F6SET   -- bit 6                  |
+
+$FFD4-D7   reserved
+$FFD8/D9   R1CLR/R1SET   -- CPU rate: 0.89MHz / 1.78MHz
+$FFDA-DD   reserved
+$FFDE/DF   ROMCLR/ROMSET -- ROM/RAM select (section 2, above)
+```
+
+**What the `V` and `F` fields actually control, precisely:** these two
+fields together are the complete answer to "which physical bytes of RAM
+does the screen currently show" -- but this is entirely independent of
+whatever address the CPU itself happens to be reading or writing at any
+given moment. The VDG has its own internal address counter, used purely
+to fetch display data, and `V`/`F` are what configure that counter, not
+the CPU's addressing at all.
+- `F` (7 bits, 128 values) selects the VDG's *starting* address for each
+  frame, in fixed-size page increments across the full 64K space --
+  this is exactly what `PMODE`'s page argument and `PCOPY` are
+  convenient BASIC-level wrappers around.
+- `V` (3 bits, 8 values) selects the *increment pattern* -- how many
+  bytes of RAM the counter advances per scanline, matching each
+  display mode's actual bandwidth needs (a 32-column text row needs far
+  less data per line than a 256-pixel colour graphics row, so different
+  modes need genuinely different advancement rates to stay in sync with
+  the screen).
+
+**This is the exact same mechanism the SG12 hack (the very first thing
+this whole project was built on) uses.** SG12's "V-mode binary 100"
+is nothing more than a specific combination of these same three V bits:
+`V2SET` (`$FFC5`), `V1CLR` (`$FFC2`), `V0CLR` (`$FFC0`) -- the same
+address-triggered latches, just landing on an undocumented display
+timing pattern instead of one of the officially-supported modes.
+
+**Scope, stated honestly:** this is the complete picture for a *stock*
+CoCo 1/2 -- one SAM chip, a plain, unexpanded 64K address space, one
+simple all-or-nothing ROM/RAM toggle. Real memory-expansion hardware for
+128K/512K CoCo 1/2 machines adds its own bank-switching schemes on top
+of this, and the CoCo 3's GIME chip replaces the SAM entirely with a
+genuinely more elaborate MMU offering proper bank-switched pages rather
+than one simple toggle -- both are real, further layers of complexity
+this section doesn't attempt to cover.
+
+## 4. Stack blasting -- fast 6809 memory copy, and its real gotchas
 
 A real, historically-used technique (the article citing it specifically
 mentions *Defender*, a 1Mhz-6809-based arcade game, using this for
@@ -274,7 +337,7 @@ This sidesteps ugBASIC's various inline-assembly quirks entirely (see
 `hero-port/upstream-reports/`) by testing real 6809 semantics directly
 against real Color BASIC, with nothing else in between.
 
-## 4. Control codes: what `PRINT`/`CHR$` actually does with values 0-31
+## 5. Control codes: what `PRINT`/`CHR$` actually does with values 0-31
 
 Explored via the character-map diagnostic in
 `hero-port/coco-basic-internals/demos.bas` (Demo 2) -- `POKE`ing every
@@ -322,7 +385,7 @@ treated as "just another character" if it shows up unintentionally.
 
 Found and precisely isolated while writing test harnesses for the above:
 
-## 5. Classic Color BASIC tokenizer quirks
+## 6. Classic Color BASIC tokenizer quirks
 
 - **No `ELSE` support at all.** `IF cond THEN stmt ELSE stmt` produces a
   flat `?SN ERROR` (Syntax error) in this ROM (Disk Extended Color BASIC
