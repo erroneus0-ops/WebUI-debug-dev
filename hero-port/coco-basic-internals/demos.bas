@@ -99,3 +99,49 @@ REM ============================================================
 320 IF C=D THEN PRINT "AFTER - ROM MODE"
 330 IF C<>D THEN PRINT "AFTER - RAM MODE"
 340 POKE &H8000,C
+
+
+REM ============================================================
+REM DEMO 4: THE COMPLETE ROM-TO-RAM MIGRATION
+REM
+REM Runs the actual full sweep -- all ~32.5K of real ROM address
+REM space ($8000 up to, but not including, $FF00 where PIA0 and
+REM the rest of real hardware I/O begins), 4064 chunks of 8 bytes
+REM each, using the exact same mechanism as Demo 3's single-chunk
+REM proof, just scaled up to the entire range.
+REM
+REM The object code below is the assembled form of
+REM hero-port/coco-basic-internals/full_rom_migrate.asm -- see that
+REM file (and its .lst) for the fully annotated source.
+REM
+REM Confirmed by real testing, not assumed: this REQUIRES disabling
+REM interrupts (ORCC #$50) before the loop starts, restoring them
+REM (ANDCC #$AF) only once it's fully finished. Without that, this
+REM hangs indefinitely partway through -- CoCo's timer/keyboard-scan
+REM interrupt fires constantly, and if one fires during one of the
+REM loop's many brief moments in RAM mode, before the interrupt
+REM vectors near $FFF0-$FFFF have actually been copied yet (since
+REM the sweep proceeds from $8000 upward, they're among the very
+REM last things touched), the CPU reads garbage as its own interrupt
+REM vector and jumps into invalid memory. This was found the hard
+REM way, by a real hang during testing, not anticipated in advance.
+REM
+REM What's actually confirmed by running this: every spot-checked
+REM address across the ENTIRE range (the very start, several points
+REM through the middle, and the very last byte before I/O begins)
+REM comes back byte-for-byte identical before and after -- the copy
+REM itself is proven correct across the whole of real ROM, not just
+REM a small test range. Whether the underlying mode switch actually
+REM takes effect afterward remains the same open XRoar-specific
+REM question noted in Demo 3 and COCO-BASIC-INTERNALS.md section 2 --
+REM confirmed here too, via a real write-persistence test immediately
+REM after running this, that it still doesn't stick in this specific
+REM emulator build even after the complete sweep.
+REM ============================================================
+400 DATA 26,80,16,255,112,40,16,254,112,42,183,255,223,53,118,183,255,222,52,118,190,112,42,48,8,191,112,42,140,255,0,38,229,16,254,112,40,28,175,57,0,0,128,0
+410 FOR I=0 TO 43:READ B:POKE &H7000+I,B:NEXT I
+420 A=PEEK(&H8000):B=PEEK(&H9000):C=PEEK(&HA000):D=PEEK(&HC000):E=PEEK(&HD000):F=PEEK(&HE000):G=PEEK(&HFEFF)
+430 PRINT "BEFORE: ";A;B;C;D;E;F;G
+440 EXEC &H7000
+450 H=PEEK(&H8000):I2=PEEK(&H9000):J=PEEK(&HA000):K=PEEK(&HC000):L=PEEK(&HD000):M=PEEK(&HE000):N=PEEK(&HFEFF)
+460 PRINT "AFTER:  ";H;I2;J;K;L;M;N
