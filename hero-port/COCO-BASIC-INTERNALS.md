@@ -272,9 +272,55 @@ This sidesteps ugBASIC's various inline-assembly quirks entirely (see
 `hero-port/upstream-reports/`) by testing real 6809 semantics directly
 against real Color BASIC, with nothing else in between.
 
-## 4. Classic Color BASIC tokenizer quirks
+## 4. Control codes: what `PRINT`/`CHR$` actually does with values 0-31
+
+Explored via the character-map diagnostic in
+`hero-port/coco-basic-internals/demos.bas` (Demo 2) -- `POKE`ing every
+value 0-255 directly into screen memory alongside `PRINT`ing the same
+values via `CHR$()`, to see where the two diverge.
+
+**Only two control codes have any real functional effect at all:**
+
+- **`CHR$(8)` (backspace)** -- doesn't draw anything at its own screen
+  position; instead, it erases exactly the *one* character immediately
+  behind the current cursor position with a space.
+- **`CHR$(13)` (carriage return / Enter)** -- clears from the current
+  cursor position all the way to the end of the current screen line.
+
+Every other value in the 0-31 range is simply, genuinely non-printing --
+confirmed properly, not just inferred.
+
+### A methodology correction worth stating plainly
+
+The first pass at this (sweeping `CHR$(0)` through `CHR$(127)`
+sequentially across one continuous row) showed values 13 through 31 *all*
+appearing as a uniform "wiped" block, which looked at first like "none of
+14-31 have a visible glyph." That conclusion was correct, but the test
+that produced it couldn't actually have told the difference between two
+very different situations: "code 20 has no glyph of its own" versus "code
+20 has a perfectly normal glyph, but code 13's clear-to-end-of-line effect
+wiped it before anyone looked." Sweeping every value in one row means
+`CHR$(13)`'s side effect necessarily contaminates every value tested after
+it in that same pass.
+
+Re-tested properly: each of `CHR$(14)` through `CHR$(31)` printed on its
+own isolated screen row, with nothing printed before it on that row that
+could cascade into it. Result: still nothing visible for any of them --
+confirming the original conclusion, but now for the right reason, from a
+test that could actually distinguish the two cases rather than one that
+happened to land on the right answer by coincidence.
+
+Practical upshot for anything that builds strings containing raw byte
+values rather than pure literal text: `CHR$(8)` and `CHR$(13)` are the
+only two values in the 0-31 range that will ever do anything other than
+silently vanish -- everything else in that range is safe to treat as
+inert if it shows up unintentionally, and neither of those two can be
+treated as "just another character" if it shows up unintentionally.
+
 
 Found and precisely isolated while writing test harnesses for the above:
+
+## 5. Classic Color BASIC tokenizer quirks
 
 - **No `ELSE` support at all.** `IF cond THEN stmt ELSE stmt` produces a
   flat `?SN ERROR` (Syntax error) in this ROM (Disk Extended Color BASIC
