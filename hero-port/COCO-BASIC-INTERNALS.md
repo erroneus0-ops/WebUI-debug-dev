@@ -205,7 +205,61 @@ genuinely more elaborate MMU offering proper bank-switched pages rather
 than one simple toggle -- both are real, further layers of complexity
 this section doesn't attempt to cover.
 
-## 4. Stack blasting -- fast 6809 memory copy, and its real gotchas
+## 4. The real `DOS` command -- a fixed track, a two-byte signature, and a jump into the unknown
+
+Confirmed directly by tracing `DOSCOM` (`$DF00`, the actual entry point
+typing `DOS` reaches) through the same disassembly used throughout this
+document. The mechanism is genuinely simple, and genuinely open-ended:
+
+```
+$DF00  DOSCOM  SWI3                ; software interrupt -- a context/setup
+                                    ; step; execution continues normally at
+                                    ; the next instruction once it returns
+$DF02          CLR   TMPLOC        ; reset sector counter
+$DF04          LDD   #DOSBUF       ; RAM load address for sector data
+   ...
+$DF1B          LDA   #34           ; TRACK NUMBER (34) -- fixed, hardcoded
+   ...                             ; reads sectors 1 through 18 (SECMAX) --
+                                    ; the entire track -- into DOSBUF,
+                                    ; advancing the load address by 256
+                                    ; bytes (one sector) after each
+                                    ; successful read
+$DF38          LDD   DOSBUF        ; first two bytes of what was loaded
+$DF3B          CMPD  #'OS'         ; does it start with "OS" (OS-9's own
+                                    ; boot signature)?
+$DF3F          LBEQ  DOSBUF+2      ; if so, JUMP DIRECTLY into the loaded
+                                    ; code -- no further validation at all
+```
+
+That's the entire mechanism. `DOS` reads the complete, fixed track 34 (all
+18 sectors) into a RAM buffer, checks whether the very first two bytes
+spell `"OS"`, and if they do, transfers control straight into whatever
+follows -- nothing else about the loaded content is checked or assumed.
+This was OS-9's real, official bootstrap path onto the CoCo, but the
+mechanism itself doesn't know or care that it's OS-9 specifically: format
+any disk with your own code starting with the bytes `'O','S'` at track
+34/sector 1, and typing `DOS` will load and execute it, unconditionally.
+Precisely as simple, and as wide open, as it sounds.
+
+**Two real, documented bugs in Tandy's own shipped ROM, found in this
+same short routine** (flagged directly in the disassembly's own
+comments, not found independently here): a `STA` at `$DF19` where a
+16-bit `STD` was clearly intended (storing only half of a 16-bit value
+into the disk-controller variables), and an `ADDA #$01` at `$DF23` doing
+what a plain `INCA` would have done more simply. Real, shipped, official
+ROM -- not immune to the same kind of small, easy-to-miss mistakes this
+whole project has spent so much time finding elsewhere.
+
+**Future idea, noted here so it doesn't get lost:** this is a genuinely
+fun, period-correct way to launch the HERO port once it exists as a real
+program on a real disk image -- format the game's `.dsk` so track
+34/sector 1 starts with `'O'`,`'S'` followed by a bootstrap that jumps
+into the game itself, and typing `DOS` at a bare `OK` prompt becomes a
+real, working way to start playing. Matches exactly how software of this
+era actually got launched, rather than a modern `LOADM`/`EXEC` sequence
+standing in for it.
+
+## 5. Stack blasting -- fast 6809 memory copy, and its real gotchas
 
 A real, historically-used technique (the article citing it specifically
 mentions *Defender*, a 1Mhz-6809-based arcade game, using this for
@@ -337,7 +391,7 @@ This sidesteps ugBASIC's various inline-assembly quirks entirely (see
 `hero-port/upstream-reports/`) by testing real 6809 semantics directly
 against real Color BASIC, with nothing else in between.
 
-## 5. Control codes: what `PRINT`/`CHR$` actually does with values 0-31
+## 6. Control codes: what `PRINT`/`CHR$` actually does with values 0-31
 
 Explored via the character-map diagnostic in
 `hero-port/coco-basic-internals/demos.bas` (Demo 2) -- `POKE`ing every
@@ -385,7 +439,7 @@ treated as "just another character" if it shows up unintentionally.
 
 Found and precisely isolated while writing test harnesses for the above:
 
-## 6. Classic Color BASIC tokenizer quirks
+## 7. Classic Color BASIC tokenizer quirks
 
 - **No `ELSE` support at all.** `IF cond THEN stmt ELSE stmt` produces a
   flat `?SN ERROR` (Syntax error) in this ROM (Disk Extended Color BASIC
