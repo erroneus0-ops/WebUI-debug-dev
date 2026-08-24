@@ -481,9 +481,20 @@ Found and precisely isolated while writing test harnesses for the above:
   the ROM's own labeling) that stays set for the rest of that unbroken
   run of letters -- meaning it never even *attempts* keyword-matching
   again until it hits a non-letter character (space, digit, operator)
-  that clears the flag.** The real code, annotated:
+  that clears the flag.** The real code, annotated -- worth noting
+  before assuming this routine is a clean, self-contained tokenizer:
+  `CRUNCH`'s actual entry point does more than the character-matching
+  logic below suggests. Its very first act, before any of it runs, is
+  `JSR RVEC23` -- a call into a RAM hook vector, meaning tokenization
+  itself can be redirected by Extended/Disk BASIC before any
+  keyword-matching happens at all, the same extensibility mechanism
+  used throughout this ROM family (see the `CONSOLE OUT` hook
+  elsewhere in this document):
 
   ```
+  LB821   JSR   RVEC23      ; hook into RAM -- see above
+  LB824   LDX   CHARAD      ; get BASIC's input pointer address
+  LB826   LDU   #LINBUF     ; point U to line input buffer
   LB829   CLR   V43        ; clear "illegal token" flag
   LB82D   LDA   ,X+        ; get next input character
           ...
