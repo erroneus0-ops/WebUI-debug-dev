@@ -42,14 +42,82 @@ data; `V`/`F` configure *that* counter, not the CPU's addressing.
 - `F` (7 bits) selects the VDG's starting address for each frame, in
   fixed page increments across the 64K space — this is exactly what
   BASIC's `PMODE` page argument and `PCOPY` wrap.
-- `V` (3 bits) selects the increment pattern — how many bytes of RAM the
-  counter advances per scanline, matched to each mode's bandwidth needs.
+- `V` (3 bits) selects the increment pattern — how often the counter
+  fetches a new byte per scanline.
 
-The undocumented SG12 semigraphics mode (used by the HERO port's original
-game) is nothing more than a specific, undocumented combination of these
-same three `V` bits (`V2SET` + `V1CLR` + `V0CLR`) — same mechanism as
-every officially-supported mode, just landing on a timing pattern Tandy
-never published.
+### The real, complete `V2 V1 V0` table (confirmed from XRoar's own
+source and cross-checked against Tim Lindner's CoCo/GIME memory-map
+reference)
+
+```
+V2 V1 V0   Buffer size   Display modes
+ 0  0  0     512         AI (alphanumeric), SG4, SG6
+ 0  0  1    1024         G1C, G1R
+ 0  1  0    2048         G2C, SG8
+ 0  1  1    1536         G2R
+ 1  0  0    3072         G3C, SG12
+ 1  0  1    3072         G3R
+ 1  1  0    6144         G6R, G6C, SG24
+ 1  1  1    (not used)
+```
+
+**Important, and easy to get wrong: SG4 and SG6 share the exact same `V`
+value (`000`).** The SAM's V-field only controls address-timing (how
+often a byte is fetched); it does *not* by itself distinguish every
+named mode. The SG4-vs-SG6 distinction, and text-vs-graphics generally,
+comes from a **separate** chip and register — see the VDG section below.
+This is the concrete reason "the SAM" and "the VDG" have to be understood
+as two genuinely separate jobs, not one combined "display mode" concept.
+
+The undocumented SG12 mode (used by the HERO port's original game) is the
+`100` row above — a real, structural combination of these bits, just one
+Tandy never documented as a supported BASIC-level mode. Same mechanism as
+every officially-supported mode, no special-case wiring involved.
+
+### The VDG's own register — text/graphics, palette, and inversion (all
+one register, `$FF22`/PIA1 "B side")
+
+Confirmed directly in XRoar's own machine-specific source
+(`dragon_update_vdg_mode`): all of CSS, GM, and the alpha/graphics select
+live in the *same* register already used for the T1-lowercase EXT bit —
+not four separate registers, one register with four separate purposes
+packed into it:
+
+```
+bit 3 (0x08)   CSS   -- green/amber select (text border colour, etc.)
+bit 4 (0x10)   EXT   -- character set selection (the T1-lowercase bit;
+                         see basic-interpreter.md)
+bits 4-6 (0x70) GM   -- 3-bit graphics mode; GM & 2 specifically drives
+                         inverse_text
+bit 7 (0x80)   nA_G  -- alpha/semigraphics mode vs. true bitmap graphics
+```
+
+Clean architectural split, confirmed rather than assumed: **PIA1
+controls how the VDG interprets whatever byte it's currently looking
+at** (palette, text-vs-graphics, inversion) — entirely separate from
+**the SAM**, which only controls which byte gets fetched and when (the
+`V2V1V0` table above). Two chips, two genuinely distinct jobs — most of
+what makes SG4/SG8/SG12/SG24 behave the way they do falls directly out of
+these two chips not being told the same thing at the same time.
+
+### Why a text character can render showing any row, not just its top
+(confirmed by tracing the actual render loop, not inferred from symptoms)
+
+The VDG's scanline counter (`row`, range 0-11) is **free-running** —
+it increments every scanline and wraps after 11, *completely
+independent* of how often a new byte actually gets fetched. A new byte
+is only fetched when `row % nLPR == 0` (`nLPR` = 12 for standard SG4/text
+— fetch once per full character height). In faster-fetching modes,
+`nLPR` is smaller, so that condition is true more often.
+
+The consequence: `row` never resets when a new byte is fetched — it just
+keeps counting on its own schedule, oblivious to whether the current byte
+is old or new. If a text character happens to get fetched at the moment
+`row` is sitting at 6, the glyph lookup becomes `font[code*12 + 6]` —
+row 6 of that letter, a horizontal slice through its *middle*, not row 0.
+Which row renders for any given character is purely a function of *when*
+in the free-running 0-11 cycle that byte happened to get fetched — not
+anything about the character itself.
 
 **Scope note:** this is the complete picture for a *stock* CoCo 1/2. Real
 memory-expansion hardware for 128K/512K CoCo 1/2 adds its own bank-
