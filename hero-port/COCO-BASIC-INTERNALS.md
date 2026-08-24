@@ -458,29 +458,62 @@ Found and precisely isolated while writing test harnesses for the above:
   keyword** (`IF`, `THEN`, `ELSE`, `ELSEIF`) rather than avoiding it
   entirely -- porting his logic directly is more faithful than
   rewriting it into chains of separate `IF` statements, and this is a
-  simple, reliable habit rather than an unresolved edge case.
+  simple, reliable habit rather than an unresolved edge case. One more
+  piece confirmed directly in the `CRUNCH` trace below: the tokenizer
+  automatically inserts a colon immediately before a recognized `ELSE`
+  token during compilation (`CMPB #$84 / LDA #':` in the real ROM code)
+  -- which is *why* `ELSE <statement>` behaves like a fresh new
+  statement at all once it's correctly recognized as a keyword:
+  internally, it's already been turned into `:ELSE <statement>` before
+  execution ever sees it.
 - **A variable name directly touching a following keyword, with no
-  space, gets swallowed whole.** `IFX=YTHEN...` fails; `IFX=Y THEN...`
-  works. The mechanism, precisely isolated by testing several variations
-  (a literal number before `THEN` works fine; a single-letter variable
-  fails; a full two-letter variable *also* fails, ruling out a simpler
-  "variables only reserve 2 significant characters" theory):
+  space, gets swallowed whole -- and now traced to the actual real
+  mechanism, not just empirically bisected.** `IFX=YTHEN...` fails;
+  `IFX=Y THEN...` works. Traced directly through Color BASIC's real
+  `CRUNCH` routine (`$B821` in the `CB 1.2` disassembly -- the actual
+  tokenizer, confirmed via `Routines CB`'s own index), rather than
+  inferred from testing alone:
 
-  **The tokenizer reads an entire unbroken run of letters as one
-  candidate word first, and only afterward checks whether that whole
-  word matches a keyword.** `CDTHEN` gets read straight through as one
-  six-letter run; since `CDTHEN` isn't itself a recognized keyword, the
-  *entire run* falls back to being treated as one variable name (with
-  only the first couple of characters actually mattering for storage/
-  lookup -- a separate, later concern). The parser never reconsiders
-  splitting the tail of what it already consumed off as a separate
-  keyword -- by the time `THEN` would need to be recognized, its letters
-  are already inside the variable name token. A digit immediately before
-  a keyword never has this problem, since digits and letters are
-  unambiguously different token classes -- the run simply stops the
-  moment the character class changes.
-  - Practical rule: always leave a space between a variable reference and
-    a following keyword. Doesn't matter for keywords following a
-    *number*, or following an *operator* directly (like `=`, `<`, `>`)
-    on their own -- only matters when a run of letters (a variable name)
-    would otherwise run directly into a run of letters (a keyword).
+  **The tokenizer does not read a whole word first and check it against
+  a keyword table afterward. It tries to match a known keyword starting
+  at every single input position, and the moment any one letter fails
+  to begin a match, it sets a genuine "illegal token" flag (`V43` in
+  the ROM's own labeling) that stays set for the rest of that unbroken
+  run of letters -- meaning it never even *attempts* keyword-matching
+  again until it hits a non-letter character (space, digit, operator)
+  that clears the flag.** The real code, annotated:
+
+  ```
+  LB829   CLR   V43        ; clear "illegal token" flag
+  LB82D   LDA   ,X+        ; get next input character
+          ...
+          TST   V43        ; already inside an illegal-token run?
+          BEQ   LB844      ; no -- go try to match a keyword
+          JSR   LB3A2      ; yes -- just check: still upper-case alpha?
+          BCC   LB852      ; if so, copy it straight through, don't
+                           ; even attempt a keyword match this time
+  ...
+  LB8E6   COM   V43        ; SET the flag -- this letter matched no
+                           ; keyword at all
+  ```
+
+  Walking `IFX=YTHEN` through this precisely: `IF` matches as a
+  keyword. `X` matches nothing -- flag sets. `=` is non-alpha -- flag
+  clears. Now `YTHEN` starts fresh: the cruncher tries `Y` alone --
+  no keyword is just `Y` -- fails, flag sets *again*. Because the flag
+  is now set, `T`,`H`,`E`,`N` are never even *tried* as a keyword
+  match -- they're copied straight through one letter at a time, still
+  "inside" the illegal-token run that started at `Y`. `THEN` isn't
+  rejected for being adjacent to `Y` -- it's never attempted at all,
+  because the flag from `Y`'s own failure is still up. A digit
+  immediately before a keyword never has this problem for a related
+  but distinct reason: `CRUNCH` explicitly excludes ASCII numeric
+  characters from ever entering the illegal-token path in the first
+  place (`CMPA #'0` / `CMPA #'9` checks right in the same routine).
+  - Practical rule, unchanged in substance but now fully explained:
+    always leave a space between a variable reference and a following
+    keyword (or, as found directly by testing, between any two
+    adjacent keywords/identifiers in general -- see the `ELSE` note
+    above). Any single non-alpha character resets the flag and gives
+    the next attempt a clean start.
+

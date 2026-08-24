@@ -1,8 +1,7 @@
 ' ============================================================================
-' HERO port -- title screen (first real piece of the actual port, not a
-' test file)
+' HERO port -- title & credits screens
 '
-' Ported from HERO-SRC.BAS lines 2810-2900 (see hero-port/HERO-SOURCE-
+' Ported from HERO-SRC.BAS lines 2810-2950 (see hero-port/HERO-SOURCE-
 ' ANALYSIS.md, section "title_page"). This is plain SCREEN 0 text mode --
 ' no PMODE4, no SG12, none of this project's graphics-hack machinery is
 ' needed for this particular screen at all.
@@ -11,7 +10,19 @@
 ' in XRoar earlier this project and screenshotted its real title screen
 ' for direct comparison. Text content, layout, two-box visual structure,
 ' and now the inverse-highlighted first letters (H/E/R/O) all match.
+'
+' DEFINE STRING directives below are required, not optional: the credits
+' text (built from several STRING()+literal concatenations) silently hangs
+' the whole program -- not even the first PRINT statement runs -- without
+' enough dynamic string headroom. Confirmed via isolated testing that this
+' is real resource exhaustion, not the separate ~15-operation concat-chain
+' corruption bug found earlier in this project: the default 32-string/
+' 512-byte pool isn't enough for this specific construction, and 2048
+' bytes of string space is what it actually took once measured directly
+' (confirmed by testing 1024 first, which still wasn't enough).
 ' ============================================================================
+DEFINE STRING COUNT 127
+DEFINE STRING SPACE 2048
 
 ' Text positioning: rather than rely on ugBASIC's AT(col,row) print
 ' positioning -- which turned out to have confusing, not-fully-
@@ -117,6 +128,41 @@ BEGIN ASM
     SUBA #64
     STA 108,X
 END ASM
+
+' ============================================================================
+' Credits screen -- ported from HERO-SRC.BAS lines 2900-2950.
+'
+' Original: PRINT@256,STRING$(32,32)"..."STRING$(8,32)"..."STRING$(40,32)
+' "..."STRING$(9,32)"..." -- one long string, positioned at row 8 (256/32=8),
+' left to wrap naturally across the remaining screen rows. STRING$(n,32) is
+' "n spaces" (32 = ASCII space); ugBASIC's equivalent is STRING(CHR(32),n)
+' -- reversed argument order, confirmed earlier this project.
+'
+' Skipping the one-shot "A" flag from the original (which suppresses
+' re-showing credits on repeat visits to this screen within one session) --
+' not yet relevant since we don't have the surrounding replay-loop wired up.
+' Skipping the BREAK-key full-exit check (PEEK(340)=191) for the same
+' reason -- nothing meaningful to exit back to yet.
+' ============================================================================
+credits$ = STRING(CHR(32),32) + "     PROGRAMMED IN BASIC FOR      TANDY/DRAGON COLOR COMPUTERS" + STRING(CHR(32),8) + "BY NICKOLAS MARENTES" + STRING(CHR(32),40) + "ORIGINAL GAME FOR ATARI 2600" + STRING(CHR(32),9) + "BY JOHN VAN RYZIN   "
+credlen = LEN(credits$)
+credaddr = STRPTR(credits$)
+
+BEGIN ASM
+    LDX TEXTADDRESS
+    LEAX 256,X
+    LDU _credaddr
+    LDB _credlen
+crloop
+    LDA ,U+
+    STA ,X+
+    DECB
+    BNE crloop
+END ASM
+
+TIMER = 0
+DO
+LOOP UNTIL INKEY <> "" OR TIMER > 800
 
 DO
 LOOP
