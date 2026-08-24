@@ -441,28 +441,24 @@ Found and precisely isolated while writing test harnesses for the above:
 
 ## 7. Classic Color BASIC tokenizer quirks
 
-- **`ELSE` support is real but genuinely inconsistent, and not fully
-  characterized.** Simple `IF cond THEN stmt ELSE stmt` reliably fails
-  with `?SN ERROR` (confirmed several ways: `IFA=BTHENC=5ELSEC=6`,
-  `IFA=BTHEN30ELSEPRINT"NO"`, even `IFA=BTHEN30ELSE C=6` with a space
-  before the assignment). But Nick Marentes' original HERO source uses
-  `ELSE` constantly and successfully on real hardware, and directly
-  testing his exact pattern confirms it: a bare `ELSE <linenumber>`
-  works (`IFK$=""THEN10:ELSE30`), and so does a full
-  `IF...THEN...:ELSEIF...THEN...:ELSE <statement>` chain -- tested with
-  real branching logic on all three paths (the initial `THEN`, the
-  `ELSEIF`, and the final `ELSE` with a genuine `CLS:PRINT...`
-  statement), all executing correctly. What doesn't seem to work is a
-  simple two-clause `IF...THEN...ELSE...` with no `ELSEIF` present
-  anywhere in the chain. Whether an `ELSEIF` earlier in the same
-  statement is genuinely what enables a later bare `ELSE` to accept a
-  real statement, or something else entirely is the actual trigger,
-  isn't nailed down here -- flagging the real, tested boundary cases
-  rather than a fully-explained rule. **Practical decision for the
-  HERO port specifically: use no `ELSE` at all, anywhere, converting
-  every instance to separate `IF` statements.** Slightly more verbose,
-  but avoids relying on a pattern whose exact edge doesn't have a
-  confident characterization yet.
+- **`ELSE` works completely reliably -- the earlier finding in this
+  section was simply wrong, and testing more carefully found the real,
+  simple rule.** The failing cases (`IFA=BTHENC=5ELSEC=6`,
+  `IFA=BTHEN30ELSEPRINT"NO"`) weren't failing because of anything to do
+  with `ELSE` itself -- they were missing spaces at keyword boundaries,
+  exactly the same letter-run-swallowing tokenizer quirk documented
+  below for `THEN`, just also affecting `ELSE`. With a space at *every*
+  keyword boundary, `ELSE` works with any statement at all, and needs
+  no preceding `ELSEIF`: confirmed directly, `IF A=B THEN 30 ELSE
+  PRINT "NO"` (bare `ELSE` plus a `PRINT`, no `ELSEIF` anywhere) and
+  `IF A=B THEN 30 ELSE C=6:PRINT "NO C=";C` (an assignment, the exact
+  form that failed originally) both execute correctly once spaced
+  properly. **Practical rule for the port: use `ELSE` freely when it
+  matches Nick's original code, just add explicit spaces around every
+  keyword** (`IF`, `THEN`, `ELSE`, `ELSEIF`) rather than avoiding it
+  entirely -- porting his logic directly is more faithful than
+  rewriting it into chains of separate `IF` statements, and this is a
+  simple, reliable habit rather than an unresolved edge case.
 - **A variable name directly touching a following keyword, with no
   space, gets swallowed whole.** `IFX=YTHEN...` fails; `IFX=Y THEN...`
   works. The mechanism, precisely isolated by testing several variations
