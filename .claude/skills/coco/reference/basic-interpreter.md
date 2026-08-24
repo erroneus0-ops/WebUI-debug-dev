@@ -20,10 +20,21 @@ even *attempts* keyword-matching again until it hits a non-letter
 character (space, digit, operator) that clears the flag.
 
 Real code, from `CRUNCH` (`$B821` in the CB 1.2 disassembly — see
-`routines-cb.csv`), annotated:
+`routines-cb.csv`), annotated. **`CRUNCH`'s actual entry point does more
+than the tokenizer logic itself** — worth knowing before assuming this
+routine is a clean, self-contained tokenizer:
 
 ```
+LB821   JSR   RVEC23      ; HOOK INTO RAM -- CRUNCH's very first act is
+                          ; calling a RAM hook vector (see memory-map.md's
+                          ; RAM hook vector table), meaning tokenization
+                          ; itself can be redirected by Extended/Disk
+                          ; BASIC before any keyword-matching logic runs
+LB824   LDX   CHARAD      ; get BASIC's input pointer address
+LB826   LDU   #LINBUF     ; point U to line input buffer
 LB829   CLR   V43        ; clear "illegal token" flag
+LB82B   CLR   V44        ; clear DATA flag (a second, separate flag --
+                          ; not traced further here, but distinct from V43)
 LB82D   LDA   ,X+        ; get next input character
         ...
         TST   V43        ; already inside an illegal-token run?
