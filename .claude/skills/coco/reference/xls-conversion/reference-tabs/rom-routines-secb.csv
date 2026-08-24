@@ -1,0 +1,140 @@
+""
+""
+"     At the back of the Color Computer 3 Extended Basic manual, you will find"
+a section called ROM ROUTINES.  In this section you will find a summary of
+the official ROM calls which may be made.  These official calls are located at
+$A000 and are made by indirect subroutine calls to the addresses given. No
+mention is made of a suspicious looking table of addresses located at address
+$E000 which is the beginning of the new code added to the Basic ROM by the
+Color Computer 3.  These addresses are similar to a table of addresses at the
+beginning of the Disk Basic ROM which is only partially documented.  It is the
+"opinion of the author that the Super Extended table, as well as the Disk Basic"
+"table, will be maintained by Tandy and should be used as if they were supported"
+by Tandy.  The reader is cautioned that this is just the OPINION of the author
+and is by no means the official stance of Tandy.
+""
+""
+SUPERVAR = [E000]
+This is the address of the direct page variables used by Super Extended Basic.
+It is not the address of a routine.
+""
+ENTRY CONDITIONS
+Not applicable
+""
+EXIT CONDITIONS
+Not applicable
+""
+""
+PRGTEXT = [E002]
+Program INIT0 and the video control registers with their RAM images according
+to the value contained in HRWIDTH. Basic (unmodified by the user) will do the
+"following: 1) If HRWIDTH = 0, set up 32 column CoCo compatible mode, 2) If"
+"HRWIDTH = 1, set up the 40 column hi-res text mode, 3) If HRWIDTH = anything"
+"else, set up the 80 column hi-res text mode. A RAM hook exists in this routine"
+which will allow the user to modify it.
+""
+ENTRY CONDITIONS
+HRWIDTH should be set to a valid value.
+""
+EXIT CONDITIONS
+"INIT0 and the video control registers are modified. All CPU registers, except"
+CC are preserved.
+""
+""
+PRGGRAPH = [E004]
+Program INIT0 and the video control registers with their RAM images according
+to the value contained in HRMODE. Basic (unmodified by the user) will do the
+"following: 1) If HRMODE is 1,2,3 or 4, set the proper HSCREEN graphics mode"
+"or 2) if HRMODE is any other value, cause invalid and potentially disastrous"
+data to be programmed into INIT0 and the video control registers. A RAM hook
+exists in this routine which will allow the user to modify it.
+""
+ENTRY CONDITIONS
+HRMODE should be set to a valid value (1-4)
+""
+EXIT CONDITIONS
+"INIT0 and the video control registers are modified. All CPU registers, except"
+CC are preserved.
+""
+""
+PRGMMU = [E006]
+Program the MMU registers with their RAM images.
+""
+ENTRY CONDITIONS
+None
+""
+EXIT CONDITIONS
+"The MMU registers are modifed. All CPU registers, except CC are preserved."
+""
+""
+GETTEXT = [E008]
+Place block 6.6 into the RAM image of the Task Register 0 MMU register which
+controls logical block 1. Then copy the RAM image of the MMU registers to the
+"MMU registers. Finally, replace block 6.6 (as saved above) with block 7.1 in"
+the RAM image of the MMU registers. This is a very special purpose routine
+used by Basic to replace the hi-res text screen into the logical address space
+so that they may be modified.
+""
+ENTRY CONDITIONS
+None
+""
+EXIT CONDIIIONS
+The RAM image of MMU register one of task register 0 and the MMU registers are
+"modified. All CPU registers, except CC, are preserved."
+""
+""
+GETBLOK0 = [E00A]
+""
+Place a block into the RAM image of Task Register 0 MMU register which controls
+logical block 0. Then copy the RAM image of the MMU registers to the MMU reg-
+"isters. Finally, replace the block (as saved above) with block 7.0 in the RAM"
+image of the MMU registers. This is a very special purpose routine used by
+Basic to place any block into the logical address space so that it may be
+modified.
+""
+ENTRY CONDITIONS
+B contains the block (0-$3F) to be loaded.
+""
+EXIT CONDITIONS
+The RAM image of the MMU register 0 of task register 0 and the MMU registers
+"are modifed. Akk CPU registers, except CC, are preserved."
+""
+""
+GETTASK0 = [E00C]
+Restore task register 0 as the active task register.
+""
+ENTRY CONDITIONS
+The new address for the stack pointer must be the first two bytes on the stack.
+""
+EXIT CONDITIONS
+The stack pointer is reset to the first two bytes on the old stack.  All other
+"CPU registers, except CC, are preserved. V40-V45 are modified. INIT1 is cleared"
+which may affect the timer input clock. FIRQ and IRQ are masked on at the CPU.
+""
+""
+GETTASK1 = [E00E]
+Select Task Register 1 as the active task register
+""
+ENTRY CONDITIONS
+None
+""
+EXIT CONDITIONS
+The stack pointer has been reset to $DFFF and the old stack pointer has been
+"saved on the new stack. All other CPU registers, except CC, have been saved."
+V40-V45 have been modified. INIT1 has been forced to 1 which may affect the
+timer input clock. FIRQ and IRQ have been masked off at the CPU.
+""
+""
+GOCART = E010
+This address is used to execute a ROM cartridge (on the expansion port) if the
+cartridge does not autostart.
+""
+""
+SPARE0 = [E013]
+This address is undefined.
+""
+SPARE1 = [E015]
+This address is undefined.
+""
+SPARE2 = [E017]
+This address is undefined.

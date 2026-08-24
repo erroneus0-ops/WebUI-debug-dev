@@ -1,0 +1,196 @@
+,,,,
+MODIFIED,,,,
+REGISTERS,,ADDRESS,,DESCRIPTION
+,,,,
+ALL,,RESVEC,,"RESET ENTRY POINT - set SAM, PIAs ram check - if"
+,,(A027),,"RSTFLG = $55, then jump to RSTVEC; otherwise do a cold"
+,,,,start.
+,,,,
+ALL,,BACDST,,"COLD START ENTRY POINT - clear 1st 1K of RAM, reset"
+,,(A074),,BASIC's pointers.
+,,,,
+ALL,,BAWMST,,WARM START ENTRY POINT - reset some of BASIC's
+,,(A0E8),,pointers.
+,,,,
+A,,A171,,ASCII CONSOLE IN - read a character from CONSOLE
+,,,,IN. Mask off bit 7 and return character in ACCA.
+,,,,
+A,,A176,,CONSOLE IN - read a character from active input device
+,,,,(DEVNUM). Return character in ACCA.
+,,,,
+"A,B,X",,A199,,CURSOR DRIVER - put a cursor block on the screen
+,,,,at the address in CURPOS.
+,,,,
+A,,A1B1,,WAIT FOR A KEYSTROKE - blink the cursor while waiting
+,,,,for a keystroke. Return the ASCII value of the key in
+,,,,ACCA when a key is depressed.
+,,,,
+A,,KEYIN,,SCAN THE KEYBOARD FOR A KEY DEPRESSION - Return zero
+,,(A1CB),,flag = 1 if no new key down. Return the ASCII value
+,,,,of the key in ACCA if a new key is depressed.
+,,,,
+NONE,,PUTCHR,,CONSOLE OUT - sends character in ACCA to output device.
+,,(A282),,The output device is specified in DEVNUM.
+,,,,
+NONE,,A2BF,,RS232 OUTPUT DRIVER - software UART specifically
+,,,,formatted to drive a line printer. The routine may be
+,,,,"used to drive other devices, and has been modified by"
+,,,,all revisions to BASIC. Version 1.2 will not begin
+,,,,transmitting data until the destination device is
+,,,,ready.
+,,,,
+NONE,,A30A,,PUT A CHARACTER ON THE SCREEN - place a character
+,,,,on the screen (the screen starts at $400) at the
+,,,,location stored in CURPOS.
+,,,,
+NONE,,A35F,,"INITIALIZE PRINT PARAMETERS - set up tab field width,"
+,,,,"tab zone, current position and line width according"
+,,,,to the device selected (DEVNUM). This routine will
+,,,,vector into RAM at RVEC2.
+,,,,
+"A,B,X",,A38D,,GET A BASIC INPUT LINE - this routine will allow the
+,,,,inputting of a BASIC input line from CONSOLE IN.
+,,,,
+A,,A3ED,,INPUT DEVICE NUMBER CHECK - check for a valid input
+,,,,device number and file mode. This routine will
+,,,,vector into RAM at RVEC5.
+,,,,
+A,,A406,,OUTPUT DEVICE NUMBER CHECK - check for a valid output
+,,,,device number and file mode. This routine will
+,,,,vector into RAM at RVEC6.
+,,,,
+A,,A42D,,CLOSE A FILE - closes the file specified by DEVNUM.
+,,,,Vectors into RAM at RVEC8.
+,,,,
+A,,A549,,BREAK CHECK - check to see if the break key or the
+,,,,pause (shift @) key is down. Vectors into RAM at
+,,,,RVEC11.
+,,,,
+"A,B,X",,A701,,"START TAPE, READ A BLOCK - load a block of data from"
+,,,,the cassette tape into RAM and return error status in
+,,,,ACCB.
+,,,,
+"A,B,X",,GETBLK,,READ A BLOCK - load a block of data from the cassette
+,,(A70B),,tape into RAM.
+,,,,
+"A,B,X",,CASON,,SYNC THE TAPE DECK - turn on the tape and wait for
+,,(A77C),,sync bytes.
+,,,,
+X,,A7D1,,LONG DELAY - approximately 1/2 second delay. Loads X
+,,,,register with zero and counts it down to zero.
+,,,,
+"A,B,X,Y",,WRLDR,,WRITE LEADER - write a leader to the cassette tape.
+,,(A7D8),,
+,,,,
+"A,B,X,Y",,SNDBLK,,WRITE BLOCK TO CASSETTE - take a block of RAM and
+,,(A7F4),,write it to cassette.
+,,,,
+"A,B,X,Y",,A82A,,WRITE A BYTE TO TAPE - write ACCA to tape. This routine
+,,,,"does the ""dirty work"" of actually writing a byte to"
+,,,,tape.
+,,,,
+"B,X",,A928,,CLEAR SCREEN - store blanks ($60) to the video display
+,,,,screen.
+,,,,
+A,,A974,,DISABLE ANALOG MULTIPLEXER - disable the sound analog
+,,,,multiplexer. This will not allow any sound input to
+,,,,pass through to the analog multiplexer.
+,,,,
+A,,A976,,ENABLE ANALOG MULTIPLEXER - enable the sound analog
+,,,,multiplexer. This will allow sound inputs to pass
+,,,,through the analog multiplexer.
+,,,,
+"A,U",,A9A2,,SET ANALOG MULTIPLEXER - set the control inputs to the
+,,,,analog multiplexer to allow one of the four inputs to
+,,,,pass through.
+,,,,
+"A,B,X,U",,GETJOY,,READ JOYSTICKS - software 6-bit analog to digital
+,,(A9DE),,conversion routine used to read the joystick
+,,,,potentiometers.
+,,,,
+"A,B",,AC33,,FREE RAM CHECK - check to see if there is room to store
+,,,,"2*ACCB bytes in free RAM, OM error if not."
+,,,,
+"A,B,X,U",,AD01,,LINE NUMBER SEARCH - search the BASIC program for the
+,,,,line number stored in BINVAL. Set the carry flag if
+,,,,no match.
+,,,,
+X,,AD26,,ERASE VARIABLES - erase BASIC's variables and reset
+,,,,pointers.
+,,,,
+"A,B,X",,AF67,,CONVERT LINE NUMBER TO BINARY - convert an ASCII line
+,,,,number in a BASIC program to binary and return the
+,,,,value in BINVAL.
+,,,,
+"A,B,X,Y",,AFA4,,PUT STRING IN STRING SPACE - move a string whose
+,,,,descriptor is located at FPA0+2 into the string space.
+,,,,
+NONE,,B143,,NUMERIC TYPE MODE CHECK - test the contents of VALTYP
+,,,,and return if positive. TM error if negative.
+,,,,
+NONE,,B146,,STRING TYPE MODE CHECK - test the contents of VALTYP
+,,,,and return if negative. TM error if positive.
+,,,,
+ALL,,B156,,EVALUATE EXPRESSION - evaluate an expression in a BASIC
+,,,,statement. BASIC's input pointer must be pointed to the
+,,,,expression.
+,,,,
+ALL,,B357,,EVALUATE VARIABLE - evaluate the variable to which
+,,,,BASIC's input pointer is pointing. Return with X and
+,,,,VARPTR pointing to the variable descriptor. If the
+,,,,"variable is not stored in the variable table, that"
+,,,,variable name with a value of zero is inserted into
+,,,,the variable table.
+,,,,
+A,,B3A2,,SET CARRY IF NOT ALPHA - set the carry flag if ACCA is
+,,,,not and ASCII alpha character.
+,,,,
+"A,B,X",,INTCNV,,CONVERT FPA0 TO INTEGER. Convert FPA0 to a signed
+,,(B3ED),,2-byte integer; return the value in ACCD.
+,,,,
+"A,B,X",,GIVABF,,CONVERT INTEGER TO FLOATING POINT - convert the value
+,,(B4F4),,in ACCD into a floating point number in FPA0.
+,,,,
+"A,B,X",,B54C,,PUT DESCRIPTOR ON STRING STACK - put the direct page
+,,,,descriptor buffer data (STRDES) onto the string stack.
+,,,,Set the variable type (VALTYP) to string type.
+,,,,
+"A,B,X",,B56D,,RESERVE ACCB BYTES IN STRING SPACE - reserve ACCB
+,,,,bytes in the string storage space. Return with the
+,,,,starting address of the reserved string space in X and
+,,,,FRESPC.
+,,,,
+"A,B,X",,B740,,INTEGER SIZE CHECK - check FPA0 to make sure it is in 
+,,,,"the range -32768 <= FPA0 <= 32767. If it is, return "
+,,,,the value of that integer in X.
+,,,,
+ALL,,B7C2,,UNCRUNCH - uncrunch a basic line into BASIC's line
+,,,,input buffer. Vectors into RAM at RVEC24.
+,,,,
+ALL,,B821,,CRUNCH - crunch the line that the input pointer is
+,,,,pointing to into the line input buffer and return the
+,,,,length of the crunched line in ACCD.
+,,,,
+"A,B,X,U",,B99C,,SEND STRING TO CONSOLE OUT - parse a string which is
+,,,,pointed to by X and send it to CONSOLE OUT.
+,,,,
+"A,B,X",,BD12,,CONVERT STRING TO FLOATING POINT - convert an ASCII
+,,,,string pointed to by BASIC's input pointer into a
+,,,,floating point value in FPA0. Vectors into RAM at
+,,,,RVEC19.
+,,,,
+"A,B,X,U",,BDCC,,PRINT DECIMAL NUMBER TO CONSOLE OUT - convert the
+,,,,value in ACCD into a decimal number and send it to
+,,,,CONSOLE OUT.
+,,,,
+"A,B,X,U",,BDD9,,FLOATING POINT TO ASCII STRING - convert the floating
+,,,,point number in FPA0 into an ASCII string in the
+,,,,string buffer.
+,,,,
+"A,B,X",,BEFF,,EXPAND THE POLYNOMIAL - calculate the value of an
+,,,,expanded polynomial expression. Enter with X pointing
+,,,,to a table of coefficients the first byte of which is
+,,,,the number of (coefficients -1) followed by that number
+,,,,of packed floating point numbers. The polynomial is
+,,,,evaluated as follows: value = (((FPA0*Y0+Y1)*FPA0+Y2)*
+,,,,FPA0…+YN)

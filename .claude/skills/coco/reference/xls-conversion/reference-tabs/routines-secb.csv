@@ -1,0 +1,191 @@
+,,,,
+,,,,
+Listed below are several routines in the Super Extended Basic ROM (which run in,,,,
+RAM).  These routines should be used with great care since they usually expect,,,,
+that some of Basic's variables have been initialized to a certain range of ,,,,
+"values in order to function.  If the routines encounter an error, they will",,,,
+exit to Basic's error processing code.  The user must be aware of this fact,,,,
+and intercept Basic's error routines if you are to stay in control while,,,,
+using these routines.  Some of these routines may also change the MMU registers,,,,
+- BEWARE!,,,,
+,,,,
+,,,,
+MODIFIED*,,,,
+REGISTERS,,ADDRESS,,DESCRIPTION
+,,,,
+none,,E0CB,,ENABLE HGET/HPUT BUFFER - Put the HPUT/HGET buffer
+,,,,block (6.4) into the logical address space. Exit with
+,,,,the MMU register images restored to 'normal'.
+,,,,
+"A,B,X,Y",,E0F1,,PROGRAM MMU REGISTERS - Program the 16 MMU registers
+,,,,with the 16 bytes pointed to by the X register.
+,,,,
+"B,X",,E58E,,GET LONG ADDRESS - Convert FPA0 into a 'long' (512K)
+,,,,address.  Return the block number of the address in
+,,,,ACCB and the remaining 13 bits of the address in X.
+,,,,
+"A,B,X",,BUTTON+13,,READ JOYSTICK BUTTON - Read the joystick button
+,,(E5BE),,specified in ACCB (0-3) and return the status in FPA0.
+,,,,
+"A,B,X,Y",,E5FA,,DISPLAY DEFAULT RGB COLORS - Copy Basic's default RGB
+,,,,palette register colors into the palette registers.
+,,,,
+"A,B,X,Y",,E606,,DISPLAY DEFAULT CMP COLORS - Copy Basic's default CMP
+,,,,palette register colors into the palette registers.
+,,,,
+"A,B,X,Y",,E634,,COPY PALETTE IMAGES - Copy the palette register color
+,,,,RAM images into the palette registers.
+,,,,
+"A,B,X",,CLRHIRES,,CLEAR THE HI-RES GRAPHICS SCREEN - Clear the hi-res
+,,(E6D8),,graphics screen to the palette register number in ACCB.
+,,,,
+"A,B",,PIXELFIL,,FILL ACCB WITH PIXELS - Fill ACCB with pixels composed
+,,E742,,of a specific palette register. Enter with ACCB Con-
+,,,,taining the palette register number used to fill ACCB.
+,,,,
+"A,B",,E792,,TURN ON A PIXEL - Turn on the pixel which is being
+,,,,pointed to by the X register (screen address) and bit
+,,,,position specified by ACCA (pixel mask) to the color
+,,,,in ALLCOL.  Set CHGFLG <> 0 if pixel was unchanged by
+,,,,the action.
+,,,,
+"A,B,X,Y",,E7B2,,EVALUATE HI-RES COORDINATES - Evaluate two expressions
+,,,,in a Basic Line.  Perform hi-res coordinate range checks
+,,,,on the values returned and store the tested values in
+,,,,the address pointed to by Y.
+,,,,
+"A,X,U",,CALPOS,,CALPOS FOR CURRENT HSCREEN MODE - Jump to the correct
+,,E7DA,,CALculate POSition routine depending upon the current
+,,,,HSCREEN mode.
+,,,,
+"A,X",,G1BITPIX,,CALPOS 2 COLOR MODE - Calculate the screen address and
+,,(E7FF),,pixel mask for the 2 color hi-res graphics mode. Enter
+,,,,"with X,Y coordinates in HORBEG and VERBEG and exit with"
+,,,,the address in the X Register and the pixel mask in ACCA.
+,,,,
+"A,X",,G2BITPIX,,CALPOS 4 COLOR MODE - Calculate the screen address and
+,,(E820),,pixel mask for the 4 color hi-res graphics mode. Enter
+,,,,"with X,Y coordinates in HORBEG and VERBEG and exit with"
+,,,,the address in the X Register and the pixel mask in ACCA.
+,,,,
+"A,X",,G4BITPIX,,CALPOS 16 COLOR MODE - Calculate the screen address and
+,,(E83F),,pixel mask for the 16 color hi-res graphics mode. Enter
+,,,,"with X,Y coordinates in HORBEG and VERBEG and exit with"
+,,,,the address in the X Register and the pixel mask in ACCA.
+,,,,
+"A,B,X,Y,U",,E8D3,,DRAW A HI-RES BOX - Enclose a diagonal line with a box
+,,,,(box function of HLINE). Enter with the start and end
+,,,,"coordinates of the original line in HORBEG,VERBEG,"
+,,,,HOREND and VEREND.
+,,,,
+"A,B,X,Y,U",,E8F6,,FILL A HI-RES BOX - Draw a series of horizontal lines
+,,,,from VERBEG to VEREND.
+,,,,
+"A,B,X,Y,U",,E906,,DRAW A HORIZONTAL HI-RES LINE - Draw a horizontal hi-res
+,,,,line from HOREND to HORBEG at the vertical coordinate
+,,,,VERBEG with the palette register number in ALLCOL.
+,,,,
+"A,B,X,Y,U",,E931,,DRAW A VERTICAL HI-RES LINE - Draw a vertical hi-res
+,,,,line from VEREND to VERBEG at the horizontal coordinate
+,,,,HORBEG with the palette register number in ALLCOL.
+,,,,
+"A,B,X,Y,U",,E94E,,"DRAW A HI-RES LINE - Draw a hi-res line from (HORBEG,"
+,,,,"VERBEG) to (HOREND, VEREND)."
+,,,,
+X,,E9B1,,INCREMENT HORIZONTAL HI-RES POSITION - Increment the
+,,,,horizontal hi-res position (HORBEG).
+,,,,
+X,,E9B8,,INCREMENT VERTICAL HI-RES POSITION - Increment the
+,,,,vertical hi-res position (VERBEG).
+,,,,
+X,,E9BF,,DEREMENT HORIZONTAL HI-RES POSITION - Decrement the
+,,,,horizontal hi-res position (HORBEG).
+,,,,
+X,,E9C6,,DECREMENT VERTICAL HI-RES POSITION - Decrement the
+,,,,vertical hi-res position (VERBEG).
+,,,,
+"A,B",,E9CD,,CALCULATE HI-RES ABS (VEREND-VERBEG) - Calculate the
+,,,,absolute value of the distance between VEREND and
+,,,,VERBEG. The carry flag will indicate which was the
+,,,,larger coordinate.
+,,,,
+"A,B",,E9DB,,CALCULATE HI-RES ABS (HOREND-HORBEG) - Calculate the
+,,,,absolute value of the distance between HOREND and
+,,,,HORBEG. The carry flag will indicate which was the
+,,,,larger coordinate.
+,,,,
+"B,U",,EA16,,POINT TO HI-RES PIXEL MOVE ROUTINE - Point the U register
+,,,,to the routine which will move the current pointer (X)
+,,,,to the right one pixel position for the current HSCREEN
+,,,,mode.
+,,,,
+"A,X",,EA2D,,MOVE A HI-RES PIXEL TO THE RIGHT - Adjust the X register
+,,,,and ACCA one pixel position to the right in the 2 color
+,,,,hi-res graphics mode. Enter with the screen address in
+,,,,the X register and the pixel mask in ACCA.
+,,,,
+"A,X",,EA34,,MOVE A HI-RES PIXEL TO THE RIGHT - Adjust the X register
+,,,,and ACCA one pixel position to the right in the 4 color
+,,,,hi-res graphics mode. Enter with the screen address in
+,,,,the X register and the pixel mask in ACCA.
+,,,,
+"A,X",,EA3D,,MOVE A HI-RES PIXEL TO THE RIGHT - Adjust the X register
+,,,,and ACCA one pixel position to the right in the 16 color
+,,,,hi-res graphics mode. Enter with the screen address in
+,,,,the X register and the pixel mask in ACCA.
+,,,,
+"B,X",,EA45,,ADJUST HI-RES SCREEN POINTER DOWN A ROW - Move the X
+,,,,register down one hi-res graphic row. The number of
+,,,,bytes per horizontal graphic row must be in HORBYT.
+,,,,
+"U,Y",,EBCB,,16 BIT MULTIPLY - Multiply (unsigned) two 16 bit
+,,,,numbers together. Enter with one number in ACCD and the
+,,,,other in the X register. The four byte product will be
+,,,,returned in the Y and U registers.
+,,,,
+"A,X",,F00A,,2 COLOR HI-RES PRINT DRIVER - Convert the bit pattern in
+,,,,ACCA into a hi-res 2 color pixel pattern and put that
+,,,,pixel pattern into the screen address pointed to by X.
+,,,,ALLCOL contains the palette register used.
+,,,,
+"A,B,X",,F01A,,4 COLOR HI-RES PRINT DRIVER - Convert the bit pattern in
+,,,,ACCA into a hi-res 4 color pixel pattern and put that
+,,,,pixel pattern into the screen address pointed to by X.
+,,,,ALLCOL contains the palette register used.
+,,,,
+"A,B,X",,F045,,16 COLOR HI-RES PRINT DRIVER - Convert the bit pattern in
+,,,,ACCA into a hi-res 16 color pixel pattern and put that
+,,,,pixel pattern into the screen address pointed to by X.
+,,,,ALLCOL contains the palette register used.
+,,,,
+"A,B",,NEGACCD,,NEGATE ACCD - Negate the value contained in ACCD.
+,,(F4CC),,
+,,,,
+"A,B",,F5FD,,MULTIPLY ACCD BY 10 - Multiply the value contained in
+,,,,ACCD by 10.
+,,,,
+none,,F608,,NUMERIC ASCII TEST - Test ACCA to see if it contains a
+,,,,numeric (0-9) character. Return the carry flag clear if
+,,,,"numeric, set if not."
+,,,,
+"A,B,X",,COL32,,SET TO 32 COLUMN MODE - Set up the 32 column CoCo com-
+,,(F652),,patible text mode and clear the text screen. This routine
+,,,,will enable IRQ and FIRQ at the CPU level.
+,,,,
+"A,B,X",,COL40,,SET TO 40 COLUMN MODE - Set up the 40 column hi-res text
+,,(F65C),,mode and clear the text screen. This routine will enable
+,,,,IRQ and FIRQ at the CPU level.
+,,,,
+"A,B,X",,COL80,,SET TO 80 COLUMN MODE - Set up the 80 column hi-res text
+,,(F679),,mode and clear the text screen. This routine will enable
+,,,,IRQ and FIRQ at the CPU level.
+,,,,
+"A,B,X",,F68C,,CLEAR THE HI-RES TEXT SCREEN - Clear the hi-res text
+,,,,screen and home the cursor. The text screen must be in
+,,,,logical block 1 for this routine to function.
+,,,,
+"A,B,X",,F8F7,,MOVE THE HI-RES CURSOR - Move the hi-res cursor to the
+,,,,column and row numbers specified in ACCA and ACCB
+,,,,respectively.
+,,,,
+,,* The CC register is modified by all routines,,

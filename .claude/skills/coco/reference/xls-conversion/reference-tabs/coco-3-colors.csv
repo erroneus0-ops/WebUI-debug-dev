@@ -1,0 +1,83 @@
+,Listed below are the 64 different colors available on the Color Computer 3.,,,,,,,,
+"In order to use the colors, first decide which color you wish to display and find",,,,,,,,,
+the color closest to your desired color in the table below.  Then you must know,,,,,,,,,
+whether the color will be viewed on an RGB monitor (RGB) or a composite monitor,,,,,,,,,
+or a television set (CMP).  Get the color number from the appropriate monitor,,,,,,,,,
+column and store that number into a palette register or the border color register.,,,,,,,,,
+,The names assigned to these colors are based upon the names given to the RGB,,,,,,,,
+colors.  Since the methods in which the RGB and composite colors are generated,,,,,,,,,
+are not the same (as explained in Chapter Five) the name of the color may not,,,,,,,,,
+agree whith what you personally see the color to be.  This table is presented,,,,,,,,,
+in order to provide a universal conversion between the RGB and composite colors.,,,,,,,,,
+All you need to do is have a short program such as the one shown in Figure 16,,,,,,,,,
+to allow easy conversion of colors in your program based upon the type of ,,,,,,,,,
+monitor being used to view the program.  The table of colors given below is,,,,,,,,,
+the conversion used in OS-9 Level Two.,,,,,,,,,
+,,,,,,,,,
+,Monitor,,,Color,,Monitor,,,Color
+,RGB,CMP,,,,RGB,CMP,,
+,00,00,,Black,,32.0,23.0,,Medium intensity red
+,01,12,,Low intensity blue,,33.0,8.0,,Blue tint red
+,02,02,,Low intensity green,,34.0,21.0,,Light Orange
+,03,14,,Low intensity cyan,,35.0,6.0,,Cyan tint red
+,04,07,,Low intensity red,,36.0,39.0,,Full intensity red
+,05,09,,Low intensity magenta,,37.0,24.0,,Magenta tint red
+,06,05,,Low intensity brown,,38.0,38.0,,Brown tint red
+,07,16,,Low intensity white,,39.0,54.0,,Faded red
+,08,28,,Medium intensity blue,,40.0,25.0,,Medium intensity magenta
+,09,44,,Full intensity blue,,41.0,42.0,,Blue tint magenta
+,10,13,,Green tint blue,,42.0,26.0,,Green tint magenta
+,11,29,,Cyan tint blue,,43.0,58.0,,Cyan tint magenta
+,12,11,,Red tint blue,,44.0,24.0,,Red tint magenta
+,13,27,,Magenta tint blue,,45.0,41.0,,Full intensity magenta
+,14,10,,Brown tint blue,,46.0,40.0,,Brown tint magenta
+,15,43,,Faded blue,,47.0,56.0,,Faded magenta
+,16,34,,Medium intensity green,,48.0,20.0,,Medium intensity yellow
+,17,17,,Blue tint green,,49.0,4.0,,Blue tint yellow
+,18,18,,Full intensity green,,50.0,35.0,,Green tint yellow
+,19,33,,Cyan tint green,,51.0,51.0,,Cyan tint yellow
+,20,03,,Red tint green,,52.0,37.0,,Red tint yellow
+,21,01,,Magenta tint green,,53.0,53.0,,Magenta tint yellow
+,22,19,,Brown tint green,,54.0,36.0,,Full intensity yellow
+,23,50,,Faded green,,55.0,52.0,,Faded yellow
+,24,30,,Medium intensity cyan,,56.0,32.0,,Medium intensity white
+,25,45,,Blue tint cyan,,57.0,59.0,,Light blue
+,26,31,,Green tint cyan,,58.0,49.0,,Light green
+,27,46,,Full intensity cyan,,59.0,62.0,,Light cyan
+,28,15,,Red tint cyan,,60.0,55.0,,Light red
+,29,60,,Magenta tint cyan,,61.0,57.0,,Light magenta
+,30,47,,Brown tint cyan,,62.0,63.0,,Light yellow
+,31,61,,Faded cyan,,63.0,48.0,,White
+,,,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,,,,Converting RGB Colors to Composite Colors,,,,,
+,,,,,,,,,
+,It will often be beneficial to allow a graphic display to appear the same on,,,,,,,,
+"a composite monitor as it does on an RGB monitor.  The following Basic routine,",,,,,,,,,
+"which will convert an RGB color code into its closest similar composite color code,",,,,,,,,,
+can be used.  Since RGB colors are derived in a different manner than composite,,,,,,,,,
+"colors, no conversion will be exact.",,,,,,,,,
+,,,,,,,,,
+,10,'SET UP CONVERSION FACTORS FOR COMPOSITE COLORS,,,,,,,
+,20,DIM C(63) : FOR X = 0 TO 63 : READ C(X) : NEXT X,,,,,,,
+,30,GOTO 100,,,,,,,
+,40,"DATA 0,12,2,14,7,9,5,16,28,44,13,29,11,27,10,43",,,,,,,
+,50,"DATA 34,17,18,33,3,1,19,50,30,45,31,46,15,60,47,61",,,,,,,
+,60,"DATA 23,8,21,6,39,24,38,54,25,42,26,58,24,41,40,56",,,,,,,
+,70,"DATA 20,4,35,51,37,53,36,52,32,59,49,62,55,57,63,48",,,,,,,
+,80,'CONVERT C TO COMPOSITE COLOR IF NOT RGB MON. (R=0),,,,,,,
+,90,IF R=0 THEN C=C(C) : RETURN ELSE RETURN,,,,,,,
+,100,'MAIN BODY OF PROGRAM,,,,,,,
+,,,,,,,,,
+,,FIGURE 16 - BASIC PROGRAM TO CONVERT RGB COLORS TO COMPOSITE,,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+,The above routine should be near the beginning of the program (but after the,,,,,,,,
+,CLEAR statement).  The program must ask for the type of monitor being used.,,,,,,,,
+,"If an RGB monitor is in use, set R=1, otherwise set R=0. Then, when it is",,,,,,,,
+,"time to set a color, make C equal to the RGB color desired and execute a",,,,,,,,
+,GOSUB 90.  The color will be converted to the appropriate composite color.,,,,,,,,
+,Then simply set the palette to the value in C.  For example (assuming R,,,,,,,,
+,"has already been set up), a line might read",,,,,,,,
+,"270 C=27 : GOSUB 90 : PALETTE 3,C",,,,,,,,

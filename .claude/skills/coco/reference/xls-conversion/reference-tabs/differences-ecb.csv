@@ -1,0 +1,81 @@
+,,,,,,,
+,,,,,,,
+,The differences between Extended Basic 1.0 and 1.1 are not earth-,,,,,,
+shaking.  The primary difference involves the bug in the PCLEAR com-,,,,,,,
+mand which caused BASIC programs to generate a syntax or illegal func-,,,,,,,
+tion call error at certain times when a PCLEAR command was executed in,,,,,,,
+a BASIC program. This error was caused by the fact that the BASIC input,,,,,,,
+pointer was not adjusted when the program was moved as a result of a,,,,,,,
+"PCLEAR command. Accordingly, when control was returned to the BASIC",,,,,,,
+program after a PCLEAR command the BASIC input pointer would invar-,,,,,,,
+iably end up pointing to the middle of the program which would cause,,,,,,,
+the error.,,,,,,,
+,,,,,,,
+,,DIFFERENCES BETWEEN EXTENDED BASIC 1.0 AND 1.1,,,,,
+ADDRESS,,,,,,,
+80D0-80DD,,Patch to move the BASIC input pointer during PCLEAR,,,,,
+,,(see Figure G1). The originial code in the 1.0 version,,,,,
+,,was designed to allow the SAM chip to be programmed,,,,,
+,,for 64K RAMs on power up but the code was never ac-,,,,,
+,,cessed by any routines in any of the 3 Basic ROMs.,,,,,
+,,,,,,,
+,,,,* THIS CODE IS NOT USED BY ANY OF THE BASICS,,,
+,80D0,B6,FF22,,LDA,PIA1+2,READ PIA PORT B
+,80D3,85,02,,BITA,#2,CHECK MEM SIZE JUMPER
+,80D5,26,03,,BNE,L80DA,BRANCH IF HIGH
+,80D7,B7,FFDD,,STA,SAM+29,SET SAM CNTL REG MEM SIZE TO 64K
+,80DA,6E,84,L80DA,JMP,",X",JUMP TO ADDRESS IN X REG
+,80DC,00,00,,FCB,"$00,$00",DEAD SPACE
+,,,,,,,
+,,Figure G1 - Version 1.0 Code,,,,,
+,,,,,,,
+80FF,,Change version number 1.0/1.1,,,,,
+,,,,,,,
+8112,,Change Copyright Year (units digit),,,,,
+,,,,,,,
+8C1B-8C22,,Patch to fix the DLOAD bug (see Figure G2). The code,,,,,
+,,in 1.0 version did not allow for the fact that the,,,,,
+,,current BASIC input character was not in ACCA follow-,,,,,
+,,ing the CLOSEing of cassette files (JSR LA429).,,,,,
+,,,,,,,
+,8C1B,6F,E2,,CLR,",-S",SAVE DEFAULT TOKEN (NON DLOADM) ON STACK
+,8C1D,81,4D,,CMPA,#'M',IS IT DLOADM?
+,8C1F,26,04,,BNE,L8C25,NO
+,8C21,A7,E4,,STA,",S",SAVE THE M ON THE STACK
+,,,,,,,
+,,Figure G2 - Version 1.0 code,,,,,
+,,,,,,,
+8C51,,Change instruction op code from BNE(1.0) to BEQ(1.1).,,,,,
+,,This change was necessitated by the previous fix to,,,,,
+,,DLOAD.,,,,,
+,,,,,,,
+9179,,Change op code address field from #12(1.0) to #10(1.1).,,,,,
+,,This change and the one following fix a minor bug in,,,,,
+,,the ASCII to floating point conversion in PRINT USING.,,,,,
+,,,,,,,
+917D,,Change op code address field from #'9'+3(1.0) to #'9'+1,,,,,
+,,(1.1),,,,,
+,,,,,,,
+962C-962D,,Change instruction from LDA #6(1.0) to LDA GRPRAM(1.1).,,,,,
+,,This change allows the start of the first graphic page,,,,,
+,,to be determined by the value in the direct page var-,,,,,
+,,iable GRPRAM (start of graphic RAM) rather than the,,,,,
+,,absolue value of 6 which is valid for an Extended,,,,,
+,,Basic ONLY system.,,,,,
+,,,,,,,
+96A3-96B3,,Patch the PCLEAR command to fix the PCLEAR bug (see,,,,,
+,,Figure G3). This patch merely rearranges existing,,,,,
+,,code to allow for the call (JSR L80D0) to the routine,,,,,
+,,which will adjust the BASIC input pointer.,,,,,
+,,,,,,,
+,96A3,1025,1DA3,,LBLO,LB44A,IF TRYING TO CLEAR LESS THAN END
+,,,,,,,OF CURRENT PAGE = 'ILLEGAL FUNCTION CALL'
+,96A7,93,19,,SUBD,TXTTAB,SUBTRACT START OF RAM
+,96A9,D3,1B,,ADDD,VARTAB,ADD END OF BASIC PROGRAM
+,96AB,1F,01,,TFR,"D,X",X=TOP OF PCLEARED SPACE+SIZE OF BASIC
+,,,,,,,PROGRAM
+,96AD,C3,00C8,,ADDD,#200,ADD 200 - LEAVE SOME ROOM FOR STACK
+,96B0,93,21,,SUBD,FRETOP,SUBTRACT OUT START OF CLEARED SPACE
+,96B2,24,B9,,BCC,L966D,NO ROOM LEFT - 'ILLEGAL FUNCTION CALL'
+,,,,,,,
+,,Figure G3 - Version 1.0 code,,,,,

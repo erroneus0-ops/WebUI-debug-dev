@@ -1,0 +1,106 @@
+,,,,,,
+MODIFIED,,1.1,,1.0,,
+REGISTERS,,ADDRESS,,ADDRESS,,DESCRIPTION
+,,,,,,
+"B,X,Y,U",,C48D,,C468,,"OPEN DISK FILE - enter with the mode (I,O,D,R) in"
+,,,,,,"ACCA, file number in ACCB, filename.ext in DNAMBF,"
+,,,,,,"and DFLTYP, DASCFL & DFFLEN initialized. An FCB"
+,,,,,,will be opened and initialized but any errors will
+,,,,,,cause control to be returned to BASIC.
+,,,,,,
+"A,B,X,U",,C52D,,C500,,INITIALIZE FCB FOR INPUT - enter with the address
+,,,,,,of the desired FCB in FCBTMP and valid directory
+,,,,,,information in V973-V978. The FCB will be properly
+,,,,,,initialized and the directory will be loaded with
+,,,,,,the number of bytes in the last sector of the file.
+,,,,,,
+"A,B,X,U",,C538,,C50B,,INITITALIZE FCB - this is the same as initialize
+,,,,,,FCB for input except that the number of bytes in
+,,,,,,the last sector is not written into the directory.
+,,,,,,
+"A,B,X,U",,C567,,C53A,,SET UP DIRECTORY ENTRY - scan the directory for the
+,,,,,,first unused entry and open a file for the infor-
+,,,,,,"mation contained in DNAMBF, DFLTYP, and DASCFL."
+,,,,,,The first unused directory entry will be allocated
+,,,,,,to the file as will the first unused granule.
+,,,,,,
+A,,C5C4,,C597,,DISK CONSOLE IN - get a byte from the already OPENed
+,,,,,,disk file specified by DEVNUM. Return the byte in
+,,,,,,ACCA.
+,,,,,,
+ALL,,C68C,,C65F,,SEARCH DIRECTORY - search the directory for the
+,,,,,,filename and extension located in DNAMBF. Set the
+,,,,,,variables V973-V978 accordingly.
+,,,,,,
+ALL,,C6F5,,C6C8,,KILL FILE - kill the file whose name is in DNAMBF.
+,,,,,,
+"A,B,X,U",,C70F,,C6E2,,FREE FILE GRANULES - enter with the number of the
+,,,,,,first granule in a file in ACCB. Free (set to $FF)
+,,,,,,all of the granules in that file and save the new
+,,,,,,FAT on the disk.
+,,,,,,
+X,,C744,,C714,,SET X TO FILE BUFFER - enter with ACCB containing
+,,,,,,the file number. Return with X pointing to the
+,,,,,,correct FCB and the flags set according to the
+,,,,,,file type.
+,,,,,,
+X,,C755,,C725,,SET X TO FAT - point X to the FAT RAM image for thE
+,,,,,,drive number stored in DCDRV.
+,,,,,,
+"A,B",,C763,,C733,,CONVERT GRANULE TO TRACK & SECTOR - enter with X
+,,,,,,pointing to an FCB. The current granule number
+,,,,,,(FCBCGR) will be converted to the equivalent track
+,,,,,,and sector numbers in DCTRK & DSEC.
+,,,,,,
+"A,B",,C779,,C749,,MULTIPLY ACCD BY NINE - multiply the value in ACCD
+,,,,,,by nine.
+,,,,,,
+"A,B",,C784,,C754,,CONVERT SECTORS TO GRANULE - enter with a total
+,,,,,,number of sectors in ACCD. Convert this number into
+,,,,,,the number of complete granules (0-67) contained in
+,,,,,,that many sectors and return the count in ACCD.
+,,,,,,
+"A,B,X",,C79D,,C76D,,READ FAT DATA - load the RAM image of the FAT with
+,,,,,,data from the disk. Data will not be loaded into
+,,,,,,the RAM image if any disk files are OPEN.
+,,,,,,
+"A,B,X",,C7BF,,C78F,,FIND FREE GRANULE - find the first free granule.
+,,,,,,Enter with the granule at which to start the search
+,,,,,,in ACCB. The found granule is marked with a $C0 to
+,,,,,,indicate that it is the last granule in the file
+,,,,,,and the number of the granule is returned in ACCA.
+,,,,,,
+"B,X",,C807,,C7D7,,FILE OPEN CHECK - check all active files to make
+,,,,,,sure a file is not already OPEN. Enter with ACCA
+,,,,,,containing a file type to disable the ‘AO’ error
+,,,,,,for that file type.
+,,,,,,
+"A,B,X,U",,C935,,C887,,GET FILENAME.EXT:DRIVE FROM BASIC - get the file-
+,,,,,,name extension and drive number from a BASIC input
+,,,,,,line.
+,,,,,,
+"A,B,X,U",,CD1E,,CC44,,GET GRANULE COUNT - enter with the granule number
+,,,,,,of the first granule in a file. The number of whole
+,,,,,,granules in that file will be returned in ACCA.
+,,,,,,ACCB will contain the data from the last granule in
+,,,,,,the file.
+,,,,,,
+"A,B,X",,CEA8,,CDCC,,GET FREE GRANULE COUNT - enter with a drive number
+,,,,,,"(0-3) in ACCB, return the number of free granules"
+,,,,,,in floating point accumulator 0.
+,,,,,,
+NONE,,D75F,,D66C,,DSKCON - universal disk I/O routine. A detailed ex-
+,,,,,,planation is available in the Color Computer disk
+,,,,,,user's manual.
+,,,,,,
+"A,B,X",,D7B8,,D6C5,,RESTORE HEAD TO TRACK ZERO - restore the head for
+,,,,,,the drive in DCDRV to track zero. Return DCSTA =
+,,,,,,$10 if there is a SEEK error.
+,,,,,,
+ALL,,D7F8,,D705,,READ ONE SECTOR - read one sector as specified by
+,,,,,,"the DSKCON parameters (DSEC,DCTRK,DCDRV) and store"
+,,,,,,the data at the address in DCBPT.
+,,,,,,
+ALL,,D7FB,,D708,,WRITE ONE SECTOR - write one sector as specified by
+,,,,,," the DSKCON parameters (DSEC,DCTRK,DCDRV) and get"
+,,,,,,the data to go on the disk from the address in DCBPT.

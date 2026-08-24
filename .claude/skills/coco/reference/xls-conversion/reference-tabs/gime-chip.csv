@@ -1,0 +1,121 @@
+,The major functions of the GIME chip are controlled by the chip control,,,,,,
+register which are mapped into the I/O page ($FF00-$FFFF) which is always,,,,,,,
+present in the logical address space regardless of the status of the MMU,,,,,,,
+registers.  The area from $FF90-$FFBF in particular is a direct link to the,,,,,,,
+GIME chip.,,,,,,,
+,,,,,,,
+,FF90,,Initialization Register 0 (INIT0),,,,
+,,,,,,,
+,,,BIT7,,COCO,,1=Color Computer Compatible
+,,,BIT6,,MMUEN,,1=MMU Enabled (COCO = 0)
+,,,BIT5,,IEN,,1=Chip IRQ output enabled
+,,,BIT4,,FEN,,1=Chip FIRQ output enabled
+,,,BIT3,,MC3,,1=RAM at XFEFF is constant
+,,,BIT2,,MC2,,1=$FF40-4F external; 0=internal
+,,,BIT1,,MC1,,ROM map control (see table below)
+,,,BIT0,,MC0,,ROM map control (see table below)
+,,,,,,,
+,,,MC1,,MC0,,ROM mapping
+,,,0,,X,,"16K Internal, 16K external"
+,,,1,,0,,32K Internal
+,,,1,,1,,32K External (except vectors)
+,,,,,,,
+,,,,,,,
+,FF91,,Initialization Register 1 (INIT1),,,,
+,,,,,,,
+,,,BIT6-7,,,,Unused
+,,,BIT5,,TINS,,"Timer clock: 1 = 70nsec, 0 = 63.5 usec"
+,,,BIT1-4,,,,Unused
+,,,BIT0,,TR,,MMU task register select
+,,,,,,,
+,,,,,,,
+,FF92,,IRQ Interrupt Enable/Status Register (IRQENR),,,,
+,,,BIT6-7,,,,Unused
+,,,BIT5,,TMR,,Timer
+,,,BIT4,,HBORD,,Horizontal Border
+,,,BIT3,,VBORD,,Vertical Border
+,,,BIT2,,EI2,,RS-232 serial port
+,,,BIT1,,EI1,,Keyboard
+,,,BIT0,,EI0,,Cartridge Port
+,,,,,,,
+,,,,,,,
+,FF93,,FIRQ Interrupt Enable/Status Register (FIRQENR),,,,
+,,,BIT6-7,,,,Unused
+,,,BIT5,,TMR,,Timer
+,,,BIT4,,HBORD,,Horizontal Border
+,,,BIT3,,VBORD,,Vertical Border
+,,,BIT2,,EI2,,RS-232 serial port
+,,,BIT1,,EI1,,Keyboard
+,,,BIT0,,EI0,,Cartridge Port
+,,,,,,,
+,,,,,,,
+,FF94,,Timer Register (MSB),,,,
+,,,,,,,
+,,,BIT4-7,,,,Unused
+,,,BIT0-3,,,,Most Significant 4 bits of timer
+,,,,,,,
+,,,,,,,
+,FF95,,Timer Register (LSB),,,,
+,,,,,,,
+,,,BIT0-7,,,,Least Significant 8 bits of timer
+,,,,,,,
+,,,,,,,
+,"FF96,7",,Reserved,,,,
+,,,,,,,
+,,,,,,,
+,FF98,,Video Mode Register,,,,
+,,,,,,,
+,,,BIT7,,BP,,"0=text, 1=bit plane graphics"
+,,,BIT6,,,,Unused
+,,,BIT5,,BPI,,Burst Phase Invert (Color Set)
+,,,BIT4,,MOCH,,1=Monochrome (Composite Monitor)
+,,,BIT3,,H50,,1=50Hz vertical sync
+,,,BIT0-2,,LPR,,Lines per Row
+,,,,,,,
+,,,,,,,
+,FF99,,Video Resolution Register,,,,
+,,,,,,,
+,,,BIT7,,,,Undefined
+,,,BIT5-6,,LPF,,Lines per Field (number of rows)
+,,,BIT2-4,,HRES,,Horizontal Resolution
+,,,BIT0-1,,CRES,,Color Resolution
+,,,,,,,
+,,,,,,,
+,FF9A,,Border Register,,,,
+,,,,,,,
+,,,BIT6-7,,,,Unused
+,,,BIT0-5,,,,Border Color
+,,,,,,,
+,,,,,,,
+,FF9B,,Unused,,,,
+,,,,,,,
+,,,,,,,
+,FF9C,,Vertical Scroll Register,,,,
+,,,,,,,
+,,,BIT4-7,,,,Unused
+,,,BIT0-3,,VSC,,Vertical Scroll Bits
+,,,,,,,
+,,,,,,,
+,FF9D,,Vertical Offset Register (MSB),,,,
+,,,,,,,
+,,,BIT0-7,,Y8-Y15,,Vertical offset high order byte
+,,,,,,,
+,,,,,,,
+,FF9E,,Vertical Offset Register (LSB),,,,
+,,,,,,,
+,,,BIT0-7,,Y0-Y7,,Vertical offset low order byte
+,,,,,,,
+,,,,,,,
+,FF9F,,Horizontal Offset Register,,,,
+,,,,,,,
+,,,BIT7,,HVEN,,Horizontal Virtual Enable
+,,,BIT0-6,,HOFF,,Horizontal Offset
+,,,,,,,
+,,,,,,,
+,FFA0-FFA7,,Memory Management Unit Task Register 0,,,,
+,,,,,,,
+,,,,,,,
+,FFA8-FFAF,,Memory Management Unit Task Register 1,,,,
+,,,,,,,
+,,,,,,,
+,FFB0-FFBF,,Palette Registers,,,,

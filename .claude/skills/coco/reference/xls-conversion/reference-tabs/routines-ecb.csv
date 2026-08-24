@@ -1,0 +1,134 @@
+,,,,
+,,,,
+EXPLANATION OF TERMS:,,,,
+,,,,
+,CALPOS - Refer to chapter 3 page 6 for detailed explanation.,,,
+,,,,
+,NORMALIZING - Refer to chapter 3 page 6 for detailed explanation.,,,
+,,,,
+,PIXEL - Refer to chapter 3 page 6 for detailed explanation.,,,
+,,,,
+SPECIAL NOTE:,,Some of the following routines require that certain registers and/or,,
+,,variables be set up with certain values before calling them.  If an,,
+,,"error is generated while in one of these routines, the normal error",,
+,,message will be generated and the routine will return control to ,,
+,,"BASIC.  In order to prevent this from happening, the error must be",,
+,,intercepted by using the ram hook for the error processing routine,,
+,,(RVEC17).,,
+,,,,
+MODIFIED,,,,
+REGISTERS,,ADDRESS,,DESCRIPTION
+,,,,
+"A,B,X",,8524,,FIX NUMBER IN FPA0 - Converts the number in FPA0
+,,,,to an integer value and forces it to be positive.
+,,,,
+"A,B,X",,881F,,EVALUATE &H - Get the value after the &H from the
+,,,,program line and convert it to a numerical value.
+,,,,
+"A,U",,928F,,GET CALPOS ROUTINE ADDRESS - Get the address of
+,,,,the routine which will convert the horizontal and
+,,,,vertical coordinates into an absolute screen
+,,,,address and pixel mask depending upon the current
+,,,,PMODE. Return the address of the routine in the
+,,,,U register.
+,,,,
+"A,U",,9298,,CALPOS FOR CURRENT PMODE - This routine jumps to
+,,,,the correct calpos routine depending upon the
+,,,,current PMODE.
+,,,,
+"A,X,U",,92A6,,CALPOS 2 COLOR MODE - Calculates toe absolute
+,,,,screen address and pixel mask for the 2 color hires
+,,,,"mode. Enter with X,Y coordinates in HORBEG and"
+,,,,VERBEG and exit with address in the X register and
+,,,,the pixel mask in ACCA.
+,,,,
+"A,X,U",,92C2,,CALPOS 4 COLOR MODE - Calculates toe absolute
+,,,,screen address and pixel mask for the 4 color hires
+,,,,"mode. Enter with X,Y coordinates in HORBEG and"
+,,,,VERBEG and exit with address in the X register and
+,,,,the pixel mask in ACCA.
+,,,,
+"B,X",,92E9,,ADJUST SCREEN POINTER DOWN A ROW - Move the X
+,,,,register down one graphic row.  The number of
+,,,,bytes per horizontal graphic row must be in HORBYT.
+,,,,
+"A,X",,92ED,,MOVE A PIXEL TO THE RIGHT (2 COLOR) - Adjust the X
+,,,,register and ACCA one pixel position to the right in
+,,,,the 2 color mode.  Enter with the absolute screen
+,,,,address in the X register and the pixel mask in ACCA.
+,,,,
+"A,X",,92F4,,MOVE A PIXEL TO THE RIGHT (4 COLOR) - Adjust the X
+,,,,register and ACCA one pixel position to the right in
+,,,,the 4 color mode.  Enter with the absolute screen
+,,,,address in the X register and the pixel mask in ACCA.
+,,,,
+"A,B,U",,931D,,NORMALIZE COORDINATES - Adjust the horizontal and
+,,,,vertical coordinates for the current PMODE. Enter
+,,,,"with X,Y coordinates in HORBEG and VERBEG, the"
+,,,,normalized coordinates will be returned in the same.
+,,,,
+"A,B",,9377,,TURN ON A PIXEL - Turn on the pixel which is
+,,,,being pointed to by the X register (absolute
+,,,,screen address) and ACCA (pixel mask) to the color
+,,,,in ALLCOL. Set CHGFLG <> 0 if pixel color was
+,,,,unchanged by the action.
+,,,,
+ALL,,9408,,DRAW A BOX - Encloses a diagonal line with a box
+,,,,(box function of LINE). Enter with the start and 
+,,,,"end coordinates of the original line in HORBEG,"
+,,,,"VERBEG, HOREND and VEREND."
+,,,,
+ALL,,9434,,FILL BOX - Draw a series of horizontal lines
+,,,,from BERBEG to VEREND
+,,,,
+ALL,,9444,,DRAW A HORIZONTAL LINE - Draw a horizontal line from
+,,,,HOREND to HORBEG at the vertical coordinate VERBEG
+,,,,with the color in ALLCOL.
+,,,,
+ALL,,946E,,DRAW A VERTICAL LINE - Draw a vertical line from
+,,,,VEREND to VERBEG at the horizontal coordinate
+,,,,HORBEG with the color in ALLCOL.
+,,,,
+"B,U",,9494,,POINT TO PIXEL MOVE ROUTINE - Point the U register
+,,,,to the routine which will move the current pixel
+,,,,to the right one position for the current PMODE.
+,,,,
+ALL,,94A1,,"DRAW A LINE - Draw a line from (HORBEG,VERBEG) to "
+,,,,"(HOREND, VEREND)."
+,,,,
+X,,9506,,INCREMENT HORIZONTAL POSITION - Gets the current
+,,,,horizontal coordinate (HORBEG) and moves it one
+,,,,to the right.
+,,,,
+X,,950D,,INCREMENT VERTICAL POSITION - Gets the current
+,,,,vertical coordinate (VERBEG) and moves it one down.
+,,,,
+X,,9515,,DECREMENT HORIZONTAL POSITION - Gets the current
+,,,,horizontal coordinate (HORBEG) and moves it one
+,,,,to the left.
+,,,,
+X,,951B,,DECREMENT VERTICAL POSITION - Gets the current
+,,,,vertical coordinate (VERBEG) and moves it one up.
+,,,,
+"A,B,X,U",,9522,,GET MAXIMUM COORDINATES - Get the maximum values
+,,,,of the horizontal and vertical coordinates for the
+,,,,current PMODE. Return HOR in VD3 and VER in VD5.
+,,,,
+"A,B,X",,9536,,CLEAR GRAPHIC SCREEN - Clear the current graphics
+,,,,screen to the color in ACCB.  If ACCB = 0 then
+,,,,clear to the current background color.
+,,,,
+"A,B",,9710,,CALCULATE ABS(VEREND-VERBEG) - Calculate the
+,,,,absolute value of the distance between VEREND
+,,,,and VERBEG. Carry flag will indicate which was
+,,,,the larger coordinate.
+,,,,
+"A,B",,971D,,CALCULATE ABS(HOREND-HORBEG) - Calculate the
+,,,,absolute value of the distance between HOREND
+,,,,and HORBEG. Carry flag will indicate which was
+,,,,the larger coordinate.
+,,,,
+"U,Y",,9FB5,,16 BIT MULTIPLY - Multiply (unsigned) two 16 bit
+,,,,numbers together.  Enter with one number in ACCD
+,,,,and the other in the X register.  The four byte
+,,,,product will be returned in the Y and U registers.
