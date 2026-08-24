@@ -441,11 +441,28 @@ Found and precisely isolated while writing test harnesses for the above:
 
 ## 7. Classic Color BASIC tokenizer quirks
 
-- **No `ELSE` support at all.** `IF cond THEN stmt ELSE stmt` produces a
-  flat `?SN ERROR` (Syntax error) in this ROM (Disk Extended Color BASIC
-  1.1) -- confirmed with the simplest possible case
-  (`IFA=BTHENC=5ELSEC=6`). Use two separate `IF` statements instead
-  (`IF cond THEN stmt` / `IF NOT-cond THEN stmt`).
+- **`ELSE` support is real but genuinely inconsistent, and not fully
+  characterized.** Simple `IF cond THEN stmt ELSE stmt` reliably fails
+  with `?SN ERROR` (confirmed several ways: `IFA=BTHENC=5ELSEC=6`,
+  `IFA=BTHEN30ELSEPRINT"NO"`, even `IFA=BTHEN30ELSE C=6` with a space
+  before the assignment). But Nick Marentes' original HERO source uses
+  `ELSE` constantly and successfully on real hardware, and directly
+  testing his exact pattern confirms it: a bare `ELSE <linenumber>`
+  works (`IFK$=""THEN10:ELSE30`), and so does a full
+  `IF...THEN...:ELSEIF...THEN...:ELSE <statement>` chain -- tested with
+  real branching logic on all three paths (the initial `THEN`, the
+  `ELSEIF`, and the final `ELSE` with a genuine `CLS:PRINT...`
+  statement), all executing correctly. What doesn't seem to work is a
+  simple two-clause `IF...THEN...ELSE...` with no `ELSEIF` present
+  anywhere in the chain. Whether an `ELSEIF` earlier in the same
+  statement is genuinely what enables a later bare `ELSE` to accept a
+  real statement, or something else entirely is the actual trigger,
+  isn't nailed down here -- flagging the real, tested boundary cases
+  rather than a fully-explained rule. **Practical decision for the
+  HERO port specifically: use no `ELSE` at all, anywhere, converting
+  every instance to separate `IF` statements.** Slightly more verbose,
+  but avoids relying on a pattern whose exact edge doesn't have a
+  confident characterization yet.
 - **A variable name directly touching a following keyword, with no
   space, gets swallowed whole.** `IFX=YTHEN...` fails; `IFX=Y THEN...`
   works. The mechanism, precisely isolated by testing several variations
