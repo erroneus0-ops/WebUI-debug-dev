@@ -57,6 +57,29 @@ coco3.c, the CoCo 3 keyboard SVGs), GIME's memory-mapped registers are
 the more likely mechanism -- but this should be confirmed against the
 actual source before building the experiment around it, not assumed.
 
+**Memory editing, not just viewing (found 2026-08-25).** During live
+diagnosis of the hero-port INKEY/TIMER hang, confirmed via hex dump that
+the compiled program halts on a genuine `BRA *` self-loop ($20 $FE) at
+the end of its run -- deliberate codegen, not a crash. Wanted to poke a
+single `RTS` ($39) over it right there in the debugger to test the fix
+live, but the current wasm_read_byte/write_byte pair (see above) isn't
+exposed anywhere in the debug UI itself -- only used internally. Worth
+adding: pull a block of memory from the hex dump view, edit bytes in
+place, and a "write back" action that calls wasm_write_byte for each
+changed byte. Doesn't need to be fancy -- editable hex dump cells plus
+one button is enough to turn read-only inspection into actual live
+patching during a debug session.
+
+**"Print to file" support (found 2026-08-25).** Desktop XRoar has this
+under File > Printer Control: a "print to file" radio button, an
+Attach button to pick/create the target file, a running "characters
+printed" counter, and a Flush button. No equivalent exists in the WASM
+build. Worth investigating some form of this for the browser --
+whether that's a visible output text window, routing print output into
+the same stream as debugger output, or building toward an actual
+downloadable-file save mechanism. Any of the three would close a real
+gap between the native and WASM builds.
+
 ### The lst2cmt connection
 
 lst2cmt (built in the cocotools-wasm repo) converts an lwasm listing
