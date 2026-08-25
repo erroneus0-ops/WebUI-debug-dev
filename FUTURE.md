@@ -80,6 +80,19 @@ the same stream as debugger output, or building toward an actual
 downloadable-file save mechanism. Any of the three would close a real
 gap between the native and WASM builds.
 
+**"Load" should accept headerless/zero-address .bin files too (found
+2026-08-25).** The web UI's Load function already handles snapshots and
+proper DECB-format .bin files (5-byte header: $00 preamble, 2-byte
+length, 2-byte load address, ..., $FF marker, 2-byte exec address) --
+confirmed working by side-loading a raw ugbc.coco -O bin output directly,
+skipping the .dsk/LOADM step entirely for quick single-binary tests.
+Worth extending Load to also accept: (1) truly headerless raw binary
+dumps (no metadata at all -- would need a way to ask the user for a
+load address), and (2) files whose header technically specifies $0000
+as the load address, which some tools use as a "no relocation info,
+caller decides" convention rather than a literal instruction to load at
+address zero.
+
 ### The lst2cmt connection
 
 lst2cmt (built in the cocotools-wasm repo) converts an lwasm listing
