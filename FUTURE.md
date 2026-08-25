@@ -104,6 +104,19 @@ sets and bare `EXEC` reads. Fix: have the side-load routine write the
 header's exec address into \$9D/\$9E the same way LOADM does, so bare
 `EXEC` works identically after either loading method.
 
+**Why this matters for hero-port specifically (noted 2026-08-25):**
+the memory-editing gap above and the headerless/zero-address .bin
+loading gap are really the same underlying need seen twice --
+dropping arbitrary bytes at an arbitrary address for testing, without
+a full recompile-and-reload cycle each time. For hero-port, that's
+things like poking test sprite or tile data straight into RAM to
+exercise a single drawing routine in isolation, or patching one
+instruction to test a fix live (as with the BRA-self-loop/RTS case
+above), rather than round-tripping through ugbc + a fresh .dsk for
+every small experiment. Worth keeping this concrete use case in mind
+when scoping either feature -- it's the actual workflow blocker, not
+just an abstract nice-to-have.
+
 ### The lst2cmt connection
 
 lst2cmt (built in the cocotools-wasm repo) converts an lwasm listing
