@@ -173,3 +173,29 @@ glyph. The PRINTed region (starting at `8*32=256` bytes in, i.e.
 gaps and shifts exactly where `CHR$(8)` and `CHR$(13)` did their thing
 (erasing/backspacing over what came before) — directly, visually
 confirming the prose facts above rather than just stating them.
+
+## PRINT translates ASCII into VDG screen codes -- POKE never does
+
+This is a second, separate transformation from the control-code handling
+above, and it's easy to conflate the two. Confirmed by walking the same
+demo dump forward past the control-code range, into ordinary printable
+characters: `PRINT`/`CHR$()` add a flat **`+$40`** offset to standard
+ASCII before the byte ever reaches screen memory. `POKE` never does --
+whatever byte value is poked is exactly what ends up in VIDRAM.
+
+Worked example, confirmed against a real running game's actual memory
+(`hero11.dsk`'s high-score screen, ASCII `'0'` = `$30` printed via a
+plain `PRINT` of a literal `"000000"` string): the byte that actually
+lands in screen memory is `$70`, not `$30` -- exactly `$30 + $40`. The
+same offset holds across the whole printable range in the demo dump
+above: space (`$20`) prints as `$60`, `'!'` (`$21`) prints as `$61`, and
+so on, consistently.
+
+**Practical upshot:** any code that needs to predict or interpret what
+byte value actually ends up in screen memory from a `PRINT`ed string
+(as opposed to a directly `POKE`d one) needs to add `$40` to the
+character's plain ASCII value first. This is exactly why comparing a
+POKE-based test against a real game's PRINT-based output byte-for-byte
+can look "wrong" at first glance when it isn't -- the values are
+supposed to differ by this fixed offset, and it's a real, confirmed
+VDG/font-ROM encoding fact, not a bug or a mismatch to chase.
