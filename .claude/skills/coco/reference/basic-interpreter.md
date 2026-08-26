@@ -152,3 +152,24 @@ trap if re-verifying this kind of thing).
 **Practical upshot:** any string built from raw byte values (not pure
 literal text) can treat 0-31 as inert *except* 8 and 13, which must be
 handled deliberately if they show up unintentionally.
+
+**Runnable demonstration** (confirmed working, 2026-08-26) — builds a
+full character map of the VDG's normal mode and shows the POKE-vs-PRINT
+distinction side by side on one screen. The top half POKEs every byte
+0-127 directly into screen RAM (no interpretation at all); the bottom
+half PRINTs the same range via `CHR$()` (full control-code handling
+applies). Values 128-255 are POKEd only, not printed, since printed
+they're visually identical to their poke'd counterparts and wouldn't
+fit both ranges on one screen:
+
+```basic
+CLS4:A=&H400:B=8*32:FORI=0TO127:POKEA+I,I:?@B+I,CHR$(I);:NEXT:FORI=128TO255:POKEA+I,I:NEXT
+```
+
+Run this and hex-dump `$0400` onward: the POKE'd region shows every
+byte value 0-255 exactly as written, an unbroken 1:1 map from byte to
+glyph. The PRINTed region (starting at `8*32=256` bytes in, i.e.
+`$0500`) shows the same CHR$ values 0-127 sent through, but with visible
+gaps and shifts exactly where `CHR$(8)` and `CHR$(13)` did their thing
+(erasing/backspacing over what came before) — directly, visually
+confirming the prose facts above rather than just stating them.
