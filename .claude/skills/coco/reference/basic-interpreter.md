@@ -199,3 +199,43 @@ POKE-based test against a real game's PRINT-based output byte-for-byte
 can look "wrong" at first glance when it isn't -- the values are
 supposed to differ by this fixed offset, and it's a real, confirmed
 VDG/font-ROM encoding fact, not a bug or a mismatch to chase.
+
+## Decoding a RAM hex dump: read bytes directly, don't reverse the PRINT transform
+
+When someone hands you a hex dump of what's actually sitting in screen
+RAM right now, the `+$40` rule above (and the lowercase-letter rule
+below) describe how a byte got *written* -- they are not the method for
+*reading* it back. Once a byte is in VIDRAM, what it looks like on
+screen is a fixed, direct property of that byte value alone; how it got
+there (POKE vs PRINT, which transform applied) is irrelevant to
+decoding it. Read every byte in a RAM dump straight against the
+POKE-based character map from the demo above (byte value -> glyph,
+1:1) -- never try to guess which PRINT rule produced it and reverse
+that rule instead. Confirmed directly: reversing the transform and
+reading straight off the character map give the same answer for every
+byte tested, but the direct map-lookup is simpler, always correct, and
+doesn't require first guessing whether a given byte came from a POKE
+or a PRINT (which usually isn't knowable from the dump alone).
+
+## Lowercase letters in a PRINT string render as invisible, not inverse-video
+
+Confirmed directly from a real compiled program's runtime output
+(2026-08-26): lowercase ASCII (`$61`-`$7A`) inside a literal `PRINT`
+string does **not** render as inverse-video uppercase. ugBASIC's own
+compiled `PRINT` routine (`TEXTATDECODE`) subtracts `$60` from any byte
+in the `$60`-`$7F` range, landing every lowercase letter in the `0`-`31`
+control-code range documented above -- where, per that same section,
+most values are genuinely non-printing. The practical result: a
+lowercase word inside a `PRINT` string just disappears from the screen
+entirely, it does not appear highlighted.
+
+This matters because it's easy to assume the opposite. On the *real,
+original* interpreted Color BASIC ROM, non-T1 hardware really does
+render lowercase ASCII as inverse-video uppercase (see the T1-hack
+documentation elsewhere in this skill) -- but ugBASIC's compiled
+runtime is an independently-authored reimplementation, not a faithful
+copy of the ROM's exact PRINT semantics, and it does not reproduce this
+particular behavior. Don't assume a real-hardware BASIC quirk carries
+over to ugBASIC-compiled output without checking directly -- confirm
+against the actual generated `TEXTATDECODE`-family code (or a live
+test) first, same as any other cross-target assumption.
