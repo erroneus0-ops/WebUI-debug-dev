@@ -132,6 +132,24 @@ been running a while. Worth adding a simple list view (even just the
 addresses, no need for anything fancy) alongside the existing
 single-address input.
 
+**Hex dump needs a PMODE4/SG12-aware render mode (found 2026-08-26).**
+The debug panel's own Hex Dump view is locked to plain text-mode byte
+interpretation -- fine for `SCREEN 0`, useless for understanding
+`PMODE4`/SG12 graphics content directly. Right now the only way to
+actually see what a PMODE4 framebuffer dump looks like is to rely on
+the real simulated CRT screenshot instead, since the debugger's own
+dump view can't decode the byte encoding at all. Worth adding a toggle
+that reinterprets the same dumped bytes as SG12 pixels instead of text
+glyphs. The actual encoding, confirmed early in this project via direct
+hardware register testing (see `hero-port/upstream-reports/` and this
+file's own git history around the original SG12 hypothesis/border
+tests): each byte's bit 7 is the semigraphics flag, bits 6-4 select one
+of 8 colors, and bits 3-0 independently illuminate the byte's four
+quadrant sub-cells. A render mode that decodes this directly in the
+hex dump panel (even a simple small colored-block grid alongside the
+existing hex/ASCII columns) would remove the need to bounce between a
+raw hex dump and a full screenshot just to understand PMODE4 content.
+
 ### The lst2cmt connection
 
 lst2cmt (built in the cocotools-wasm repo) converts an lwasm listing
