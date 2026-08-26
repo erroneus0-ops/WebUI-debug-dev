@@ -74,6 +74,38 @@ The undocumented SG12 mode (used by the HERO port's original game) is the
 Tandy never documented as a supported BASIC-level mode. Same mechanism as
 every officially-supported mode, no special-case wiring involved.
 
+### `PMODE` number -> VDG name -> SAM `V` / VDG `GM` bits (confirmed
+directly from ugBASIC's own `ugbc/src/hw/6847.c` register-configuration
+code, 2026-08-26 -- not inferred from naming patterns)
+
+```
+PMODE  VDG name              Resolution  Colors  VRAM   SAM V(2,1,0)  GM(2,1,0)
+  0    Resolution Graphics 2  128x96      2      1536   0,1,1 (011)   0,1,1
+  1    Color Graphics 3       128x96      4      3072   1,0,0 (100)   1,0,0
+  2    Resolution Graphics 3  128x192     2      3072   1,0,1 (101)   1,0,1
+  3    Color Graphics 6       128x192     4      6144   1,1,0 (110)   1,1,0
+  4    Resolution Graphics 6  256x192     2      6144   1,1,0 (110)   1,1,1
+```
+
+Two things worth being precise about, confirmed by this table rather
+than assumed:
+
+- **`PMODE3` and `PMODE4` genuinely share the identical SAM `V` value**
+  (`110`) -- they differ *only* in the VDG's `GM0` bit (the last digit
+  of the `GM` triplet), which controls bit-depth/color interpretation,
+  not scanline-fetch timing. Any scanline-grouping or timing behaviour
+  (e.g. the "6 rows = 1 visual line" MOD-group finding used throughout
+  this project's SG12 work) that holds for one holds for the other --
+  confirmed architecturally (separate SAM vs VDG registers) and now
+  confirmed by the actual register values matching exactly.
+- **`PMODE1` (Color Graphics 3) shares its SAM `V` value (`100`) with
+  SG12 itself.** SG12 isn't a mode disconnected from the standard
+  `PMODE` numbers -- it's the *same* SAM timing as `PMODE1`, just with
+  different VDG `GM`/mode-select configuration to get the undocumented
+  semigraphics-12 interpretation instead of ordinary 4-color Color
+  Graphics 3. This is the concrete reason SG12 work in this project
+  starts from `PMODE1`-adjacent register pokes, not from scratch.
+
 ### The VDG's own register — text/graphics, palette, and inversion (all
 one register, `$FF22`/PIA1 "B side")
 
