@@ -117,6 +117,21 @@ every small experiment. Worth keeping this concrete use case in mind
 when scoping either feature -- it's the actual workflow blocker, not
 just an abstract nice-to-have.
 
+**Debug panel needs a breakpoint list view (found 2026-08-26).**
+Confirmed via source (`wasm.c`'s `wasm_set_breakpoint`) that the
+underlying mechanism genuinely supports multiple simultaneous
+breakpoints -- it calls straight into XRoar's real internal
+`debug.add_breakpoint` list, not a single overwritable slot. But the
+debug panel UI only exposes one `Break: $` input field with Set/Clear,
+with no way to see which breakpoints are currently active. Set several
+by typing a new address and clicking Set each time (without Clear in
+between) and they do all stay active -- confirmed working -- but
+there's no way to review the list, so it's easy to lose track of what
+you've already set, especially across a paused/resumed session that's
+been running a while. Worth adding a simple list view (even just the
+addresses, no need for anything fancy) alongside the existing
+single-address input.
+
 ### The lst2cmt connection
 
 lst2cmt (built in the cocotools-wasm repo) converts an lwasm listing
