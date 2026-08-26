@@ -76,16 +76,31 @@ every officially-supported mode, no special-case wiring involved.
 
 **SG12's actual buffer size, empirically confirmed (2026-08-26):** 3072
 bytes, matching the `V=100` table entry above -- not 1536. Settled with
-a direct test: four distinct, wide (768-byte) solid color bands filled
-from `BITMAPADDRESS`, then switched into SG12. All four bands rendered
-as separate, non-repeating regions, confirming the full 3072-byte range
-is genuinely addressed and displayed, not just half of it. (A tempting
-but incorrect reconciling theory along the way: that documented "K"
-figures for SGn modes referred to some other unit and the real byte
-counts were simple multiples of the 512-byte text screen -- 512, 1024,
-1536, 2048 -- which would have put SG12 at 1536. Worth remembering as
-a case where a plausible-sounding alternate theory still needed a real
-test before being trusted over an already-sourced figure.)
+three independent checks, not just one:
+
+1. Source: `SAM_V2_SET`/`SAM_V1_CLR`/`SAM_V0_CLR` in ugBASIC's own
+   `ugbc/src/hw/6847.c` for `BITMAP_MODE_COLOR3` (`PMODE1`) -- `V=100`,
+   3072-byte capacity, same row SG12 shares in the table above.
+2. Four distinct, wide (768-byte) solid color bands filled from
+   `BITMAPADDRESS`, then switched into SG12 -- all four bands rendered
+   as separate, non-repeating regions.
+3. The strongest check: a full-buffer randomized fill (LCG PRNG driving
+   every byte, high bits only -- low-order LCG bits are a well-known
+   weak-randomness pitfall) across all 3072 bytes. A genuinely
+   continuous, seamless noise texture edge to edge, with no visible
+   repeat or wraparound boundary anywhere -- exactly what a fully,
+   uniquely addressed 3072-byte buffer should look like, and exactly
+   what a silently-wrapping smaller buffer would *not* produce (random
+   data repeating from a wrap point is visually obvious, unlike a
+   solid-fill test which can't reveal a wrap the same way).
+
+(A tempting but incorrect reconciling theory along the way: that
+documented "K" figures for SGn modes referred to some other unit and
+the real byte counts were simple multiples of the 512-byte text screen
+-- 512, 1024, 1536, 2048 -- which would have put SG12 at 1536. Worth
+remembering as a case where a plausible-sounding alternate theory still
+needed a real test before being trusted over an already-sourced
+figure.)
 
 ### `PMODE` number -> VDG name -> SAM `V` / VDG `GM` bits (confirmed
 directly from ugBASIC's own `ugbc/src/hw/6847.c` register-configuration
