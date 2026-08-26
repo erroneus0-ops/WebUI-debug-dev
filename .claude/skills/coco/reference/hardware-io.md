@@ -74,6 +74,19 @@ The undocumented SG12 mode (used by the HERO port's original game) is the
 Tandy never documented as a supported BASIC-level mode. Same mechanism as
 every officially-supported mode, no special-case wiring involved.
 
+**SG12's actual buffer size, empirically confirmed (2026-08-26):** 3072
+bytes, matching the `V=100` table entry above -- not 1536. Settled with
+a direct test: four distinct, wide (768-byte) solid color bands filled
+from `BITMAPADDRESS`, then switched into SG12. All four bands rendered
+as separate, non-repeating regions, confirming the full 3072-byte range
+is genuinely addressed and displayed, not just half of it. (A tempting
+but incorrect reconciling theory along the way: that documented "K"
+figures for SGn modes referred to some other unit and the real byte
+counts were simple multiples of the 512-byte text screen -- 512, 1024,
+1536, 2048 -- which would have put SG12 at 1536. Worth remembering as
+a case where a plausible-sounding alternate theory still needed a real
+test before being trusted over an already-sourced figure.)
+
 ### `PMODE` number -> VDG name -> SAM `V` / VDG `GM` bits (confirmed
 directly from ugBASIC's own `ugbc/src/hw/6847.c` register-configuration
 code, 2026-08-26 -- not inferred from naming patterns)
