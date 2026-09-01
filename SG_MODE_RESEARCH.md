@@ -221,6 +221,134 @@ quirks/bugs in those modes. Worth a dedicated follow-up search rather than
 assuming the graphics-mode additions and the SG-mode improvements are the
 same thing.
 
+## GET/PUT are provably mode-blind -- confirmed directly from the ECB 1.1 ROM disassembly (2026-09-01)
+
+Long-standing question, now settled by tracing the actual routines rather
+than inferring from behavior: **does classic `GET`/`PUT` know or care
+which display mode (SG4/SG8/SG12/SG24/PMODE) is actually active when it
+copies bytes?** Answer: no, and it structurally *can't* -- there's nowhere
+for that knowledge to live.
+
+Both `GET` ($9755) and `PUT` ($9758) funnel through the same shared
+address-computation routine, `L9298`, before doing any byte copying
+(confirmed in `reference/xls-conversion/listings/ecb-1.1/`,
+chunks `ecb_03000-03599.csv` and `ecb_02400-02999.csv`):
+
+```
+L928F  LDA  PMODE        ; read the STORED mode number -- whatever
+                          ; BASIC's own PMODE statement last set
+       ASLA               ; x2, word-sized table entries
+       LDU  A,U            ; jump-table lookup
+       RTS
+L9298  BSR  L928F          ; go get the jump address
+       JMP  ,U             ; jump into ONE of five fixed routines
+
+L929C  FDB  L92A6          ; PMODE 0
+L929E  FDB  L92C2          ; PMODE 1
+L92A0  FDB  L92A6          ; PMODE 2
+L92A2  FDB  L92C2          ; PMODE 3
+L92A4  FDB  L92A6          ; PMODE 4
+```
+
+Five entries. `PMODE` 0 through 4, full stop -- no sixth entry, no
+mechanism by which one could exist for SG12/SG24 or any semigraphics
+mode. The `PMODE` variable this jump table reads only ever means "which
+of BASIC's five real graphics resolutions did a `PMODE` statement last
+select" -- it has zero representation for "the SAM/VDG registers have
+since been hand-flipped into an undocumented reinterpretation via raw
+pokes." `GET`/`PUT`'s addressing math (row-byte-count in `HORBYT`,
+pixels-per-byte via a fixed number of `LSRB`s -- three for PMODE4's
+2-colour/8-per-byte, two for PMODE 1/3's 4-colour/4-per-byte) is baked
+into which of those five routines got selected, and stays fixed at
+whatever it was computed as under the *last real `PMODE` statement* --
+completely oblivious to any hardware trick applied afterward.
+
+This is exactly why HERO's SG12 hack works at all: it draws using an
+ordinary `PMODE 4` (2-colour, 8 pixels/byte, 32 bytes/row) so `GET`/`PUT`
+keep doing PMODE4's own mundane, correct addressing the entire time --
+the reinterpretation only happens downstream, at VDG scan-out, which
+`GET`/`PUT` never touches. HERO's own collision formula,
+`U = PY*32 + PX*.125`, is PMODE4's addressing math typed out by hand;
+the fact that 32 bytes/row and 8 pixels/byte happen to match SG12's real
+hardware row geometry is the entire trick, not a coincidence GET/PUT is
+aware of.
+
+**Practical consequence, worth stating plainly:** "does compiler/runtime
+X support GET/PUT for SG mode Y" was never really a coherent question to
+begin with -- not for DECB, not for any compiled-BASIC toolchain. No
+implementation of GET/PUT anywhere has ever been "SG-aware," because the
+real ROM never was either. What actually matters for any hand-rolled
+replacement (this project's own `writerow`/`fillrow`, or an equivalent
+built on another toolchain) is only whether its addressing math matches
+the *target* mode's real row-byte-count and pixels-per-byte -- a
+geometry question, fully answerable from the SAM's real V2V1V0 buffer
+table earlier in this document, not a "mode support" question at all.
+
+## Terminology: these are "quadrant" characters, not an ad-hoc description
+
+Confirmed via Unicode's own charts (`Block Elements`, U+2580-U+259F):
+the 2x2 four-cell mosaic subdivision semigraphics modes use --
+upper-left, upper-right, lower-left, lower-right sub-cells within one
+character position -- has a real, precise name: **quadrant**. Unicode
+has had dedicated code points for exactly this concept since 1999
+(`U+2598` QUADRANT UPPER LEFT, `U+259D` QUADRANT UPPER RIGHT, `U+2596`
+QUADRANT LOWER LEFT, `U+2597` QUADRANT LOWER RIGHT, plus all
+combinations). Worth knowing the sibling term to *avoid* here: "sextant"
+is the Unicode committee's name (coined "by analogy with quadrant") for
+teletext's denser *2x3*, six-cell mosaic scheme -- a different standard.
+The VDG's semigraphics glyphs are quadrant characters, not sextant ones.
+Use "quadrant sub-cell" going forward instead of describing the
+subdivision by hand -- `FUTURE.md`'s existing "four quadrant sub-cells"
+phrasing already independently landed on the correct term.
+
+**Also confirmed directly and worth stating precisely:** the 2x2
+quadrant subdivision is a VDG scan-out-time rendering choice about how
+to paint *one character cell* -- it is never a real increase in
+addressable resolution. The **32-characters-per-line limit is fixed
+regardless of SG mode** (SG4/SG8/SG12/SG24 all still address 32 cells
+per row; higher SG numbers add vertical resolution via smaller SAM Y
+divisors -- see the V2V1V0 table above -- not more horizontal cells).
+The subdivision is real pixels on the actual CRT, but it is entirely a
+VDG-side illusion from the addressing/byte-layout side: nothing about
+how bytes are fetched or laid out in RAM changes because of it.
+
+## The SAM's write-only bit registers: confirmed mechanism, no settled community name
+
+Directly confirmed from the real Motorola MC6883 SAM datasheet (via
+Scribd-hosted copy), in almost exactly the words used informally
+earlier in this project:
+
+> To set any one of these 16 bits, the MPU simply writes to a unique
+> odd address (within $FFC1 through $FFDF). To clear any one of these
+> 16 bits, the MPU simply writes to a unique even address (within
+> $FFC0 through $FFDE). **Note that the data on the MPU data bus is
+> irrelevant.**
+
+So every `STA $FFDF`/`STA $FFDE`-style poke used throughout this
+project's SG12 work (and in the classic Hogg-1982/Rainbow-1987
+ROM-shadow routines) genuinely only depends on the *address*, never the
+value written -- confirmed from the primary source, not folklore. No
+single widely-agreed proper name for the technique was found in general
+EE literature beyond generic description ("address-decoded set/clear
+register," "one-address-per-bit register") -- worth noting as an open
+naming question rather than inventing a term for it.
+
+## Byte-boundary discipline: a real, hardware-forced constraint, not just a speed trick
+
+Confirmed directly from the same `L92B1`-`L92C0` addressing code traced
+above: converting a horizontal pixel coordinate to a byte offset uses
+`LSRB` (discarding the low 3 bits) then `ANDA #$07` to recover the
+sub-byte bit position for masking. Any x-coordinate that's a multiple of
+8 skips that masking work entirely -- long-known CoCo PMODE folklore as
+a *speed* optimization. But it's more than that once hand-rolling a
+`get`/`put` equivalent for a semigraphics buffer specifically: a "pixel"
+in an SG-reinterpreted buffer isn't a bit anymore, it's a whole
+quadrant-coded byte carrying color+pattern for 4 sub-cells at once.
+Straddling a byte boundary mid-quadrant would genuinely corrupt the
+image, not just cost cycles -- byte-boundary alignment is a
+**correctness** requirement for any hand-rolled SG-mode blitter, not
+merely a performance nicety the way it is for ordinary PMODE work.
+
 ## Toward simulating this in the character-dump tool
 
 Three real hooks the memory inspector could use, each already partially
