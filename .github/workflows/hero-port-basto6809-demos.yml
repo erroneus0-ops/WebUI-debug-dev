@@ -50,10 +50,16 @@ name: HERO port -- BASIC-To-6809 SG12 demos (auto-build)
 on:
   push:
     branches: [main]
+    # `paths` and `paths-ignore` can't both be set on the same trigger
+    # (GitHub Actions rejects that combination outright, confirmed
+    # 2026-09-04: instant zero-job "failure" on push, no job ever
+    # scheduled). A single `paths` list with a `!`-negated entry does
+    # the same job: match anything under basto6809-tests/ except each
+    # demo's own output/ folder, so the commit-back step doesn't
+    # retrigger itself in a loop.
     paths:
       - 'hero-port/basto6809-tests/**'
-    paths-ignore:
-      - 'hero-port/basto6809-tests/**/output/**'
+      - '!hero-port/basto6809-tests/**/output/**'
   workflow_dispatch: {}
 
 env:
