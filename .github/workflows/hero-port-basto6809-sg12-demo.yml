@@ -1,0 +1,189 @@
+# .github/workflows/hero-port-basto6809-sg12-demo.yml
+#
+# Manual-dispatch only, scoped narrowly on purpose (mirrors
+# hero-port-build-and-test.yml's scoping rationale): this is a one-off
+# proof that the BASIC-To-6809 / PNGtoCCSB toolchain can genuinely
+# produce a working SG12 (GMODE 7) sprite demo end-to-end, not a
+# recurring build for an in-progress port (there is no BASIC-To-6809
+# hero-port yet -- see hero-port/COMPILER-COMPARISON.md for why ugBASIC
+# remains the active port target).
+#
+# WHAT THIS DOES
+# --------------
+# 1. Fetches the real, current BASIC-To-6809 v5.50 Linux x86_64 release
+#    (bundled binaries: BasTo6809, PNGtoCCSB, decb, BLANK.DSK -- decb
+#    ships bundled with this toolchain, unlike ugBASIC's coco target,
+#    so no toolshed submodule build is needed here at all).
+# 2. Runs PNGtoCCSB -g7 (SG12) on a tiny 8x8 test sprite
+#    (hero-port/basto6809-tests/BALL.png) to produce BALL.asm --
+#    confirmed working by hand first (2026-09-04) before committing to
+#    a CI run: real output, "Generating semigraphics sprite" reported,
+#    not just accepted without error.
+# 3. Runs BasTo6809 on hero-port/basto6809-tests/BALLDEMO.BAS (a
+#    bouncing-ball program written directly against BasTo6809's own
+#    documented SPRITE_LOAD/GMODE/SPRITE LOCATE/BACKUP/SHOW/WAIT VBL/
+#    ERASE pattern) -- also confirmed compiling cleanly by hand first.
+# 4. Builds lwasm from the real upstream source
+#    (lwtools.ca/releases/lwtools/lwtools-4.25.tar.gz -- the actual
+#    current release as of 2026-07-18, confirmed via that site's own
+#    directory index, not guessed) -- this compiler's own manual
+#    documents assembling its output specifically with lwasm, a
+#    different assembler dialect from ugBASIC's asm6809, so this can't
+#    reuse the other workflow's toolchain build.
+# 5. Assembles with the exact invocation BasTo6809's own manual
+#    documents for a plain (non-Dragon) CoCo target:
+#    `lwasm -9bl -p cd -o BALLDEMO.bin BALLDEMO.asm` -- producing a
+#    self-contained DECB LOADM binary (load + exec address in its own
+#    postamble), confirmed in the manual as needing no separate
+#    bootstrap loader the way ugBASIC's dsk chunking does.
+# 6. Builds a disk image with the bundled `decb` tool directly (no
+#    build step needed, unlike ugBASIC's toolshed-built decb) by
+#    copying the compiled .bin onto the release's own BLANK.DSK.
+# 7. Reuses this repo's existing XRoar-with-headless-screenshot patch
+#    (hero-port/patches/xroar-screenshot-on-exit.patch) and the same
+#    real ROM images already in wasm/ -- both already
+#    established/working infrastructure from
+#    hero-port-build-and-test.yml, not duplicated logic.
+# 8. Boots the disk headlessly, typing `LOADM"BALLDEMO":EXEC` directly
+#    (not `RUN"LOADER"` -- there is no bootstrap loader here, per (5)),
+#    grabs a screenshot, publishes it as a GitHub Release asset so it's
+#    reachable from Claude's sandbox via
+#    release-assets.githubusercontent.com.
+
+name: HERO port -- BASIC-To-6809 SG12 ball demo (one-off proof)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v4
+
+      - name: Install build/runtime prerequisites
+        run: |
+          sudo apt-get update
+          # libglu1-mesa: the QB64PE-built BasTo6809/PNGtoCCSB binaries
+          #   fail immediately with "libGLU.so.1: cannot open shared
+          #   object file" without it, confirmed via direct local run.
+          # xvfb: same binaries need a display to initialize even for
+          #   this command-line use -- confirmed hanging/erroring
+          #   without one locally, fixed by running everything through
+          #   xvfb-run.
+          # build-essential: for compiling lwasm from source.
+          sudo apt-get install -y libglu1-mesa xvfb build-essential zip
+
+      - name: Fetch BASIC-To-6809 v5.50 (Linux x86_64) and extract
+        run: |
+          git clone --depth 1 https://github.com/nowhereman999/BASIC-To-6809.git /tmp/basto6809-src
+          mkdir -p /tmp/basto6809
+          unzip -q /tmp/basto6809-src/Binary_Versions/BASIC-To-6809_v5.50_Linux_x86_64.zip -d /tmp/basto6809
+          BDIR=$(find /tmp/basto6809 -maxdepth 1 -type d -name "BASIC-To-6809*")
+          echo "BDIR=$BDIR" >> "$GITHUB_ENV"
+          chmod +x "$BDIR"/BasTo6809 "$BDIR"/BasTo6809.1.Tokenizer "$BDIR"/BasTo6809.2.Compile "$BDIR"/PNGtoCCSB "$BDIR"/decb
+
+      - name: Generate the SG12 sprite with PNGtoCCSB
+        run: |
+          cp hero-port/basto6809-tests/BALL.png "$BDIR/"
+          cd "$BDIR"
+          xvfb-run -a ./PNGtoCCSB -g7 -s0 BALL.png
+          ls -la BALL.asm
+          test -s BALL.asm
+
+      - name: Compile the ball demo with BasTo6809
+        run: |
+          cp hero-port/basto6809-tests/BALLDEMO.BAS "$BDIR/"
+          cd "$BDIR"
+          xvfb-run -a ./BasTo6809 -ascii BALLDEMO.BAS
+          ls -la BALLDEMO.asm
+          test -s BALLDEMO.asm
+
+      - name: Build lwasm from real upstream source (lwtools 4.25)
+        run: |
+          # Confirmed current release directly from lwtools.ca's own
+          # directory index on 2026-09-04 (dated 2026-07-18) -- not
+          # guessed. This compiler's manual documents assembling with
+          # lwasm specifically, a different dialect from ugBASIC's
+          # asm6809, so this can't reuse the other workflow's toolchain.
+          curl -LO http://www.lwtools.ca/releases/lwtools/lwtools-4.25.tar.gz
+          tar xzf lwtools-4.25.tar.gz
+          cd lwtools-4.25
+          make
+          find . -type f -name lwasm -exec sudo cp {} /usr/local/bin/ \;
+          lwasm --version
+
+      - name: Assemble with lwasm (exact invocation from BasTo6809's own manual)
+        run: |
+          cd "$BDIR"
+          # "lwasm -9bl -p cd -o<file>.bin <file>.asm" is the documented
+          # non-Dragon build sequence (BasTo6809_User_Manual.pdf,
+          # "Example build sequence" / Dragon section for comparison).
+          # Output is a self-contained DECB LOADM binary -- load and
+          # exec address in its own postamble, no separate bootstrap
+          # loader needed (unlike ugBASIC's dsk chunking/loader.bas).
+          lwasm -9bl -p cd -oBALLDEMO.bin BALLDEMO.asm
+          ls -la BALLDEMO.bin
+          test -s BALLDEMO.bin
+
+      - name: Build the disk image with the bundled decb tool
+        run: |
+          cd "$BDIR"
+          cp BLANK.DSK DISK1.DSK
+          ./decb copy -2 -b -r BALLDEMO.bin DISK1.DSK,BALLDEMO.BIN
+          ls -la DISK1.DSK
+
+      - name: Build XRoar from source (reusing this repo's existing headless-screenshot patch)
+        run: |
+          git clone --depth 1 https://github.com/stahta01/xroar.git /tmp/xroar
+          cd /tmp/xroar
+          git apply "${GITHUB_WORKSPACE}/hero-port/patches/xroar-screenshot-on-exit.patch"
+          sudo apt-get install -y bison flex libpng-dev libgtk-3-dev libasound2-dev libsdl2-dev libx11-dev pkg-config autoconf automake libtool texinfo
+          ./autogen.sh
+          ./configure --without-gtk3 --without-gtk2 --without-gtkgl
+          make -j"$(nproc)"
+          sudo make install
+          xroar --version
+
+      - name: Boot the disk headlessly and screenshot it
+        run: |
+          mkdir -p /tmp/screenshots
+          export SDL_VIDEODRIVER=dummy
+          # LOADM"BALLDEMO":EXEC directly -- this compiler's output is a
+          # self-contained LOADM binary (see assemble step above), no
+          # RUN"LOADER" bootstrap the way ugBASIC's dsk output needs.
+          xroar -ui sdl -machine coco2b -cart rsdos \
+            -rompath "${GITHUB_WORKSPACE}/wasm" \
+            -no-disk-write-back \
+            -load-fd0 "$BDIR/DISK1.DSK" \
+            -type 'LOADM"BALLDEMO":EXEC\r' \
+            -screenshot-on-exit "/tmp/screenshots/balldemo.png" &
+          XROAR_PID=$!
+          sleep 15
+          kill -ALRM "$XROAR_PID" 2>/dev/null || true
+          wait "$XROAR_PID" 2>/dev/null || echo "xroar exited: $?"
+          ls -la /tmp/screenshots/
+
+      - name: Package outputs
+        run: |
+          mkdir -p /tmp/release-assets
+          cp "$BDIR/DISK1.DSK" /tmp/release-assets/BALLDEMO.dsk
+          cp /tmp/screenshots/balldemo.png /tmp/release-assets/ 2>/dev/null || true
+          ls -la /tmp/release-assets/
+
+      - name: Publish as a GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hero-port-basto6809-demo-${{ github.run_number }}
+          name: "BASIC-To-6809 SG12 ball demo -- CI build #${{ github.run_number }}"
+          body: |
+            One-off proof build from commit ${{ github.sha }}: PNGtoCCSB
+            -g7 (SG12) sprite generation + BasTo6809 compile + lwasm
+            assembly + decb disk image + headless XRoar boot/screenshot,
+            all from real current toolchain sources. See
+            hero-port/COMPILER-COMPARISON.md for context -- this does
+            not represent a new active port target.
+          files: |
+            /tmp/release-assets/*
+          prerelease: true
