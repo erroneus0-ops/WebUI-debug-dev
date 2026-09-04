@@ -148,33 +148,19 @@ jobs:
 
       - name: Install XRoar onto PATH
         run: |
-          mkdir -p /tmp/ci-diagnostics
-          {
-            echo "=== contents of /home/runner/xroar-install (post cache-restore) ==="
-            find /home/runner/xroar-install -maxdepth 4 2>&1 || echo "directory does not exist at all"
-            echo "=== disk space ==="
-            df -h /home/runner 2>&1
-          } > /tmp/ci-diagnostics/xroar-install-debug.txt 2>&1
-          cat /tmp/ci-diagnostics/xroar-install-debug.txt
-          XROAR_BIN=$(find /home/runner/xroar-install -type f -name xroar -perm -u+x 2>/dev/null | head -1)
+          # Confirmed via diagnostics (previous run): the binary itself
+          # survives cache restore fine, but the executable permission
+          # bit does not -- a known actions/cache tar round-trip quirk.
+          # chmod explicitly rather than relying on cache to preserve it.
+          XROAR_BIN=$(find /home/runner/xroar-install -type f -name xroar 2>/dev/null | head -1)
           if [ -z "$XROAR_BIN" ]; then
-            echo "No xroar binary found under the cached path -- cache restore likely incomplete or empty." | tee -a /tmp/ci-diagnostics/xroar-install-debug.txt
+            echo "No xroar binary found under the cached path at all."
+            find /home/runner/xroar-install -maxdepth 4 2>&1 || echo "directory does not exist"
             exit 1
           fi
-          echo "Found xroar binary at: $XROAR_BIN"
+          chmod +x "$XROAR_BIN"
           sudo ln -sf "$XROAR_BIN" /usr/local/bin/xroar
           xroar --version
-
-      - name: Publish diagnostics even on failure (readable via release-assets.githubusercontent.com)
-        if: always()
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: hero-port-basto6809-demos-diag-${{ github.run_number }}
-          name: "Diagnostics -- CI run #${{ github.run_number }}"
-          body: "CI diagnostics for debugging cache-restore behavior."
-          files: |
-            /tmp/ci-diagnostics/*
-          prerelease: true
 
       - name: Build every demo under hero-port/basto6809-tests/
         run: |
