@@ -148,7 +148,20 @@ jobs:
 
       - name: Install XRoar onto PATH
         run: |
-          sudo ln -sf /home/runner/xroar-install/bin/xroar /usr/local/bin/xroar
+          # Diagnostic first: a cache-restore across separate runner VMs
+          # is the one part of this pipeline not yet confirmed to survive
+          # intact (unlike the cache-miss/fresh-build path, proven working
+          # in the very first run of this workflow) -- print what's
+          # actually there before assuming the expected binary exists.
+          echo "=== contents of /home/runner/xroar-install (post cache-restore) ==="
+          find /home/runner/xroar-install -maxdepth 3 2>&1 || echo "directory does not exist at all"
+          XROAR_BIN=$(find /home/runner/xroar-install -type f -name xroar -perm -u+x 2>/dev/null | head -1)
+          if [ -z "$XROAR_BIN" ]; then
+            echo "No xroar binary found under the cached path -- cache restore likely incomplete or empty."
+            exit 1
+          fi
+          echo "Found xroar binary at: $XROAR_BIN"
+          sudo ln -sf "$XROAR_BIN" /usr/local/bin/xroar
           xroar --version
 
       - name: Build every demo under hero-port/basto6809-tests/
