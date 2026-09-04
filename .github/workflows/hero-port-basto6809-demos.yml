@@ -81,7 +81,16 @@ jobs:
           #   binaries need these even for command-line use (confirmed
           #   2026-09-04: missing libGLU.so.1 otherwise, and no display
           #   to initialize against without xvfb-run).
-          sudo apt-get install -y libglu1-mesa xvfb build-essential zip
+          # libsdl2-2.0-0/libpulse0: XRoar's own *runtime* shared-library
+          #   dependencies. These must be installed unconditionally here,
+          #   not only inside the cache-guarded XRoar build step below --
+          #   confirmed via direct diagnostic (release
+          #   hero-port-basto6809-demos-diag-8, `ldd` on the cached
+          #   binary): a cache-hit run skips the build step entirely
+          #   (nothing to rebuild), which also skips its apt-get line,
+          #   leaving the cached binary unable to find libSDL2-2.0.so.0
+          #   at runtime even though the binary itself restored fine.
+          sudo apt-get install -y libglu1-mesa xvfb build-essential zip libsdl2-2.0-0 libpulse0
 
       - name: Fetch BASIC-To-6809 (pinned commit) and extract Linux binaries
         run: |
