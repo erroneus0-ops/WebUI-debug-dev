@@ -1,0 +1,3 @@
+ARC_TOP.png 7 1
+ARC_BOTTOM.png 7 1
+DOME.png 7 2

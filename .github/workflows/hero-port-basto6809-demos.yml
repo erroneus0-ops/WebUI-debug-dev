@@ -1,0 +1,243 @@
+# .github/workflows/hero-port-basto6809-demos.yml
+#
+# Redesigned 2026-09-04 to replace the one-off
+# hero-port-basto6809-sg12-demo.yml after its first (successful)
+# manual-dispatch run. Differences, and why:
+#
+# 1. AUTO-TRIGGERS on push to hero-port/basto6809-tests/**, so editing
+#    a .BAS or .png under here and pushing is enough -- no manual
+#    dispatch needed. `paths-ignore` excludes each demo's own output/
+#    folder so the commit-back step (see end of job) doesn't retrigger
+#    itself in a loop.
+# 2. REUSABLE across demos, not just the one ball program. Each
+#    subfolder under hero-port/basto6809-tests/ is one self-contained
+#    demo: exactly one .BAS file, whatever .png sprite sources it
+#    needs, and a small sprites.txt manifest (one line per sprite:
+#    "filename.png gmode frames" -- frames omitted/1 for a
+#    single-frame sprite, e.g. "2" for a 2-frame blink/animation strip
+#    the way DOME.png in saucer/ uses it). The workflow discovers and
+#    builds every subfolder automatically -- adding a new demo is
+#    "make a new subfolder, push it", nothing here needs editing.
+# 3. PINNED, not floating. The previous version's `git clone --depth 1`
+#    on both BASIC-To-6809 and xroar tracked whatever the default
+#    branch HEAD happened to be at runtime -- fine for a one-off proof,
+#    but meant a future run could silently pick up a different, untested
+#    commit. Pinned here to the exact commits confirmed working
+#    2026-09-04 (BASIC-To-6809 3747a69, stahta01/xroar 0c3ddf1).
+#    Bump these deliberately (a visible diff) when there's real reason
+#    to move forward, not automatically.
+# 4. VENDORED lwtools SOURCE instead of fetching from lwtools.ca at
+#    runtime. erroneus0-ops/cocotools-wasm already carries a full,
+#    working lwtools-4.24 source tree (confirmed 2026-09-04 to have a
+#    plain Makefile, buildable exactly like the fresh 4.25 tarball the
+#    one-off version curled) -- reusing that means one less external
+#    site this workflow depends on being reachable, and reuses
+#    something already staged, per the point raised about redundant
+#    fetching.
+# 5. CACHED slow builds. lwasm and XRoar don't change between runs
+#    unless the pinned inputs above change, so both are cached
+#    (actions/cache) keyed on those exact inputs -- a demo-only change
+#    (editing a .BAS/.png) should hit both caches and skip straight to
+#    the fast steps.
+# 6. COMMITS results back into the repo (mirroring the existing
+#    build_xroar_wasm.yml pattern already established here), so a
+#    plain `git pull` after pushing a demo change is enough to see the
+#    new .dsk and screenshot -- no separate trip to the Releases page
+#    needed the way the one-off version required.
+
+name: HERO port -- BASIC-To-6809 SG12 demos (auto-build)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hero-port/basto6809-tests/**'
+    paths-ignore:
+      - 'hero-port/basto6809-tests/**/output/**'
+  workflow_dispatch: {}
+
+env:
+  BASTO6809_SHA: 3747a693b70deeac03acd89cf02c5e6b38b63ef3
+  XROAR_SHA: 0c3ddf17ee899ecd385a5912e212b14975d19657
+  COCOTOOLS_SHA: 46505c8a3de7125ca443931ec1476c09809119e8
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v4
+
+      - name: Install runtime prerequisites
+        run: |
+          sudo apt-get update
+          # libglu1-mesa/xvfb: the QB64PE-built BasTo6809/PNGtoCCSB
+          #   binaries need these even for command-line use (confirmed
+          #   2026-09-04: missing libGLU.so.1 otherwise, and no display
+          #   to initialize against without xvfb-run).
+          sudo apt-get install -y libglu1-mesa xvfb build-essential zip
+
+      - name: Fetch BASIC-To-6809 (pinned commit) and extract Linux binaries
+        run: |
+          git clone https://github.com/nowhereman999/BASIC-To-6809.git /tmp/basto6809-src
+          cd /tmp/basto6809-src
+          git checkout "${{ env.BASTO6809_SHA }}"
+          mkdir -p /tmp/basto6809
+          unzip -q Binary_Versions/BASIC-To-6809_v5.50_Linux_x86_64.zip -d /tmp/basto6809
+          BDIR=$(find /tmp/basto6809 -maxdepth 1 -type d -name "BASIC-To-6809*")
+          echo "BDIR=$BDIR" >> "$GITHUB_ENV"
+          chmod +x "$BDIR"/BasTo6809 "$BDIR"/BasTo6809.1.Tokenizer "$BDIR"/BasTo6809.2.Compile "$BDIR"/PNGtoCCSB "$BDIR"/decb
+
+      - name: Cache lwasm build
+        id: cache-lwasm
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/lwasm-bin
+          # Keyed on the vendored source repo's pinned commit
+          # specifically, so bumping COCOTOOLS_SHA above (a visible
+          # diff) is what invalidates this cache -- not a floating
+          # hash of something not yet checked out at this point.
+          key: lwasm-cocotools-${{ env.COCOTOOLS_SHA }}
+
+      - name: Build lwasm from cocotools-wasm's vendored lwtools-4.24 source (cache miss only)
+        if: steps.cache-lwasm.outputs.cache-hit != 'true'
+        run: |
+          # Reuses source already vendored in a sibling repo instead of
+          # fetching lwtools.ca fresh -- one less external dependency,
+          # and this exact source is already known-good (see
+          # cocotools-wasm/LWASM_WASM_UPDATE_GUIDE.md: this is the tree
+          # a previous WASM build was validated against).
+          git clone https://github.com/erroneus0-ops/cocotools-wasm.git /tmp/cocotools-wasm
+          cd /tmp/cocotools-wasm
+          git checkout "${{ env.COCOTOOLS_SHA }}"
+          cd emcc_workflow/lwtools-4.24
+          make
+          mkdir -p /home/runner/lwasm-bin
+          find . -type f -name lwasm -exec cp {} /home/runner/lwasm-bin/ \;
+
+      - name: Install lwasm onto PATH
+        run: |
+          sudo cp /home/runner/lwasm-bin/lwasm /usr/local/bin/
+          lwasm --version
+
+      - name: Cache XRoar build
+        id: cache-xroar
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/xroar-install
+          key: xroar-${{ env.XROAR_SHA }}-${{ hashFiles('hero-port/patches/xroar-screenshot-on-exit.patch') }}
+
+      - name: Build XRoar from source (pinned commit, cache miss only)
+        if: steps.cache-xroar.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/stahta01/xroar.git /tmp/xroar
+          cd /tmp/xroar
+          git checkout "${{ env.XROAR_SHA }}"
+          git apply "${GITHUB_WORKSPACE}/hero-port/patches/xroar-screenshot-on-exit.patch"
+          sudo apt-get install -y bison flex libpng-dev libgtk-3-dev libasound2-dev libsdl2-dev libx11-dev pkg-config autoconf automake libtool texinfo
+          ./autogen.sh
+          ./configure --without-gtk3 --without-gtk2 --without-gtkgl --prefix=/home/runner/xroar-install
+          make -j"$(nproc)"
+          make install
+
+      - name: Install XRoar onto PATH
+        run: |
+          sudo ln -sf /home/runner/xroar-install/bin/xroar /usr/local/bin/xroar
+          xroar --version
+
+      - name: Build every demo under hero-port/basto6809-tests/
+        run: |
+          mkdir -p /tmp/release-assets /tmp/screenshots
+          for demo_dir in hero-port/basto6809-tests/*/; do
+            demo=$(basename "$demo_dir")
+            echo "=================================================="
+            echo "=== Building demo: $demo"
+            echo "=================================================="
+            # Build inside the full extracted release directory ($BDIR)
+            # rather than a stripped-down copy -- confirmed 2026-09-04
+            # that running from a partial copy risks missing support
+            # files (Basic_Includes/Basic_Commands and possibly more)
+            # that BasTo6809 expects alongside itself; $BDIR already
+            # has everything from the real release zip, known-working.
+            # Demo-specific files are copied in, built, copied back out,
+            # then cleaned up so the next demo in the loop starts fresh.
+            cp "$demo_dir"*.png "$BDIR/" 2>/dev/null || true
+            cp "$demo_dir"*.BAS "$BDIR/"
+            cp "$demo_dir/sprites.txt" "$BDIR/"
+            cd "$BDIR"
+
+            # sprites.txt: "filename.png gmode [frames]"
+            while read -r png gmode frames rest; do
+              [ -z "$png" ] && continue
+              if [ -n "$frames" ] && [ "$frames" -gt 1 ] 2>/dev/null; then
+                xvfb-run -a ./PNGtoCCSB -g"$gmode" -s0 -a"$frames" "$png"
+              else
+                xvfb-run -a ./PNGtoCCSB -g"$gmode" -s0 "$png"
+              fi
+            done < sprites.txt
+
+            basfile=$(ls *.BAS | head -1)
+            name=$(basename "$basfile" .BAS)
+            xvfb-run -a ./BasTo6809 -ascii "$basfile"
+            test -s "${name}.asm"
+
+            lwasm -9bl -p cd -o"${name}.bin" "${name}.asm"
+            test -s "${name}.bin"
+
+            cp BLANK.DSK "${name}.dsk"
+            ./decb copy -2 -b -r "${name}.bin" "${name}.dsk,${name}.BIN"
+
+            export SDL_VIDEODRIVER=dummy
+            xroar -ui sdl -machine coco2b -cart rsdos \
+              -rompath "${GITHUB_WORKSPACE}/wasm" \
+              -no-disk-write-back \
+              -load-fd0 "${name}.dsk" \
+              -type "LOADM\"${name}\":EXEC\r" \
+              -screenshot-on-exit "/tmp/screenshots/${name}.png" &
+            XROAR_PID=$!
+            sleep 15
+            kill -ALRM "$XROAR_PID" 2>/dev/null || true
+            wait "$XROAR_PID" 2>/dev/null || echo "xroar exited: $?"
+
+            mkdir -p "${GITHUB_WORKSPACE}/${demo_dir}output"
+            cp "${name}.dsk" "${GITHUB_WORKSPACE}/${demo_dir}output/"
+            cp "/tmp/screenshots/${name}.png" "${GITHUB_WORKSPACE}/${demo_dir}output/" 2>/dev/null || true
+            cp "${name}.dsk" /tmp/release-assets/
+            cp "/tmp/screenshots/${name}.png" "/tmp/release-assets/${name}-screenshot.png" 2>/dev/null || true
+
+            # Clean up this demo's files from $BDIR before the next
+            # loop iteration, so nothing from one demo can bleed into
+            # the next (stale .asm/.bin/.dsk, sprite outputs, etc.) --
+            # $BDIR's own original release contents are left untouched.
+            rm -f ./*.png ./*.BAS ./sprites.txt ./*.asm ./*.bin ./*.dsk
+            cd "${GITHUB_WORKSPACE}"
+          done
+          ls -laR /tmp/release-assets
+
+      - name: Commit build outputs back into the repo
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add hero-port/basto6809-tests/*/output/
+          if git diff --staged --quiet; then
+            echo "Nothing changed -- outputs identical to what's already committed. Skipping commit/push."
+            exit 0
+          fi
+          git commit -m "ci: rebuild BASIC-To-6809 demo outputs [ci skip]"
+          git pull --rebase --autostash origin main
+          git push
+
+      - name: Publish as a GitHub Release (for sandbox-reachable access alongside the git commit)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hero-port-basto6809-demos-${{ github.run_number }}
+          name: "BASIC-To-6809 demos -- CI build #${{ github.run_number }}"
+          body: |
+            Automated build from commit ${{ github.sha }}. Every demo
+            under hero-port/basto6809-tests/ rebuilt from pinned,
+            cached toolchain sources. Outputs also committed directly
+            into each demo's output/ folder -- a plain git pull picks
+            these up too.
+          files: |
+            /tmp/release-assets/*
+          prerelease: true
