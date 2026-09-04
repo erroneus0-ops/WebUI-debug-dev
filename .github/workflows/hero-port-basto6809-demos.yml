@@ -152,15 +152,36 @@ jobs:
           # survives cache restore fine, but the executable permission
           # bit does not -- a known actions/cache tar round-trip quirk.
           # chmod explicitly rather than relying on cache to preserve it.
+          mkdir -p /tmp/ci-diagnostics
           XROAR_BIN=$(find /home/runner/xroar-install -type f -name xroar 2>/dev/null | head -1)
           if [ -z "$XROAR_BIN" ]; then
-            echo "No xroar binary found under the cached path at all."
-            find /home/runner/xroar-install -maxdepth 4 2>&1 || echo "directory does not exist"
+            echo "No xroar binary found under the cached path at all." | tee /tmp/ci-diagnostics/xroar-install-debug.txt
+            find /home/runner/xroar-install -maxdepth 4 2>&1 | tee -a /tmp/ci-diagnostics/xroar-install-debug.txt
             exit 1
           fi
           chmod +x "$XROAR_BIN"
           sudo ln -sf "$XROAR_BIN" /usr/local/bin/xroar
-          xroar --version
+          set +e
+          {
+            echo "=== ldd on the binary ==="
+            ldd "$XROAR_BIN" 2>&1
+            echo "=== xroar --version ==="
+            xroar --version 2>&1
+          } > /tmp/ci-diagnostics/xroar-install-debug.txt 2>&1
+          RESULT=$?
+          cat /tmp/ci-diagnostics/xroar-install-debug.txt
+          exit $RESULT
+
+      - name: Publish diagnostics even on failure (readable via release-assets.githubusercontent.com)
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hero-port-basto6809-demos-diag-${{ github.run_number }}
+          name: "Diagnostics -- CI run #${{ github.run_number }}"
+          body: "CI diagnostics for debugging XRoar cache-restore behavior."
+          files: |
+            /tmp/ci-diagnostics/*
+          prerelease: true
 
       - name: Build every demo under hero-port/basto6809-tests/
         run: |
