@@ -1,2 +1,1 @@
-BODY.png 7 1
-DOME.png 7 2
+SAUCER_SPR.png 7 6

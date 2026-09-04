@@ -1,22 +1,14 @@
-' SAUCER.BAS -- classic flying saucer in SG12 (GMODE 7)
-' Two layered sprites: BODY (merged yellow-top/white-bottom hull, one
-' sprite instead of two -- cuts one sprite's worth of backup/restore
-' overhead versus the original 3-sprite version, which compiled to an
-' address range spanning into $C000+, the Disk Extended Color BASIC
-' ROM's own territory, and failed to LOADM with ?IO ERROR) and DOME
-' (blue dome, 2-frame blink, toggled on a timer independent of motion).
-' Sprites generated with:
-'   PNGtoCCSB -g7 -s0 BODY.png
-'   PNGtoCCSB -g7 -s0 -a2 DOME.png
-' Motion is a gentle vertical hover within a narrow, bounds-checked
-' range -- footprints are large relative to the 64x96 SG12 playfield,
-' not much spare room otherwise.
-DIM SY AS INTEGER, VY AS INTEGER
-DIM SX AS INTEGER, DOMEX AS INTEGER
-DIM BLINKCOUNT AS INTEGER, BLINKFRAME AS INTEGER
+' SAUCER.BAS -- one small flying-saucer sprite in SG12 (GMODE 7)
+' Same bounce pattern as BALLDEMO.BAS (full-screen X/Y bounce), same
+' rough scale as the ball sprite -- just one sprite object, whose dome
+' band cycles through 6 colours as it moves, instead of a static shape.
+' Sprite generated with:
+'   PNGtoCCSB -g7 -s0 -a6 SAUCER_SPR.png
+DIM BX AS INTEGER, BY AS INTEGER
+DIM VX AS INTEGER, VY AS INTEGER
+DIM FRAMECOUNT AS INTEGER, FRAME AS INTEGER
 
-Sprite_Load "BODY.asm", 0
-Sprite_Load "DOME.asm", 1, 2
+Sprite_Load "SAUCER_SPR.asm", 0, 6
 
 GMODE 7,1
 GMODE 7,0
@@ -24,32 +16,30 @@ GCLS 0
 SCREEN 1,0
 GCOPY 0,1
 
-SX = 4
-DOMEX = 20
-SY = 20
+BX = 0
+BY = 0
+VX = 1
 VY = 1
-BLINKCOUNT = 0
-BLINKFRAME = 0
+FRAMECOUNT = 0
+FRAME = 0
 
 MainLoop:
-SPRITE LOCATE 0, SX, SY
+SPRITE LOCATE 0, BX, BY
 SPRITE BACKUP 0
-SPRITE SHOW 0, 0
-
-SPRITE LOCATE 1, DOMEX, SY - 20
-SPRITE BACKUP 1
-SPRITE SHOW 1, BLINKFRAME
-
+SPRITE SHOW 0, FRAME
 WAIT VBL
-
-SPRITE ERASE 1
 SPRITE ERASE 0
 
-SY = SY + VY
-IF SY < 20 THEN SY = 20 : VY = -VY
-IF SY > 31 THEN SY = 31 : VY = -VY
+BX = BX + VX
+BY = BY + VY
 
-BLINKCOUNT = BLINKCOUNT + 1
-IF BLINKCOUNT > 8 THEN BLINKCOUNT = 0 : BLINKFRAME = 1 - BLINKFRAME
+IF BX < 0 THEN BX = 0 : VX = -VX
+IF BX > 43 THEN BX = 43 : VX = -VX
+IF BY < 0 THEN BY = 0 : VY = -VY
+IF BY > 67 THEN BY = 67 : VY = -VY
+
+FRAMECOUNT = FRAMECOUNT + 1
+IF FRAMECOUNT > 3 THEN FRAMECOUNT = 0 : FRAME = FRAME + 1
+IF FRAME > 5 THEN FRAME = 0
 
 GOTO MainLoop
