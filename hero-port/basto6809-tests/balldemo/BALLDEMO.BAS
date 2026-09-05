@@ -23,6 +23,9 @@ SPRITE SHOW 0, 0
 WAIT VBL
 SPRITE ERASE 0
 
+A$ = INKEY$
+IF A$ = " " THEN END
+
 BX = BX + VX
 BY = BY + VY
 
