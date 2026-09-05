@@ -246,9 +246,30 @@ jobs:
             kill -ALRM "$XROAR_PID" 2>/dev/null || true
             wait "$XROAR_PID" 2>/dev/null || echo "xroar exited: $?"
 
-            mkdir -p "${GITHUB_WORKSPACE}/${demo_dir}output"
+            mkdir -p "${GITHUB_WORKSPACE}/${demo_dir}output" "${GITHUB_WORKSPACE}/${demo_dir}output/history"
             cp "${name}.dsk" "${GITHUB_WORKSPACE}/${demo_dir}output/"
             cp "/tmp/screenshots/${name}.png" "${GITHUB_WORKSPACE}/${demo_dir}output/" 2>/dev/null || true
+            # Serialized history: every successful run's full source and
+            # build products, run-number-prefixed so nothing ever
+            # overwrites a previous run's files. Requested 2026-09-05
+            # after the fixed-name-only files meant an earlier failed
+            # attempt got silently overwritten with no way to see it
+            # again -- this is what actually implements that, not just
+            # claims to.
+            HIST="${GITHUB_WORKSPACE}/${demo_dir}output/history"
+            RUNTAG="run${{ github.run_number }}"
+            cp "${basfile}" "${HIST}/${RUNTAG}_${basfile}" 2>/dev/null || true
+            cp "${name}.asm" "${HIST}/${RUNTAG}_${name}.asm" 2>/dev/null || true
+            cp "${name}.bin" "${HIST}/${RUNTAG}_${name}.bin" 2>/dev/null || true
+            cp "${name}.dsk" "${HIST}/${RUNTAG}_${name}.dsk" 2>/dev/null || true
+            cp "/tmp/screenshots/${name}.png" "${HIST}/${RUNTAG}_${name}.png" 2>/dev/null || true
+            # Also serialize each sprite's own generated .asm, since
+            # sprite art is often what actually changed between runs.
+            while read -r png gmode frames rest; do
+              [ -z "$png" ] && continue
+              sname=$(basename "$png" .png)
+              cp "${sname}.asm" "${HIST}/${RUNTAG}_${sname}.asm" 2>/dev/null || true
+            done < sprites.txt
             cp "${name}.dsk" /tmp/release-assets/
             cp "/tmp/screenshots/${name}.png" "/tmp/release-assets/${name}-screenshot.png" 2>/dev/null || true
 
