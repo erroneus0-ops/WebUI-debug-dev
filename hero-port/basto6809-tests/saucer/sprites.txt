@@ -1,1 +1,1 @@
-SAUCER_SPR.png 7 6
+SAUCER_SPR.png 7 5
