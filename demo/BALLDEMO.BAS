@@ -1,0 +1,34 @@
+' BALLDEMO.BAS -- bouncing ball in SG12 (GMODE 7)
+' Sprite generated with: PNGtoCCSB -g7 -s0 BALL.png
+DIM BX AS INTEGER, BY AS INTEGER
+DIM VX AS INTEGER, VY AS INTEGER
+
+Sprite_Load "BALL.asm", 0
+
+GMODE 7,1
+GMODE 7,0
+GCLS 0
+SCREEN 1,0
+GCOPY 0,1
+
+BX = 0
+BY = 0
+VX = 1
+VY = 1
+
+MainLoop:
+SPRITE LOCATE 0, BX, BY
+SPRITE BACKUP 0
+SPRITE SHOW 0, 0
+WAIT VBL
+SPRITE ERASE 0
+
+BX = BX + VX
+BY = BY + VY
+
+IF BX < 0 THEN BX = 0 : VX = -VX
+IF BX > 47 THEN BX = 47 : VX = -VX
+IF BY < 0 THEN BY = 0 : VY = -VY
+IF BY > 63 THEN BY = 63 : VY = -VY
+
+GOTO MainLoop
