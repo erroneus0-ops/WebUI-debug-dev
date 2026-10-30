@@ -117,6 +117,9 @@ than the routine.)
 
 Regions of the ROM images the book does not list: DECB 1.0 $D7DD-$DFFF,
 DECB 1.1 $D8D0-$DEFF and $DF59-$DFFF, SECB $C36C-$DFFF and $FA0C-$FFFF.
+Most of the SECB gap is data, not code: `AUTHPIC` ($C405-$DC04, $1800 bytes)
+is the digitized picture of the SECB authors that CTRL+ALT+RESET displays as a
+256x192 two-color image (see `LC1F0` in `secb/secb_C1D6-C255.asm`).
 
 ## Other files
 
