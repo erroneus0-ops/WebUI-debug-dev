@@ -25,6 +25,10 @@ display modes, and a 64-color palette. This skill covers only that delta.
   Extended Color BASIC vs Extended Color BASIC, pointing at the
   `Differences SECB` / `DIFFERENCES SECB` reference tabs.
 
+- **`reference/reset-and-rom-copy.md`** — BASIC runs from a RAM copy of
+  the ROMs; why POKE patches to BASIC survive a plain RESET; how
+  CTRL+ALT+RESET (the authors' picture) forces a fresh ROM copy.
+
 ## Reference data
 
 The full SECB disassembly and reference tables live in the coco skill, in
