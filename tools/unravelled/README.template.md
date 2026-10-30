@@ -92,6 +92,12 @@ Most of the SECB gap is data, not code: `AUTHPIC` ($C405-$DC04, $1800 bytes)
 is the digitized picture of the SECB authors that CTRL+ALT+RESET displays as a
 256x192 two-color image (see `LC1F0` in `secb/secb_C1D6-C255.asm`).
 
+## Known errors in the book's own comments
+
+- Memory maps: `ROMCLR` (`$FFDE`) is commented "ROM DISABLED" and `ROMSET`
+  (`$FFDF`) "ROM ENABLED". **Backwards.** The ROM's own code at `$C1B1`
+  (SECB) enables ROM with `$FFDE` and disables it with `$FFDF`.
+
 ## Other files
 
 - `SYMBOLS.txt` — every label, one per line (~3,800). Grep it.

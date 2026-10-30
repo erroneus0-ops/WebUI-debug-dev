@@ -72,13 +72,14 @@ REM The object code below is the assembled form of
 REM hero-port/coco-basic-internals/romcopy_proof.asm -- see that
 REM file (and its matching .lst listing) for the annotated source.
 REM
-REM NOTE, confirmed during this exploration: a plain POKE &HFFDE,0
-REM (the SAM's documented all-RAM-mode toggle) did NOT actually
-REM switch modes in the specific XRoar coco2bus build used to
-REM verify all of this -- meaning DEMO 3 as written will correctly
-REM show "BEFORE - ROM MODE" both times until/unless that's
-REM resolved (real open question, see COCO-BASIC-INTERNALS.md
-REM section 2). The COPY mechanism itself (the actual point of this
+REM NOTE (2026-10-30): the earlier "POKE &HFFDE,0 doesn't switch
+REM modes" puzzle is resolved: $FFDE SELECTS ROM, $FFDF selects
+REM all-RAM (proven by the CoCo 3 ROM's own copy loop at $C1B1).
+REM DEMO 3's object code still has the old, swapped order, which is
+REM why it shows ROM MODE both times. Do NOT simply swap it: after
+REM copying only 8 bytes it would return to BASIC in all-RAM mode
+REM with BASIC's own code missing, and crash. It needs a redesign
+REM (e.g. switch back to ROM before RTS and test inside the routine). The COPY mechanism itself (the actual point of this
 REM demo) is separately, solidly verified -- see
 REM stackblast_multichunk.asm/.lst for that proof, done directly
 REM against ordinary RAM rather than depending on the ROM/RAM
@@ -131,14 +132,15 @@ REM address across the ENTIRE range (the very start, several points
 REM through the middle, and the very last byte before I/O begins)
 REM comes back byte-for-byte identical before and after -- the copy
 REM itself is proven correct across the whole of real ROM, not just
-REM a small test range. Whether the underlying mode switch actually
-REM takes effect afterward remains the same open XRoar-specific
-REM question noted in Demo 3 and COCO-BASIC-INTERNALS.md section 2 --
-REM confirmed here too, via a real write-persistence test immediately
-REM after running this, that it still doesn't stick in this specific
-REM emulator build even after the complete sweep.
+REM a small test range. CORRECTION (2026-10-30): those earlier runs
+REM had $FFDE/$FFDF swapped, so they read in all-RAM mode, wrote in
+REM ROM mode and ended in ROM mode; the before/after PEEKs both read
+REM ROM, which is why they matched and writes never stuck. The DATA
+REM below is now fixed: the sweep ends in all-RAM mode with BASIC
+REM running from its RAM copy, and a POKE to e.g. &H8000 should stick.
+REM Needs re-testing in XRoar (64K machine).
 REM ============================================================
-400 DATA 26,80,16,255,112,40,16,254,112,42,183,255,223,53,118,183,255,222,52,118,190,112,42,48,8,191,112,42,140,255,0,38,229,16,254,112,40,28,175,57,0,0,128,0
+400 DATA 26,80,16,255,112,40,16,254,112,42,183,255,222,53,118,183,255,223,52,118,190,112,42,48,8,191,112,42,140,255,0,38,229,16,254,112,40,28,175,57,0,0,128,0
 410 FOR I=0 TO 43:READ B:POKE &H7000+I,B:NEXT I
 420 A=PEEK(&H8000):B=PEEK(&H9000):C=PEEK(&HA000):D=PEEK(&HC000):E=PEEK(&HD000):F=PEEK(&HE000):G=PEEK(&HFEFF)
 430 PRINT "BEFORE: ";A;B;C;D;E;F;G

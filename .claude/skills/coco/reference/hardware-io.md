@@ -189,8 +189,18 @@ skill.
 
 | Address | Name | Effect |
 |---|---|---|
-| `$FFDE` (65502) | `ROMCLR` | disables ROM (all-RAM mode) |
-| `$FFDF` (65503) | `ROMSET` | enables ROM (normal mode) |
+| `$FFDE` (65502) | `ROMCLR` | clears SAM bit TY: map type 0, **ROM enabled** (normal mode) |
+| `$FFDF` (65503) | `ROMSET` | sets SAM bit TY: map type 1, **all-RAM mode** (ROM disabled) |
+
+**Corrected 2026-10-30.** This table used to say the opposite, copied from
+the Unravelled memory map's comments (`ROMCLR ; ROM DISABLED`, `ROMSET ;
+ROM ENABLED`), which are backwards. The ROM's own, byte-verified code
+settles it: the CoCo 3 boot copy loop at `$C1B1` does `CLR SAM+30` (`$FFDE`)
+"ENABLE THE ROM" before reading and `CLR SAM+31` (`$FFDF`) "DISABLE THE ROM"
+before writing, and `$C1F6` uses `$FFDE` to "ENABLE THE ROMS". It also fits
+the SAM datasheet: odd addresses *set* a bit, even addresses *clear* it, and
+TY=1 is the all-RAM map. In BASIC: `POKE &HFFDF,0` = all-RAM, `POKE &HFFDE,0`
+= ROM.
 
 **You cannot just flip this once.** RAM underneath the ROM mapping starts
 as genuine uninitialized garbage. If the CPU is actively executing from
@@ -208,20 +218,20 @@ START   ORCC  #$50      ; interrupts OFF -- critical, an interrupt firing
                          ; mid-toggle could hit a handler expecting a
                          ; consistent memory state
         LDX   #$8000    ; start of ROM
-LOOP    STA   $FFDF     ; force ROM mode
+LOOP    STA   $FFDE     ; force ROM mode
         LDD   ,X        ; read from ROM
-        STA   $FFDE     ; force RAM mode
+        STA   $FFDF     ; force RAM mode
         STD   ,X++      ; write the same data back to the same address
         CMPX  #$E000    ; end of CoCo 1/2 ROM space
         BNE   LOOP
 ```
 
-**Open question, not yet resolved:** a plain `POKE &HFFDE,0` in at least
-one XRoar `coco2bus` build did *not* switch modes (confirmed via a
-before/after `PEEK`/`POKE` write-test showing no change). Worth checking
-whether this is an XRoar emulation gap before relying on `$FFDE`/`$FFDF`
-in XRoar-based work specifically — real hardware behavior is not in
-question, only this one emulator build's fidelity to it.
+**Resolved: not an XRoar gap.** An earlier test found that `POKE &HFFDE,0`
+"did not switch modes". That was correct behavior: `$FFDE` *selects ROM*,
+which was already the mode. The project's copy routines had the two
+addresses swapped as well (fixed 2026-10-30), so they read in all-RAM mode,
+wrote in ROM mode, and finished in ROM mode, which is why every "after" test
+looked like ROM.
 
 ## PIA1 and the T1 lowercase font
 

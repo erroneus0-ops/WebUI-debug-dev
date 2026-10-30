@@ -6,9 +6,9 @@ START   ORCC  #$50        ; disable IRQ+FIRQ -- critical: an interrupt firing
                            ; and jump into invalid memory
         STS   REALS        ; save BASIC's real stack pointer first
 LOOP1   LDS   CURPOS       ; S = current position -- this IS both source and dest
-        STA   $FFDF        ; force ROM mode
+        STA   $FFDE        ; force ROM mode
         PULS  D,X,Y,U      ; read 8 bytes; S advances forward by 8
-        STA   $FFDE        ; force RAM mode
+        STA   $FFDF        ; force RAM mode
         PSHS  D,X,Y,U      ; write same 8 bytes back; S returns to CURPOS's value exactly
         LDX   CURPOS       ; reload X from the SEPARATE tracker (untouched by the blast)
         LEAX  8,X          ; advance to next chunk
