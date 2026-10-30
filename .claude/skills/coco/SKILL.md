@@ -1,14 +1,14 @@
 ---
 name: coco
-description: Use when working with TRS-80 Color Computer (CoCo 1/2) hardware, Color BASIC / Extended Color BASIC / Disk Extended Color BASIC internals, 6809 assembly on the CoCo, or compiled-BASIC toolchains (ugBASIC, BASIC-to-6809) targeting the CoCo. Covers memory map, SAM/PIA registers, display modes, the BASIC tokenizer/interpreter, ROM call chains, and known ugBASIC compiler quirks. For CoCo 3-specific hardware (GIME chip, banked memory, extra display modes), use the coco3 skill instead or in addition.
+description: Use when working with TRS-80 Color Computer (CoCo 1/2) hardware, Color BASIC / Extended Color BASIC / Disk Extended Color BASIC internals, 6809 assembly on the CoCo, or compiled-BASIC toolchains (ugBASIC, BASIC-to-6809) targeting the CoCo. Includes the complete, ROM-verified Color BASIC Unravelled disassemblies (Color/Extended/Disk/Super Extended BASIC). Use it whenever a question involves a CoCo ROM routine or address, a PEEK/POKE/EXEC target, BASIC internals, or 6809 code that calls into or patches the ROM. Covers memory map, SAM/PIA registers, display modes, the BASIC tokenizer/interpreter, ROM call chains, and known ugBASIC compiler quirks. For CoCo 3-specific hardware (GIME chip, banked memory, extra display modes), use the coco3 skill instead or in addition.
 ---
 
 # CoCo (TRS-80 Color Computer 1/2) reference skill
 
 This skill packages verified, empirically-confirmed knowledge about the
-stock CoCo 1/2 machine and its BASIC dialects, plus a full disassembly
-reference converted from `Unravelled II.xls` into plain CSV for direct
-lookup (no spreadsheet library needed).
+stock CoCo 1/2 machine and its BASIC dialects, plus the complete
+*Color BASIC Unravelled* ROM disassemblies as plain-text listings whose
+bytes and labels have been verified against genuine ROM images.
 
 **Load only what the current task needs — this file is the index, not the
 content.** Each reference file below is self-contained.
@@ -39,29 +39,34 @@ abstract away" — there is no abstraction layer to find.
 - **`reference/ugbasic-compiler-notes.md`** — known ugBASIC compiler bugs
   and workarounds when targeting the `coco` platform, found while porting
   a real BASIC program to it.
-- **`reference/conventions.md`** — how to read the disassembly CSVs
-  (column layout, `EQU`/`FDB`/`ORG` conventions used throughout).
-- **`reference/xls-conversion/`** — the full disassembly, converted from
-  `Unravelled II.xls`. Small tabs (memory maps, routine indexes, symbol
-  tables, differences between ROM versions, ASCII charts) are single CSV
-  files under `xls-conversion/reference-tabs/`. The four large full-ROM
-  listings (`CB 1.2`, `ECB 1.1`, `SECB`, `DECB 1.1`/`DECB 1.0`) are
-  chunked by address range under `xls-conversion/listings/<tab>/`, each
-  with its own `INDEX.md` mapping address range → chunk file. See
-  `xls-conversion/MANIFEST.md` for the full tab-to-file map.
+- **`reference/conventions.md`** — 6809 assembler directives and
+  conventions used in the listings (`EQU`, `RMB`, `FDB`, `FCC`, `SETDP`,
+  direct-page `<` and extended `>` operand prefixes).
+- **`reference/unravelled/`** — the full Unravelled disassemblies of
+  Color BASIC 1.2, Extended 1.1, Disk 1.0 and 1.1, and Super Extended
+  (CoCo 3), plus memory maps, routine tables, a global symbol index and the
+  book's other tables. **Read `unravelled/README.md` first**: it explains
+  the line format and lookup method, and records the verification.
+- **`reference/CoCo Hardware Reference v2.pdf`** — hardware reference
+  document. PDF is costly to read; check the markdown files above first and
+  open this only for detail they don't cover.
 
 ## How to look something up
 
-1. Know roughly what you need: a named routine/variable (check
-   `reference-tabs/routines-*.csv` or `symbols-*.csv` first — much
-   smaller than the full listing), or a specific address (go straight to
-   the relevant listing's `INDEX.md` to find the right chunk).
-2. Only read the one chunk file that covers the address range you need —
-   never read a whole `listings/<tab>/` directory's chunks at once.
-3. Cross-check against `reference/COCO-BASIC-INTERNALS.md`-derived notes
-   above first — many common questions (T1 lowercase hack, 64K/all-RAM
-   mode, the SAM register map, tokenizer quirks) are already answered
-   there with the full traced call chain, not just a raw listing row.
+1. **A name** (routine, label, RAM variable): `grep -w NAME
+   reference/unravelled/SYMBOLS.txt` gives its address and the file that
+   defines it. Open only that file.
+2. **An address**: `grep -rn "^A01F " reference/unravelled/cb-1.2/` (use
+   the folder for the ROM in question), or for RAM `grep -w 0033
+   reference/unravelled/SYMBOLS.txt`.
+3. **A task** ("how does BASIC read the keyboard"): `grep -i` the
+   `reference/unravelled/routines-*.txt` files (one routine per line), then
+   open the listing chunk for the address it gives.
+4. Never read a whole listing folder, `SYMBOLS.txt` or a memory map in
+   full. Each listing chunk is about 260 lines, sized to be read whole.
+5. Check the curated notes above first: many common questions (T1
+   lowercase hack, 64K/all-RAM mode, the SAM register map, tokenizer
+   quirks) are already answered there with the full traced call chain.
 
 ## Scope note
 

@@ -27,22 +27,23 @@ display modes, and a 64-color palette. This skill covers only that delta.
 
 ## Reference data
 
-Full SECB disassembly and reference tabs are converted the same way as
-the coco skill's material — see `../coco/reference/xls-conversion/`:
-- `reference-tabs/memory-map-secb.csv`, `symbols-secb.csv`,
-  `routines-secb.csv`, `rom-routines-secb.csv`, `data-tables-secb.csv`,
-  `differences-secb.csv` / `DIFFERENCES-SECB.csv`
-- `reference-tabs/gime-chip.csv` (full register detail, this skill's
-  `gime.md` is a curated subset)
-- `reference-tabs/coco-3-colors.csv` (full 64-color table, RGB and
-  composite values)
-- `listings/secb/` — full SECB ROM disassembly, chunked by address range
-  with an `INDEX.md` (same pattern as the coco skill's listings)
+The full SECB disassembly and reference tables live in the coco skill, in
+`../coco/reference/unravelled/` (read its `README.md` first for the line
+format and lookup method):
+- `secb/` — full SECB ROM disassembly, chunked at routine boundaries,
+  with an `INDEX.md`; bytes and labels verified against the genuine ROM
+- `memory-map-secb.asm`, `routines-secb.txt`, `SYMBOLS.txt` (grep it)
+- `tables/rom-routines-secb.txt`, `tables/data-tables-secb.txt`,
+  `tables/differences-secb.txt`
+- `tables/gime-chip.txt` (full register detail; this skill's `gime.md` is
+  a curated subset)
+- `tables/coco3-colors.txt` (full 64-color table, RGB and composite values)
+- `tables/charset-coco3.txt` (hi-res text character set)
 
 ## When something seems like a CoCo 1/2 vs CoCo 3 discrepancy
 
-Check `secb-differences.md` and the `differences-secb.csv` /
-`DIFFERENCES-SECB.csv` tabs first — many apparent "bugs" in ported code
+Check `secb-differences.md` and
+`../coco/reference/unravelled/tables/differences-secb.txt` first — many apparent "bugs" in ported code
 are actually genuine behavioral differences between BASIC dialects, not
 compiler or logic errors. The **coco** skill's `ugbasic-compiler-notes.md`
 is written from CoCo 1/2 (ECB) testing; re-verify anything

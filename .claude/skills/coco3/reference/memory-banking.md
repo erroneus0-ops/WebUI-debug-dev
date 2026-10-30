@@ -2,7 +2,7 @@
 
 **Confidence note:** unlike most of the `coco` skill's content, this file
 is derived from the GIME register documentation in
-`gime-chip.csv` (i.e. from Tandy/Microware's own spec as transcribed in
+`gime-chip.txt` (i.e. from Tandy/Microware's own spec as transcribed in
 the disassembly), not from the same kind of direct empirical
 PEEK/POKE/disassembly-trace verification used for the CoCo 1/2 material.
 Treat mechanics described here as "documented," not "independently
@@ -40,6 +40,6 @@ pages) to a specific 8K physical block of the larger RAM pool.
 - `MMUEN` (`INIT0` bit 6) must be set for the MMU to actually be active;
   in `COCO`-compatible mode the machine behaves like a plain CoCo 1/2
   with no banking.
-- Check `../../coco/reference/xls-conversion/reference-tabs/gime-chip.csv`
+- Check `../../coco/reference/unravelled/tables/gime-chip.txt`
   directly for any bit-level detail not covered above — this file is
   intentionally the commonly-needed subset, not the full spec transcript.

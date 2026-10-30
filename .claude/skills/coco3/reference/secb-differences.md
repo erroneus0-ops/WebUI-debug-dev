@@ -1,6 +1,6 @@
 # SECB (Super Extended Color BASIC) vs ECB — what's actually different
 
-Source: `../../coco/reference/xls-conversion/reference-tabs/differences-secb.csv`
+Source: `../../coco/reference/unravelled/tables/differences-secb.txt`
 (titled internally "BASIC 1.2/EXTENDED 1.1 vs COLOR EXTENDED 2.0
 DIFFERENCES" — "Color Extended 2.0" is the CoCo 3's SECB). This tab is
 laid out as a literal patch list: every section of code where the CoCo 3
@@ -41,10 +41,10 @@ BASIC-language-level behavior looks identical.
 
 ## Related tabs for the other ROM revisions
 
-- `differences-cb-1.0.csv`, `differences-cb-1.1.csv` — CB revision-to-
+- `differences-cb-1.0.txt`, `differences-cb-1.1.txt` — CB revision-to-
   revision differences (relevant to the **coco** skill directly, not
   CoCo-3-specific)
-- `differences-ecb.csv` — ECB revision differences
+- `differences-ecb.txt` — ECB revision differences
 
 Cross-reference these if working with anything version-specific — the
 **coco** skill's `basic-interpreter.md` notes that the well-known
