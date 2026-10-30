@@ -2,8 +2,8 @@
 
 Source: `Memory Map CB` / `Memory Map ECB` / `Memory Map SECB` / `Memory Map
 DECB` tabs, converted to
-`../xls-conversion/reference-tabs/memory-map-{cb,ecb,secb,decb}.csv`. Full
-detail (all ~670-1,067 rows per tab) lives there — this file is the
+`unravelled/memory-map-{cb,ecb,secb,decb}.asm`. Full
+detail (every constant and RAM variable, with addresses) lives there — this file is the
 commonly-needed subset with context, not a full copy.
 
 ## ROM regions
@@ -80,11 +80,12 @@ vector (used by the T1-lowercase-font technique, among other things).
 
 ## Looking up more
 
-- Full memory map CSVs (all constants, not just the ones above):
-  `../xls-conversion/reference-tabs/memory-map-cb.csv` (CB),
-  `memory-map-ecb.csv` (ECB), `memory-map-secb.csv` (SECB, CoCo 3's Super
-  Extended Color BASIC — see the **coco3** skill for CoCo 3-specific
-  detail), `memory-map-decb.csv` (Disk Extended Color BASIC).
+- Full memory maps (all constants and RAM variables, not just the ones
+  above): `unravelled/memory-map-cb.asm` (CB), `memory-map-ecb.asm` (ECB),
+  `memory-map-secb.asm` (SECB, CoCo 3's Super Extended Color BASIC — see
+  the **coco3** skill for CoCo 3-specific detail), `memory-map-decb.asm`
+  (Disk Extended Color BASIC). These are long; `grep -w NAME` them, or
+  `grep -w NAME unravelled/SYMBOLS.txt` for the address alone.
 - For actual ROM routine addresses and what they do, see
-  `../xls-conversion/reference-tabs/routines-{cb,ecb,secb,decb}.csv`
-  first (small, indexed) before going to the full listings.
+  `unravelled/routines-{cb,ecb,secb,decb}.txt` first (one routine per line)
+  before going to the full listings.

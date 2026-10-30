@@ -1,6 +1,6 @@
 # GIME chip register map
 
-Source: `../../coco/reference/xls-conversion/reference-tabs/gime-chip.csv`
+Source: `../../coco/reference/unravelled/tables/gime-chip.txt`
 (full detail — this is the curated subset covering the most commonly
 needed registers). The GIME's registers are mapped into the I/O page
 (`$FF00`-`$FFFF`), always present in the logical address space regardless

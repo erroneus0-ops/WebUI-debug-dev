@@ -240,8 +240,8 @@ stops it).
 
 Not yet independently traced/verified in this skill to the same depth as
 the above. Look these up directly rather than assuming: check
-`../xls-conversion/reference-tabs/memory-map-cb.csv` and
-`data-tables-cb.csv` for named constants (search for things like `CAS`,
+`unravelled/memory-map-cb.asm` and
+`unravelled/tables/data-tables-cb.txt` for named constants (search for things like `CAS`,
 `JOY`, `SND`, `PIA0` prefixes), then cross-reference the routine that
-uses them in `routines-cb.csv` before trusting an address for real I/O
+uses them in `unravelled/routines-cb.txt` before trusting an address for real I/O
 work.

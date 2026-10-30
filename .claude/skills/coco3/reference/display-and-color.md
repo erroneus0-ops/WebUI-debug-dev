@@ -1,7 +1,7 @@
 # CoCo 3 display modes and the 64-color palette
 
 Full color table:
-`../../coco/reference/xls-conversion/reference-tabs/coco-3-colors.csv`
+`../../coco/reference/unravelled/tables/coco3-colors.txt`
 (64 rows, RGB and CMP/composite index side by side, with color name).
 Register addresses controlling mode/resolution/border:
 `gime.md` (`$FF98`-`$FF9A`).

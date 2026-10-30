@@ -20,7 +20,8 @@ even *attempts* keyword-matching again until it hits a non-letter
 character (space, digit, operator) that clears the flag.
 
 Real code, from `CRUNCH` (`$B821` in the CB 1.2 disassembly — see
-`routines-cb.csv`), annotated. **`CRUNCH`'s actual entry point does more
+`unravelled/routines-cb.txt`; listing in
+`unravelled/cb-1.2/cb_B764-B8F6.asm`), annotated. **`CRUNCH`'s actual entry point does more
 than the tokenizer logic itself** — worth knowing before assuming this
 routine is a clean, self-contained tokenizer:
 
