@@ -1,3 +1,6 @@
+* 64K MACHINES ONLY: on a 32K CoCo, all-RAM mode makes $8000-$FEFF an alias
+* of $0000-$7EFF, so this sweep would overwrite BASIC's own RAM. See the 64K
+* check in romcopy_proof.asm for a way to detect that first.
         ORG $7000
 START   ORCC  #$50        ; disable IRQ+FIRQ -- critical: an interrupt firing
                            ; while we're briefly in RAM mode, before the

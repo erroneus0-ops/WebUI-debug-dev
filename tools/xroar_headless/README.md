@@ -35,6 +35,10 @@ back out of the snapshot.
   `write=3F00` fired during BASIC's startup memory test.)
 - Don't trap on a *write* to a RAM mailbox: BASIC's cold start writes
   everywhere. Trap on *executing* an address nothing else runs.
+- BASIC lines max out at 249 characters: split long `DATA` lines or the
+  program silently never runs (no snapshot).
+- `-ram 32` / `-ram 16` after the machine name changes RAM size; useful as a
+  negative control. On 32K, all-RAM mode aliases `$8000` to `$0000`.
 - `coco2bus` is a 64K CoCo 2 with Disk BASIC 1.1 attached by default.
 - In ROM mode XRoar (like the real SAM) sends writes to `$8000+` to the
   ROM, so they don't stick. That's the test for "are we in all-RAM mode?".
