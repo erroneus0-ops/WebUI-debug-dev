@@ -99,7 +99,7 @@ address, but a bare `EXEC` (no parameter) afterward doesn't work --
 only `EXEC <addr>` does. Root cause: the side-load path pokes bytes
 into RAM directly without updating `EXECJP` (\$9D, 2 bytes,
 high-byte-first -- "*PV JUMP ADDRESS FOR EXEC COMMAND", per
-memory-map-decb.csv), which is the specific variable a real `LOADM`
+`.claude/skills/coco/reference/unravelled/memory-map-decb.asm`), which is the specific variable a real `LOADM`
 sets and bare `EXEC` reads. Fix: have the side-load routine write the
 header's exec address into \$9D/\$9E the same way LOADM does, so bare
 `EXEC` works identically after either loading method.

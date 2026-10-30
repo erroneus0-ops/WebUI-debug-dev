@@ -231,8 +231,9 @@ for that knowledge to live.
 
 Both `GET` ($9755) and `PUT` ($9758) funnel through the same shared
 address-computation routine, `L9298`, before doing any byte copying
-(confirmed in `reference/xls-conversion/listings/ecb-1.1/`,
-chunks `ecb_03000-03599.csv` and `ecb_02400-02999.csv`):
+(confirmed in `.claude/skills/coco/reference/unravelled/ecb-1.1/`:
+`ecb_91D8-9338.asm` for `L928F`/`L9298`, `ecb_968B-9757.asm` for `GET`,
+`ecb_9758-98EB.asm` for `PUT`):
 
 ```
 L928F  LDA  PMODE        ; read the STORED mode number -- whatever

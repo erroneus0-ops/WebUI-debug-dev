@@ -47,8 +47,9 @@ two independent reasons it can fail:
 ### The full, real call chain (confirmed via direct disassembly)
 
 Traced through an actual "Color BASIC Unravelled"-style disassembly
-spreadsheet (34 tabs covering CB/ECB/SECB/DECB across multiple versions --
-see the repo root, `Unravelled II.xls`):
+spreadsheet (`Unravelled II.xls`, 35 tabs covering CB/ECB/SECB/DECB across
+multiple versions; the original is in the Exploring-6809-Assembly repo, and
+its ROM-verified plain-text form is `.claude/skills/coco/reference/unravelled/`):
 
 ```
 $167 (359)   CONSOLE OUT RAM hook -- one of 25 documented 3-byte JMP

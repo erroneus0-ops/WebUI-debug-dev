@@ -90,7 +90,8 @@ behavior without patching the base ROM (see `memory-map.md`).
 
 `$167` (decimal 359) is the `CONSOLE OUT` hook — the very first link in
 the chain that runs on every character output. The full traced call
-chain (via `Unravelled II.xls`, cross-tabs CB/ECB/SECB/DECB):
+chain (via the Unravelled disassemblies in `unravelled/`, cross-referencing
+CB/ECB/SECB/DECB):
 
 ```
 $167 (359)   CONSOLE OUT RAM hook -- originally JMP $CC1C
