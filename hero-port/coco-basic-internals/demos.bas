@@ -56,49 +56,39 @@ REM ============================================================
 
 
 REM ============================================================
-REM DEMO 3: ROM/RAM MODE DETECTION -- proving the stack-blast
-REM ROM-to-RAM copy actually works
+REM DEMO 3: ROM-TO-RAM SINGLE-CHUNK PROOF (redesigned 2026-10-30)
 REM
-REM Detects whether address &H8000 is currently genuine (writable)
-REM RAM or read-only ROM by trying to change it and checking
-REM whether the write stuck, runs a real stack-blasting copy
-REM routine that reads 8 bytes from &H8000 while ROM is forced on
-REM and writes them back while RAM is forced on, then runs the same
-REM detection again -- proving the address is now genuinely
-REM writable RAM, with its original ROM content faithfully
-REM preserved.
+REM The machine code (romcopy_proof.asm) stack-blasts the 8 bytes
+REM at &H8000 from ROM into the RAM underneath, then, while still in
+REM all-RAM mode, copies that RAM back out to &H7045 and tests that
+REM RAM at &H8000 really is writable (flag at &H7044). It switches
+REM back to ROM mode before returning, because BASIC itself is still
+REM running from ROM and only 8 bytes were copied. It first checks
+REM for a 64K machine: on 32K, all-RAM mode makes $8000 an alias of
+REM $0000, and copying would overwrite BASIC's own variables.
+REM $FFDE selects ROM, $FFDF selects all-RAM.
 REM
-REM The object code below is the assembled form of
-REM hero-port/coco-basic-internals/romcopy_proof.asm -- see that
-REM file (and its matching .lst listing) for the annotated source.
-REM
-REM NOTE, confirmed during this exploration: a plain POKE &HFFDE,0
-REM (the SAM's documented all-RAM-mode toggle) did NOT actually
-REM switch modes in the specific XRoar coco2bus build used to
-REM verify all of this -- meaning DEMO 3 as written will correctly
-REM show "BEFORE - ROM MODE" both times until/unless that's
-REM resolved (real open question, see COCO-BASIC-INTERNALS.md
-REM section 2). The COPY mechanism itself (the actual point of this
-REM demo) is separately, solidly verified -- see
-REM stackblast_multichunk.asm/.lst for that proof, done directly
-REM against ordinary RAM rather than depending on the ROM/RAM
-REM switch working in this specific emulator build.
+REM TESTED 2026-10-30, headless XRoar 1.12.1, coco2bus 64K: copy
+REM matches ROM, RAM writable, back in ROM mode, BASIC running; on
+REM a 32K machine it detects the $8000->$0000 alias and refuses.
+REM (The old version had $FFDE/$FFDF swapped and always showed ROM.)
+REM Bytes assembled by lwasm.wasm from romcopy_proof.asm.
 REM ============================================================
-200 DATA 16,255,112,24,16,254,112,26,79,183,255,223,53,118,183,255,222,52,118,16,254,112,24,57,0,0,128,0
-210 FOR I=0 TO 27:READ B:POKE &H7000+I,B:NEXT I
-220 A=PEEK(&H8000)
-230 POKE &H8000,(A+1) AND 255
-240 B=PEEK(&H8000)
-250 IF A=B THEN PRINT "BEFORE - ROM MODE"
-260 IF A<>B THEN PRINT "BEFORE - RAM MODE"
-270 POKE &H8000,A
-280 EXEC &H7000
-290 C=PEEK(&H8000)
-300 POKE &H8000,(C+1) AND 255
-310 D=PEEK(&H8000)
-320 IF C=D THEN PRINT "AFTER - ROM MODE"
-330 IF C<>D THEN PRINT "AFTER - RAM MODE"
-340 POKE &H8000,C
+200 DATA 26,80,183,255,223,150,0,67,183,128,0,145,0,38,10,67,151,0,198,2,247,112,94,32,61,183,255,222,16,255,112,92,16,206,128,0
+202 DATA 183,255,222,53,118,183,255,223,52,118,16,254,112,92,142,128,0,206,112,95,198,8,166,128,167,192,90,38,249,182,128,0,76,183,128,0
+204 DATA 177,128,0,38,5,198,1,247,112,94,74,183,128,0,183,255,222,28,175,57,0,0,0,0,0,0,0,0,0,0,0
+220 FOR I=0 TO 102:READ B:POKE &H7000+I,B:NEXT I
+230 EXEC &H7000
+235 IF PEEK(&H705E)=2 THEN PRINT "32K MACHINE: NO RAM UNDER ROM.":PRINT "REFUSED (ALL-RAM MODE WOULD":PRINT "OVERWRITE $0000-$7FFF)":GOTO 320
+240 PRINT "ROM  @8000:";:FOR I=0 TO 7:PRINT PEEK(&H8000+I);:NEXT I:PRINT
+250 PRINT "RAM COPY  :";:FOR I=0 TO 7:PRINT PEEK(&H705F+I);:NEXT I:PRINT
+260 M=1:FOR I=0 TO 7:IF PEEK(&H8000+I)<>PEEK(&H705F+I) THEN M=0
+270 NEXT I
+280 IF M=1 THEN PRINT "RAM COPY MATCHES ROM" ELSE PRINT "COPY MISMATCH"
+290 IF PEEK(&H705E)=1 THEN PRINT "RAM WAS WRITABLE IN 64K MODE" ELSE PRINT "RAM NOT WRITABLE"
+300 A=PEEK(&H8000):POKE &H8000,(A+1) AND 255
+310 IF PEEK(&H8000)=A THEN PRINT "BACK IN ROM MODE" ELSE PRINT "STILL IN RAM MODE":POKE &H8000,A
+320 REM END OF DEMO 3
 
 
 REM ============================================================
@@ -131,14 +121,20 @@ REM address across the ENTIRE range (the very start, several points
 REM through the middle, and the very last byte before I/O begins)
 REM comes back byte-for-byte identical before and after -- the copy
 REM itself is proven correct across the whole of real ROM, not just
-REM a small test range. Whether the underlying mode switch actually
-REM takes effect afterward remains the same open XRoar-specific
-REM question noted in Demo 3 and COCO-BASIC-INTERNALS.md section 2 --
-REM confirmed here too, via a real write-persistence test immediately
-REM after running this, that it still doesn't stick in this specific
-REM emulator build even after the complete sweep.
+REM a small test range. CORRECTION (2026-10-30): those earlier runs
+REM had $FFDE/$FFDF swapped, so they read in all-RAM mode, wrote in
+REM ROM mode and ended in ROM mode; the before/after PEEKs both read
+REM ROM, which is why they matched and writes never stuck. The DATA
+REM below is now fixed: the sweep ends in all-RAM mode with BASIC
+REM running from its RAM copy, and a POKE to e.g. &H8000 sticks.
+REM TESTED 2026-10-30, headless XRoar 1.12.1, coco2bus 64K: old code ->
+REM writes never stick; fixed code -> values identical before/after,
+REM POKE &H8000 sticks, BASIC keeps running. (tools/xroar_headless/)
+REM WARNING: 64K MACHINES ONLY. On 32K, all-RAM mode makes $8000-$FEFF
+REM alias $0000-$7EFF, so this sweep would copy the ROM over BASIC's
+REM own RAM and crash. (Found 2026-10-30; Demo 3 now checks for this.)
 REM ============================================================
-400 DATA 26,80,16,255,112,40,16,254,112,42,183,255,223,53,118,183,255,222,52,118,190,112,42,48,8,191,112,42,140,255,0,38,229,16,254,112,40,28,175,57,0,0,128,0
+400 DATA 26,80,16,255,112,40,16,254,112,42,183,255,222,53,118,183,255,223,52,118,190,112,42,48,8,191,112,42,140,255,0,38,229,16,254,112,40,28,175,57,0,0,128,0
 410 FOR I=0 TO 43:READ B:POKE &H7000+I,B:NEXT I
 420 A=PEEK(&H8000):B=PEEK(&H9000):C=PEEK(&HA000):D=PEEK(&HC000):E=PEEK(&HD000):F=PEEK(&HE000):G=PEEK(&HFEFF)
 430 PRINT "BEFORE: ";A;B;C;D;E;F;G
