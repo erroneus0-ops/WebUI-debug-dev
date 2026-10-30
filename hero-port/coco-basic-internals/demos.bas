@@ -137,8 +137,10 @@ REM had $FFDE/$FFDF swapped, so they read in all-RAM mode, wrote in
 REM ROM mode and ended in ROM mode; the before/after PEEKs both read
 REM ROM, which is why they matched and writes never stuck. The DATA
 REM below is now fixed: the sweep ends in all-RAM mode with BASIC
-REM running from its RAM copy, and a POKE to e.g. &H8000 should stick.
-REM Needs re-testing in XRoar (64K machine).
+REM running from its RAM copy, and a POKE to e.g. &H8000 sticks.
+REM TESTED 2026-10-30, headless XRoar 1.12.1, coco2bus 64K: old code ->
+REM writes never stick; fixed code -> values identical before/after,
+REM POKE &H8000 sticks, BASIC keeps running. (tools/xroar_headless/)
 REM ============================================================
 400 DATA 26,80,16,255,112,40,16,254,112,42,183,255,222,53,118,183,255,223,52,118,190,112,42,48,8,191,112,42,140,255,0,38,229,16,254,112,40,28,175,57,0,0,128,0
 410 FOR I=0 TO 43:READ B:POKE &H7000+I,B:NEXT I
