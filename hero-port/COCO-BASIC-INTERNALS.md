@@ -99,8 +99,18 @@ Confirmed directly from the disassembly's own memory-map documentation:
 
 | Address | Name | Effect |
 |---|---|---|
-| `$FFDE` (65502) | `ROMCLR` | disables ROM (all-RAM mode) |
-| `$FFDF` (65503) | `ROMSET` | enables ROM (normal mode) |
+| `$FFDE` (65502) | `ROMCLR` | clears SAM bit TY: map type 0, **ROM enabled** (normal mode) |
+| `$FFDF` (65503) | `ROMSET` | sets SAM bit TY: map type 1, **all-RAM mode** (ROM disabled) |
+
+**Corrected 2026-10-30.** This table used to say the opposite, copied from
+the Unravelled memory map's comments (`ROMCLR ; ROM DISABLED`, `ROMSET ;
+ROM ENABLED`), which are backwards. The ROM's own, byte-verified code
+settles it: the CoCo 3 boot copy loop at `$C1B1` does `CLR SAM+30` (`$FFDE`)
+"ENABLE THE ROM" before reading and `CLR SAM+31` (`$FFDF`) "DISABLE THE ROM"
+before writing, and `$C1F6` uses `$FFDE` to "ENABLE THE ROMS". It also fits
+the SAM datasheet: odd addresses *set* a bit, even addresses *clear* it, and
+TY=1 is the all-RAM map. In BASIC: `POKE &HFFDF,0` = all-RAM, `POKE &HFFDE,0`
+= ROM.
 
 These are address-triggered SAM registers -- the value written doesn't
 matter, only the act of accessing that address.
@@ -122,9 +132,9 @@ START   ORCC  #$50      ; interrupts OFF -- critical, an interrupt firing
                          ; mid-toggle could hit a handler expecting a
                          ; consistent memory state
         LDX   #$8000    ; start of ROM
-LOOP    STA   $FFDF     ; force ROM mode
+LOOP    STA   $FFDE     ; force ROM mode
         LDD   ,X        ; read from ROM
-        STA   $FFDE     ; force RAM mode
+        STA   $FFDF     ; force RAM mode
         STD   ,X++      ; write the same data back to the same address
         CMPX  #$E000    ; end of CoCo 1/2 ROM space
         BNE   LOOP
@@ -135,13 +145,11 @@ range being toggled, so the CPU is always executing stable, unaffected
 code -- it never executes instructions *from* the region being flipped
 back and forth, only reads/writes data there.
 
-**Note on our own testing:** a plain `POKE &HFFDE,0` in this specific
-XRoar `coco2bus` build did *not* actually switch modes (confirmed via a
-before/after `PEEK`/`POKE` write-test showing no change at all). Real,
-open, unresolved question -- worth checking whether this is an XRoar
-`coco2bus` emulation gap (similar to the T1-font `EXT`-signal gap found
-elsewhere in this project) or something else, before relying on
-`$FFDE`/`$FFDF` in any XRoar-based work.
+**Note on our own testing (resolved 2026-10-30):** a plain `POKE &HFFDE,0`
+"did not switch modes" because `$FFDE` *selects ROM*, the mode the machine
+was already in. Not an XRoar gap. The copy routines in
+`coco-basic-internals/` had the two addresses swapped too; they're fixed,
+and should now finish in all-RAM mode with writes that stick.
 
 ## 3. The SAM chip -- the complete register map, and how it all connects
 

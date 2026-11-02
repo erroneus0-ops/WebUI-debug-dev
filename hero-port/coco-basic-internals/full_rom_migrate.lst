@@ -6,9 +6,9 @@
                                                  ; and jump into invalid memory
 7002  10FF7028                STS   REALS        ; save BASIC's real stack pointer first
 7006  10FE702A        LOOP1   LDS   CURPOS       ; S = current position -- this IS both source and dest
-700A  B7FFDF                  STA   $FFDF        ; force ROM mode
+700A  B7FFDE                  STA   $FFDE        ; force ROM mode
 700D  3576                    PULS  D,X,Y,U      ; read 8 bytes; S advances forward by 8
-700F  B7FFDE                  STA   $FFDE        ; force RAM mode
+700F  B7FFDF                  STA   $FFDF        ; force RAM mode
 7012  3476                    PSHS  D,X,Y,U      ; write same 8 bytes back; S returns to CURPOS's value exactly
 7014  BE702A                  LDX   CURPOS       ; reload X from the SEPARATE tracker (untouched by the blast)
 7017  3008                    LEAX  8,X          ; advance to next chunk

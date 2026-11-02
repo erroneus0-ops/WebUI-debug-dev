@@ -1,9 +1,9 @@
 7000                          ORG $7000
 7000  10FF7024        START   STS   REALS        ; save BASIC's real stack pointer first
 7004  10FE7026        LOOP1   LDS   CURPOS       ; S = current position -- this IS both source and dest
-7008  B7FFDF                  STA   $FFDF        ; force ROM mode
+7008  B7FFDE                  STA   $FFDE        ; force ROM mode
 700B  3576                    PULS  D,X,Y,U      ; read 8 bytes; S advances forward by 8; X now holds DATA, not position!
-700D  B7FFDE                  STA   $FFDE        ; force RAM mode
+700D  B7FFDF                  STA   $FFDF        ; force RAM mode
 7010  3476                    PSHS  D,X,Y,U      ; write same 8 bytes back; S returns to CURPOS's value exactly
 7012  BE7026                  LDX   CURPOS       ; reload X from the SEPARATE tracker (untouched by the blast)
 7015  3008                    LEAX  8,X          ; advance to next chunk
